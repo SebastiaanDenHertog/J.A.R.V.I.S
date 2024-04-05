@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(J.A.R.V.I.S)
+set(CMAKE_CXX_STANDARD 17)
 
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
@@ -17,7 +18,6 @@ add_subdirectory(
   EXCLUDE_FROM_ALL
 )
 
-set(CMAKE_CXX_STANDARD 17)
 add_executable(${PROJECT_NAME} main.cpp)
 
 # Link TensorFlow libraries
