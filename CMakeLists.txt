@@ -1,19 +1,24 @@
-# CMakeLists.txt
-
 cmake_minimum_required(VERSION 3.10)
-project(MyProject)
+project(J.A.R.V.I.S)
 
-# Specify C++ standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(TENSORFLOW_INCLUDE_PATH "/path/to/tensorflow/include")
-set(TENSORFLOW_LIB_PATH "/path/to/tensorflow/lib")
+set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
+  "Directory that contains the TensorFlow project"
+)
+if(NOT TENSORFLOW_SOURCE_DIR)
+  get_filename_component(TENSORFLOW_SOURCE_DIR
+    "${CMAKE_CURRENT_LIST_DIR}/../../../../"
+    ABSOLUTE
+  )
+endif()
 
+add_subdirectory(
+  "${TENSORFLOW_SOURCE_DIR}/tensorflow/lite"
+  "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-lite"
+  EXCLUDE_FROM_ALL
+)
 
-include_directories(${TENSORFLOW_INCLUDE_PATH})
-
-# Add executable target
+set(CMAKE_CXX_STANDARD 17)
 add_executable(${PROJECT_NAME} main.cpp)
 
 # Link TensorFlow libraries
-target_link_libraries(${PROJECT_NAME} ${TENSORFLOW_LIB_PATH}/libtensorflow_cc.so ${TENSORFLOW_LIB_PATH}/libtensorflow_framework.so)
+target_link_libraries(${PROJECT_NAME} tensorflow-lite)
