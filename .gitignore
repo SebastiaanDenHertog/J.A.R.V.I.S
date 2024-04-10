@@ -31,5 +31,4 @@
 *.out
 *.app
 
-/lib/tensorflow/
 /build
