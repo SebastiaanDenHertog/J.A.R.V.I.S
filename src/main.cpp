@@ -1,4 +1,8 @@
+#include "tensorflow/lite/interpreter.h"
+#include "repeaker.h"
 #include "wifi_server.h"
+
+input Repeaker;
 
 int main(int argc, char *argv[])
 {
