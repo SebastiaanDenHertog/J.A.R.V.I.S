@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(J.A.R.V.I.S)
 set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-Wall -g)
+include_directories(../include)
+
 
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
