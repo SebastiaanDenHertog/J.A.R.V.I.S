@@ -1,8 +1,8 @@
 #include "tensorflow/lite/interpreter.h"
-#include "repeaker.h"
+#include "ReSpeaker.h"
 #include "wifi_server.h"
 
-input Repeaker;
+ReSpeaker respeaker("/dev/i2c-1", 0x4b, 4);
 
 int main(int argc, char *argv[])
 {
