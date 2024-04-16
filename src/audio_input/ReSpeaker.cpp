@@ -82,6 +82,20 @@ void ReSpeaker::startCapture()
   sendI2C(databuf, 2); // sample resolution 32 bit Additional configuration for capture
 }
 
+// funtion to get audio data and process it
+uint8_t ReSpeaker::getAudioData()
+{
+  // Read the audio data
+  uint8_t buf[256];
+  uint32_t  = readI2C(buf, 256);
+  if (bytes_read == 0)
+  {
+    std::cerr << "Failed to read audio data.\n";
+    return;
+  }
+  return buf;
+}
+
 void ReSpeaker::stopCapture()
 {
   // Stop the capture

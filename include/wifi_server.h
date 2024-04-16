@@ -17,11 +17,11 @@
 #include <fcntl.h>
 #include <fstream>
 
-class Server
+class wifiServer
 {
 public:
-    Server(int port);
-    ~Server();
+    wifiServer(int port);
+    ~wifiServer();
     void run();
 
 private:
