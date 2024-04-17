@@ -25,8 +25,8 @@ add_subdirectory(
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp" "${PROJECT_SOURCE_DIR}/src/*/*.c")
 
 # Executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(main "${PROJECT_SOURCE_DIR}/src/main.cpp" ${SOURCES})
 
 # Linking libraries
 # Ensure the Bluetooth library is linked
-target_link_libraries(${PROJECT_NAME} tensorflow-lite -lbluetooth)
+target_link_libraries(main PRIVATE tensorflow-lite -lbluetooth)
