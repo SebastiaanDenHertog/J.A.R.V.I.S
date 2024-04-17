@@ -2,39 +2,33 @@
 #define WIFI_SERVER_H
 
 #include <iostream>
-#include <string>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/uio.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <fstream>
+#include <string>
+#include <sstream>
+#include <cstring>
+#include "ReSpeaker.h"
 
 class wifiServer
 {
 public:
-    wifiServer(int port);
+    wifiServer(int port, ReSpeaker &respeaker);
     ~wifiServer();
     void run();
-
-private:
-    int serverSd;
-    sockaddr_in servAddr;
-    int port;
-
     void setupServerSocket();
     void bindSocket();
     void listenForClients();
     void acceptClient(sockaddr_in &newSockAddr, int &newSd);
-    void session(int &clientSd);
+    void session(int clientSd);
+    void sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType);
     void closeSocket(int sd);
+
+private:
+    ReSpeaker &respeaker;
+    int port;
+    int serverSd;
+    sockaddr_in servAddr;
 };
 
 #endif // WIFI_SERVER_H
