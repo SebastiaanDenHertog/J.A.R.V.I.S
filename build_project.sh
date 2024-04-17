@@ -20,11 +20,11 @@ cd "$BUILD_DIR"
 
 # Run CMake to configure the project and generate the build system
 echo "Running CMake..."
-cmake ..
+cmake –G"Unix Makefiles" ..
 
 # Build the project
 echo "Building the project..."
-make
+make -j -l30
 
 # Navigate back to the root project directory
 cd ..
