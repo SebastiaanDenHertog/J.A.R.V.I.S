@@ -1,7 +1,10 @@
 #include "ReSpeaker.h"
 
-ReSpeaker::ReSpeaker(const char* device_path, uint8_t addr, uint8_t count) : i2c_device(device_path), device_addr(addr), mic_count(count)
+ReSpeaker::ReSpeaker(const char *device_path, uint8_t addr, uint8_t count) : device_addr(addr), mic_count(count)
 {
+  strncpy(i2c_device, device_path, sizeof(i2c_device) - 1); // Copy the string safely
+  i2c_device[sizeof(i2c_device) - 1] = '\0';                // Ensure null-termination
+
   i2c_fd = open(i2c_device, O_RDWR);
   if (i2c_fd < 0)
   {

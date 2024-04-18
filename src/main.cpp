@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
         pixel_ring.startAnimation();
 
         ReSpeaker respeaker(devicePath, deviceAddress, micCount);
-        wifiServer server(port, respeaker);
+        wifiServer wifiserver(port, respeaker);
 
-        server.run();
+        wifiserver.run();
     }
     catch (const std::exception &e)
     {

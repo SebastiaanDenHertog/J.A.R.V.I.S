@@ -13,9 +13,11 @@ elseif(TARGET_ARCH STREQUAL "x86_64")
     include("x86_64_toolchain.cmake")
 endif()
 
-# Specify the path to the Torch library
-list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/lib/libtorch")
-find_package(Torch REQUIRED)
+# Setting option to download dependencies for mlpack
+set(DOWNLOAD_DEPENDENCIES ON CACHE BOOL "Download dependencies for mlpack")
+
+# Include the mlpack library directory
+add_subdirectory("${PROJECT_SOURCE_DIR}/lib/mlpack/")
 
 # Source files
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp" "${PROJECT_SOURCE_DIR}/src/*/*.c")
@@ -24,17 +26,10 @@ file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp" "${PROJECT_SOURCE_DIR}/src
 add_executable(main "${PROJECT_SOURCE_DIR}/src/main.cpp" ${SOURCES})
 
 # Include directories
-target_include_directories(main PRIVATE "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(main PRIVATE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/lib/mlpack/src")
 
-# Compiler and linker options
-target_compile_options(main PRIVATE -Wall -g -pthread ${TORCH_CXX_FLAGS})
-target_link_libraries(main PRIVATE "${TORCH_LIBRARIES}" -lbluetooth -lstdc++ -lm)
+# Link against mlpack and other libraries
+target_link_libraries(main PRIVATE mlpack -lbluetooth -lstdc++ -lm)
 
-# Windows DLLs copying for PyTorch
-if (MSVC)
-    file(GLOB TORCH_DLLs "${PROJECT_SOURCE_DIR}/lib/libtorch/lib/*.dll")
-    add_custom_command(TARGET main POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                       ${TORCH_DLLs}
-                       $<TARGET_FILE_DIR:main>)
-endif()
+# Compiler options
+target_compile_options(main PRIVATE -Wall -g -pthread)
