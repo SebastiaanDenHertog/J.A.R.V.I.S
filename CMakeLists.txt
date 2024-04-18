@@ -8,9 +8,11 @@ set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture")
 
 # Include the toolchain file based on the architecture
 if(TARGET_ARCH STREQUAL "aarch64")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/arm64_toolchain.cmake")
+    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/aarch64_toolchain.cmake")
+    message(STATUS "Using aarch64 toolchain")
 elseif(TARGET_ARCH STREQUAL "x86_64")
     set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/x86_64_toolchain.cmake")
+    message(STATUS "Using x86_64 toolchain")
 endif()
 
 # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
