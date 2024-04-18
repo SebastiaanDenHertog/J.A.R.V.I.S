@@ -20,7 +20,7 @@ cd "$BUILD_DIR"
 
 # Run CMake to configure the project and generate the build system
 echo "Running CMake..."
-cmake –G"Unix Makefiles" ..
+cmake –G"Unix Makefiles" -DTARGET_ARCH=aarch64 ..
 
 # Build the project
 echo "Building the project..."
