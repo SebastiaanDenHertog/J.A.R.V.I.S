@@ -1,5 +1,4 @@
 // ReSpeaker.h
-
 #ifndef RESPEAKER_H
 #define RESPEAKER_H
 
@@ -25,11 +24,12 @@ private:
   int i2c_fd;
   uint8_t device_addr;
   uint8_t mic_count;
-  uint8_t databuf[2]; // Buffer for I2C data
+  uint8_t databuf[2];
 
   void initBuffer(uint8_t reg, uint8_t val);
   void sendI2C(const uint8_t *buf, uint32_t sz);
   uint32_t readI2C(uint8_t *buf, uint32_t sz);
+  void initBoard();
 };
 
-#endif // RESPEAKER_H
+#endif 

@@ -1,20 +1,52 @@
 #include "wifi_server.h"
 
-// Constructor
-Server::Server(int port) : port(port), serverSd(-1)
+wifiServer::wifiServer(int port, ReSpeaker &respeaker) : port(port), respeaker(respeaker)
 {
     setupServerSocket();
     bindSocket();
     listenForClients();
 }
 
+void wifiServer::session(int clientSd)
+{
+    char buffer[1024];
+    memset(buffer, 0, 1024);
+    int bytesReceived = recv(clientSd, buffer, 1024, 0);
+    if (bytesReceived < 0)
+    {
+        std::cerr << "Failed to read data from client." << std::endl;
+        return;
+    }
+
+    std::string request(buffer);
+    if (request.find("GET /data ") != std::string::npos)
+    {
+        uint32_t dataLength;
+        uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
+        if (audioData != nullptr)
+        {
+            sendHttpResponse(clientSd, audioData, dataLength, "200 OK", "application/octet-stream");
+            delete[] audioData;
+        }
+        else
+        {
+            sendHttpResponse(clientSd, reinterpret_cast<const uint8_t *>("No data"), 7, "404 Not Found", "text/plain");
+        }
+        respeaker.stopCapture();
+    }
+    else
+    {
+        sendHttpResponse(clientSd, reinterpret_cast<const uint8_t *>("Not Found"), 9, "404 Not Found", "text/plain");
+    }
+}
+
 // Destructor
-Server::~Server()
+wifiServer::~wifiServer()
 {
     closeSocket(serverSd);
 }
 
-void Server::run()
+void wifiServer::run()
 {
     sockaddr_in newSockAddr;
     int newSd;
@@ -23,7 +55,7 @@ void Server::run()
     closeSocket(newSd);
 }
 
-void Server::setupServerSocket()
+void wifiServer::setupServerSocket()
 {
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSd < 0)
@@ -36,7 +68,7 @@ void Server::setupServerSocket()
     servAddr.sin_port = htons(port);
 }
 
-void Server::bindSocket()
+void wifiServer::bindSocket()
 {
     int bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
     if (bindStatus < 0)
@@ -46,13 +78,13 @@ void Server::bindSocket()
     }
 }
 
-void Server::listenForClients()
+void wifiServer::listenForClients()
 {
     listen(serverSd, 5); // Listen for up to 5 requests at a time
     std::cout << "Waiting for a client to connect..." << std::endl;
 }
 
-void Server::acceptClient(sockaddr_in &newSockAddr, int &newSd)
+void wifiServer::acceptClient(sockaddr_in &newSockAddr, int &newSd)
 {
     socklen_t newSockAddrSize = sizeof(newSockAddr);
     newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
@@ -64,12 +96,7 @@ void Server::acceptClient(sockaddr_in &newSockAddr, int &newSd)
     std::cout << "Connected with client!" << std::endl;
 }
 
-void Server::session(int &clientSd)
-{
-    // Implementation of session handling with client
-}
-
-void Server::closeSocket(int sd)
+void wifiServer::closeSocket(int sd)
 {
     close(sd);
 }

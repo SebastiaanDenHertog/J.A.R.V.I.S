@@ -1,12 +1,11 @@
 #include "ReSpeaker.h"
 
-ReSpeaker::ReSpeaker(const char *device_path, uint8_t addr, uint8_t count) : i2c_device(device_path), device_addr(addr), mic_count(count)
+ReSpeaker::ReSpeaker(const char* device_path, uint8_t addr, uint8_t count) : i2c_device(device_path), device_addr(addr), mic_count(count)
 {
   i2c_fd = open(i2c_device, O_RDWR);
   if (i2c_fd < 0)
   {
     std::cerr << "Failed to open the I2C bus\n";
-    // Handle error appropriately
   }
 }
 
@@ -59,41 +58,20 @@ void ReSpeaker::initBuffer(uint8_t reg, uint8_t val)
 void ReSpeaker::initBoard()
 {
   initBuffer(0x00, 0x12);
-  sendI2C(databuf, 2); // reset registers
-  sleep(200);          // 200 ms delay
+  sendI2C(databuf, 2);
+  sleep(200);         
   initBuffer(0x20, 0x08);
-  sendI2C(databuf, 2); // sys clock 24000000 Hz
-                       // Additional initialization as needed
+  sendI2C(databuf, 2); 
+                       
 }
 
 void ReSpeaker::setVolume(uint8_t vol)
 {
   for (uint8_t i = 0; i < mic_count; ++i)
   {
-    initBuffer(0x70 + i, vol); // volume for each mic
+    initBuffer(0x70 + i, vol); 
     sendI2C(databuf, 2);
   }
-}
-
-void ReSpeaker::startCapture()
-{
-  // Initialize the board for capture
-  initBuffer(0x33, 0x7f);
-  sendI2C(databuf, 2); // sample resolution 32 bit Additional configuration for capture
-}
-
-// funtion to get audio data and process it
-uint8_t ReSpeaker::getAudioData()
-{
-  // Read the audio data
-  uint8_t buf[256];
-  uint32_t  = readI2C(buf, 256);
-  if (bytes_read == 0)
-  {
-    std::cerr << "Failed to read audio data.\n";
-    return;
-  }
-  return buf;
 }
 
 void ReSpeaker::stopCapture()
@@ -101,4 +79,22 @@ void ReSpeaker::stopCapture()
   // Stop the capture
   initBuffer(0x30, 0xb0);
   sendI2C(databuf, 2); // disable all clocks
+}
+
+uint8_t *ReSpeaker::startCaptureAndGetAudioData(uint32_t &dataLength)
+{
+  initBuffer(0x33, 0x7f);
+  sendI2C(databuf, 2); // Sample resolution 32 bit, additional configuration for capture
+
+  // Example buffer size, adjust according to your needs
+  dataLength = 256;
+  uint8_t *audioData = new uint8_t[dataLength];
+  uint32_t bytesRead = readI2C(audioData, dataLength);
+  if (bytesRead == 0)
+  {
+    std::cerr << "Failed to read audio data.\n";
+    delete[] audioData;
+    return nullptr;
+  }
+  return audioData;
 }
