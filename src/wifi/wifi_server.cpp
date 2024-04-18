@@ -115,3 +115,4 @@ void wifiServer::sendHttpResponse(int clientSd, const uint8_t *data, size_t leng
         send(clientSd, data, length, 0);
     }
 }
+
