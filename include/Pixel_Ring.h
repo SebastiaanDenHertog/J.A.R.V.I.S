@@ -44,4 +44,4 @@ private:
     void initSpi();
 };
 
-#endif 
+#endif

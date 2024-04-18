@@ -100,3 +100,18 @@ void wifiServer::closeSocket(int sd)
 {
     close(sd);
 }
+
+void wifiServer::sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType)
+{
+    std::ostringstream httpResponse;
+    httpResponse << "HTTP/1.1 " << statusCode << "\r\n";
+    httpResponse << "Content-Type: " << contentType << "\r\n";
+    httpResponse << "Content-Length: " << length << "\r\n";
+    httpResponse << "Connection: close\r\n\r\n";
+    send(clientSd, httpResponse.str().c_str(), httpResponse.str().length(), 0);
+
+    if (data != nullptr && length > 0)
+    {
+        send(clientSd, data, length, 0);
+    }
+}
