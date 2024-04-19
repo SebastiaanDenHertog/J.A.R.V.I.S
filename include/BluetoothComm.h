@@ -2,8 +2,6 @@
 #define BLUETOOTHCOMM_H
 
 #include <string>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/rfcomm.h>
 #include <unistd.h>
 #include <sys/socket.h>
 
