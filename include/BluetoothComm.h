@@ -4,6 +4,12 @@
 #include <string>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+#include <bluetooth/l2cap.h>
+#include <errno.h>
+#include <iostream>
 
 class BluetoothComm
 {
@@ -11,20 +17,21 @@ public:
     BluetoothComm();
     virtual ~BluetoothComm();
 
-    // Initialize the Bluetooth communication
+    // Initialize Bluetooth Low Energy communication
     bool initialize();
 
-    // Terminate the Bluetooth communication
+    // Terminate Bluetooth Low Energy communication
     void terminate();
 
-    // Send data over Bluetooth
+    // Send data over Bluetooth Low Energy
     bool sendData(const std::string &data);
 
-    // Receive data over Bluetooth
+    // Receive data over Bluetooth Low Energy
     std::string receiveData();
 
 private:
-    int sockfd; // Socket file descriptor for Bluetooth communication
+    int deviceHandle;     // Device handle for BLE communication
+    int connectionHandle; // Connection handle for BLE communication
 };
 
 #endif // BLUETOOTHCOMM_H
