@@ -6,12 +6,11 @@
 #include <iostream>
 #include <memory>
 
-// Helper function to create an interpreter
 std::unique_ptr<tflite::Interpreter> CreateInterpreter(const tflite::Model &model)
 {
     tflite::ops::builtin::BuiltinOpResolver resolver;
     std::unique_ptr<tflite::Interpreter> interpreter;
-    tflite::InterpreterBuilder builder(model, resolver);
+    tflite::InterpreterBuilder builder(&model, resolver); // Pass the address of model here
     if (builder(&interpreter) != kTfLiteOk)
     {
         std::cerr << "Failed to build interpreter." << std::endl;
