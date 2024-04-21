@@ -8,8 +8,6 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 #include <bluetooth/l2cap.h>
-#include <errno.h>
-#include <iostream>
 
 class BluetoothComm
 {

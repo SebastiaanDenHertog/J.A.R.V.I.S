@@ -1,7 +1,7 @@
-#include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/tools/logging.h"
+#include "tensorflow/lite/interpreter.h"
 
 #include <iostream>
 #include <memory>
@@ -25,15 +25,16 @@ int main()
 {
     // Load the model
     const char *model_path = "path_to_your_model.tflite";
-    std::unique_ptr<tflite::FlatBufferModel> model = tflite::FlatBufferModel::BuildFromFile(model_path);
-    if (!model)
+    std::unique_ptr<tflite::FlatBufferModel> flat_buffer_model = tflite::FlatBufferModel::BuildFromFile(model_path);
+    if (!flat_buffer_model)
     {
         std::cerr << "Failed to load model." << std::endl;
         return 1;
     }
 
     // Create an interpreter
-    std::unique_ptr<tflite::Interpreter> interpreter = CreateInterpreter(*model);
+    // Note: Use flat_buffer_model->GetModel() to get the underlying tflite::Model pointer
+    std::unique_ptr<tflite::Interpreter> interpreter = CreateInterpreter(*(flat_buffer_model->GetModel()));
     if (!interpreter)
     {
         std::cerr << "Failed to create interpreter." << std::endl;
