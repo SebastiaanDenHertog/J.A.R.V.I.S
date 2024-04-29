@@ -23,7 +23,7 @@ std::unique_ptr<tflite::Interpreter> CreateInterpreter(const tflite::Model &mode
 int main()
 {
     // Load the model
-    const char *model_path = "path_to_your_model.tflite";
+    const char *model_path = "../model/model.tflite";
     std::unique_ptr<tflite::FlatBufferModel> flat_buffer_model = tflite::FlatBufferModel::BuildFromFile(model_path);
     if (!flat_buffer_model)
     {
