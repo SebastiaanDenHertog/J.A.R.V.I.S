@@ -1,6 +1,5 @@
 #include "Pixel_Ring.h"
 
-
 PixelRing::PixelRing(const std::string& spi_device, int num_leds)
 : num_leds(num_leds), global_brightness(31), running(false) {
     spi_fd = open(spi_device.c_str(), O_RDWR);

@@ -2,6 +2,23 @@
 #include "wifi_server.h"
 #include "Pixel_Ring.h"
 
+// run all model and logic in a funtion to avoid global variables 
+// model: nlp, llm, 
+void modelsLogic( uint8_t *audioData, uint32_t dataLength)
+{
+    // load models
+    ModelRunner nlpModel("models/nlp_model.tflite");
+    ModelRunner llmModel("models/llm_model.tflite");
+
+    // run models
+    float nlpOutput = nlpModel.RunModel(audioData);
+    float llmOutput = llmModel.RunModel(0.5f);
+
+    // print output
+    std::cout << "NLP output: " << nlpOutput << std::endl;
+    std::cout << "LLM output: " << llmOutput << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
     int port = 8080;
@@ -19,6 +36,14 @@ int main(int argc, char *argv[])
         wifiServer wifiserver(port, respeaker);
 
         wifiserver.run();
+        uint32_t dataLength;
+        uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
+        if (audioData != nullptr)
+        {
+            modelsLogic(audioData, dataLength);
+            delete[] audioData;
+        }
+        respeaker.stopCapture();
     }
     catch (const std::exception &e)
     {
