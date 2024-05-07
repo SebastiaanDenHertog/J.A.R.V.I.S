@@ -2,23 +2,43 @@
 #include "wifi_server.h"
 #include "Pixel_Ring.h"
 #include "model_runner.h"
+#include <vector>
+#include <iostream>
 
-// run all model and logic in a funtion to avoid global variables
-// model: nlp, llm,
+// A mock audio preprocessing function that converts audio data to float.
+std::vector<float> preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+{
+    std::vector<float> floatAudioData;
+    floatAudioData.reserve(dataLength);
+
+    // Normalize audio data to the range [-1, 1] or [0, 1] depending on the requirement.
+    for (uint32_t i = 0; i < dataLength; ++i)
+    {
+        float normalizedValue = static_cast<float>(audioData[i]) / 255.0f; // Example normalization
+        floatAudioData.push_back(normalizedValue);
+    }
+
+    return floatAudioData;
+}
+
+// Run all models and logic in a function to avoid global variables.
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
-    // load models
+    // Load models.
     ModelRunner speechModel("models/whisper_english.tflite");
     ModelRunner nlpModel("models/nlp_model.tflite");
     ModelRunner llmModel("models/llm_model.tflite");
 
-    // run models
-    float speechOutput = speechModel.RunModel(audioData);
+    // Preprocess audio data.
+    std::vector<float> processedAudio = preprocessAudioData(audioData, dataLength);
+
+    // Run models. Ensure the input type matches.
+    float speechOutput = speechModel.RunModel(processedAudio[0]); // Adjust as per the model's input needs.
     float nlpOutput = nlpModel.RunModel(speechOutput);
     std::cout << "NLP output: " << nlpOutput << std::endl;
     float llmOutput = llmModel.RunModel(0.5f);
 
-    // print output
+    // Print output.
     std::cout << "NLP output: " << nlpOutput << std::endl;
     std::cout << "LLM output: " << llmOutput << std::endl;
 }
