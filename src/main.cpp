@@ -1,6 +1,7 @@
 #include "ReSpeaker.h"
 #include "wifi_server.h"
 #include "Pixel_Ring.h"
+#include "model_runner.h"
 
 // run all model and logic in a funtion to avoid global variables 
 // model: nlp, llm, 
