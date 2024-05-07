@@ -3,16 +3,19 @@
 #include "Pixel_Ring.h"
 #include "model_runner.h"
 
-// run all model and logic in a funtion to avoid global variables 
-// model: nlp, llm, 
-void modelsLogic( uint8_t *audioData, uint32_t dataLength)
+// run all model and logic in a funtion to avoid global variables
+// model: nlp, llm,
+void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
     // load models
+    ModelRunner speechModel("models/whisper_english.tflite");
     ModelRunner nlpModel("models/nlp_model.tflite");
     ModelRunner llmModel("models/llm_model.tflite");
 
     // run models
-    float nlpOutput = nlpModel.RunModel(audioData);
+    float speechOutput = speechModel.RunModel(audioData);
+    float nlpOutput = nlpModel.RunModel(speechOutput);
+    std::cout << "NLP output: " << nlpOutput << std::endl;
     float llmOutput = llmModel.RunModel(0.5f);
 
     // print output
