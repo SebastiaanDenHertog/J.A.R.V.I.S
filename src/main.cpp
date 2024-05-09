@@ -2,6 +2,7 @@
 #include "wifi_server.h"
 #include "Pixel_Ring.h"
 #include "model_runner.h"
+#include "DeviceScanner.h"
 #include <vector>
 #include <iostream>
 
