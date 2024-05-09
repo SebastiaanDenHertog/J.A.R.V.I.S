@@ -35,7 +35,7 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
     std::vector<float> processedAudio = preprocessAudioData(audioData, dataLength);
 
     // Run models. Ensure the input type matches.
-    float dnnOutput = dnnModel.RunModel(processedAudio.data());
+    float dnnOutput = dnnModel.RunModel(processedAudio);
     std::cout << "dnn output: " << dnnOutput << std::endl;
 
     float speechOutput = speechModel.RunModel(processedAudio[0]); // Adjust as per the model's input needs.
