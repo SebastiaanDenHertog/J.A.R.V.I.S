@@ -26,7 +26,8 @@ std::vector<float> preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
     // Load models.
-    ModelRunner speechModel("g/whisper_english.tflite");
+    ModelRunner dnnModel("models/dnn_model.tflite");
+    ModelRunner speechModel("models/whisper_english.tflite");
     ModelRunner nlpModel("models/nlp_model.tflite");
     ModelRunner llmModel("models/llm_model.tflite");
 
@@ -34,8 +35,13 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
     std::vector<float> processedAudio = preprocessAudioData(audioData, dataLength);
 
     // Run models. Ensure the input type matches.
+    float dnnOutput = dnnModel.RunModel(processedAudio.data());
+    std::cout << "dnn output: " << dnnOutput << std::endl;
+
     float speechOutput = speechModel.RunModel(processedAudio[0]); // Adjust as per the model's input needs.
+    std::cout << "Speech output: " << speechOutput << std::endl;
     float nlpOutput = nlpModel.RunModel(speechOutput);
+
     std::cout << "NLP output: " << nlpOutput << std::endl;
     float llmOutput = llmModel.RunModel(0.5f);
 
@@ -71,7 +77,7 @@ int main(int argc, char *argv[])
     PixelRing pixelring(spi_device, 12);
     try
     {
-        const char *devicePath = i2c_device.c_str(); 
+        const char *devicePath = i2c_device.c_str();
         uint8_t deviceAddress = 0x40;
         uint8_t micCount = 4;
 
