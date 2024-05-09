@@ -48,8 +48,6 @@ int main(int argc, char *argv[])
 {
     DeviceScanner scanner;
     int port = 8080;
-    // List SPI devices
-    // Get the first SPI device
     std::string spi_device = scanner.get_first_spi_device();
     if (!spi_device.empty())
     {
@@ -73,7 +71,7 @@ int main(int argc, char *argv[])
     PixelRing pixelring(spi_device, 12);
     try
     {
-        const char *devicePath = i2c_device;
+        const char *devicePath = i2c_device.c_str(); 
         uint8_t deviceAddress = 0x40;
         uint8_t micCount = 4;
 
