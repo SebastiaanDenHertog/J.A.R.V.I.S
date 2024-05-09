@@ -25,7 +25,7 @@ std::vector<float> preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
     // Load models.
-    ModelRunner speechModel("models/whisper_english.tflite");
+    ModelRunner speechModel("g/whisper_english.tflite");
     ModelRunner nlpModel("models/nlp_model.tflite");
     ModelRunner llmModel("models/llm_model.tflite");
 
@@ -45,11 +45,34 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 
 int main(int argc, char *argv[])
 {
+    DeviceScanner scanner;
     int port = 8080;
-    PixelRing pixelring("/dev/spidev0.0", 12);
+    // List SPI devices
+    // Get the first SPI device
+    std::string spi_device = scanner.get_first_spi_device();
+    if (!spi_device.empty())
+    {
+        std::cout << "First SPI device: " << spi_device << "\n";
+    }
+    else
+    {
+        std::cout << "No SPI device found.\n";
+    }
+
+    // Get the first I²C device
+    std::string i2c_device = scanner.get_first_i2c_device();
+    if (!i2c_device.empty())
+    {
+        std::cout << "First I²C device: " << i2c_device << "\n";
+    }
+    else
+    {
+        std::cout << "No I²C device found.\n";
+    }
+    PixelRing pixelring(spi_device, 12);
     try
     {
-        const char *devicePath = "/dev/i2c-1";
+        const char *devicePath = i2c_device;
         uint8_t deviceAddress = 0x40;
         uint8_t micCount = 4;
 
