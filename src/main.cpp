@@ -5,6 +5,7 @@
 #include "DeviceScanner.h"
 #include <vector>
 #include <iostream>
+#include <thread>
 
 // A mock audio preprocessing function that converts audio data to float.
 float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
@@ -77,8 +78,8 @@ int main(int argc, char *argv[])
 
         ReSpeaker respeaker(devicePath, deviceAddress, micCount);
         wifiServer wifiserver(port, respeaker);
-
-        wifiserver.run();
+        std::thread t1(&wifiServer::run, &wifiserver); // Fix: Use function pointer and pass object as argument
+        t1.detach();
         uint32_t dataLength;
         uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
         if (audioData != nullptr)
