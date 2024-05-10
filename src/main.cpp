@@ -43,35 +43,14 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 
 int main(int argc, char *argv[])
 {
-    DeviceScanner scanner;
     int port = 8080;
-    std::string spi_device = scanner.get_first_spi_device();
-    if (!spi_device.empty())
-    {
-        std::cout << "First SPI device: " << spi_device << "\n";
-    }
-    else
-    {
-        std::cout << "No SPI device found.\n";
-    }
-
-    // Get the first I²C device
-    std::string i2c_device = scanner.get_first_i2c_device();
-    if (!i2c_device.empty())
-    {
-        std::cout << "First I²C device: " << i2c_device << "\n";
-    }
-    else
-    {
-        std::cout << "No I²C device found.\n";
-    }
-    PixelRing pixelring(spi_device, 12);
+    
     try
     {
         const char *devicePath = i2c_device.c_str();
-        uint8_t deviceAddress = 0x40;
+        uint8_t deviceAddress = 0x3b;
         uint8_t micCount = 4;
-
+        PixelRing pixelring(devicePath, deviceAddress,12);
         pixelring.setBrightness(15);
         pixelring.startAnimation();
 
