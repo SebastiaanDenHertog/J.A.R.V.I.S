@@ -1,50 +1,55 @@
 #include "Pixel_Ring.h"
+#include <sys/ioctl.h>
+#include <linux/i2c-dev.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdexcept>
+#include <iostream>
 
-PixelRing::PixelRing(const std::string& spi_device, int num_leds)
-: num_leds(num_leds), global_brightness(31), running(false) {
-    spi_fd = open(spi_device.c_str(), O_RDWR);
-    if (spi_fd < 0) {
-        throw std::runtime_error("Failed to open SPI device");
+PixelRing::PixelRing(const std::string &i2c_device, int i2c_address, int num_leds)
+    : num_leds(num_leds), global_brightness(31), running(false), i2c_address(i2c_address)
+{
+    i2c_fd = open(i2c_device.c_str(), O_RDWR);
+    if (i2c_fd < 0)
+    {
+        throw std::runtime_error("Failed to open I2C device");
     }
-    initSpi();
+    if (ioctl(i2c_fd, I2C_SLAVE, i2c_address) < 0)
+    {
+        close(i2c_fd);
+        throw std::runtime_error("Failed to set I2C address");
+    }
     leds.resize(num_leds * 4, 0);
     clear();
 }
 
-PixelRing::~PixelRing() {
+PixelRing::~PixelRing()
+{
     stopAnimation();
     off();
     show();
-    close(spi_fd);
+    close(i2c_fd);
 }
 
-void PixelRing::initSpi() {
-    uint8_t mode = SPI_MODE_0;
-    uint8_t bits = 8;
-    uint32_t speed = 8000000; // 8 MHz
-
-    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0 ||
-        ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0 ||
-        ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
-        close(spi_fd);
-        throw std::runtime_error("Failed to configure SPI device");
-    }
-}
-
-void PixelRing::startAnimation() {
+void PixelRing::startAnimation()
+{
     running = true;
     animationThread = std::thread(&PixelRing::animationLoop, this);
 }
 
-void PixelRing::stopAnimation() {
+void PixelRing::stopAnimation()
+{
     running = false;
-    if (animationThread.joinable()) {
+    if (animationThread.joinable())
+    {
         animationThread.join();
     }
 }
 
-void PixelRing::animationLoop() {
-    while (running) {
+void PixelRing::animationLoop()
+{
+    while (running)
+    {
         std::lock_guard<std::mutex> guard(lock);
         // Example animation: cycle colors
         setColor(255, 0, 0); // Red
@@ -63,14 +68,17 @@ void PixelRing::animationLoop() {
     show();
 }
 
-void PixelRing::setBrightness(uint8_t brightness) {
+void PixelRing::setBrightness(uint8_t brightness)
+{
     std::lock_guard<std::mutex> guard(lock);
     global_brightness = std::min(brightness, uint8_t(31));
 }
 
-void PixelRing::setColor(uint8_t r, uint8_t g, uint8_t b) {
+void PixelRing::setColor(uint8_t r, uint8_t g, uint8_t b)
+{
     std::lock_guard<std::mutex> guard(lock);
-    for (int i = 0; i < num_leds; ++i) {
+    for (int i = 0; i < num_leds; ++i)
+    {
         int index = i * 4;
         leds[index] = 0xE0 | global_brightness;
         leds[index + 1] = b;
@@ -79,32 +87,41 @@ void PixelRing::setColor(uint8_t r, uint8_t g, uint8_t b) {
     }
 }
 
-void PixelRing::show() {
+void PixelRing::show()
+{
     std::lock_guard<std::mutex> guard(lock);
     startFrame();
-    write(spi_fd, leds.data(), leds.size());
+    if (write(i2c_fd, leds.data(), leds.size()) != leds.size())
+    {
+        std::cerr << "Error writing to I2C device" << std::endl;
+    }
     endFrame();
 }
 
-void PixelRing::clear() {
+void PixelRing::clear()
+{
     std::lock_guard<std::mutex> guard(lock);
     std::fill(leds.begin(), leds.end(), 0);
-    for (int i = 0; i < num_leds; ++i) {
+    for (int i = 0; i < num_leds; ++i)
+    {
         leds[i * 4] = 0xE0 | global_brightness;
     }
 }
 
-void PixelRing::off() {
+void PixelRing::off()
+{
     std::lock_guard<std::mutex> guard(lock);
     clear();
 }
 
-void PixelRing::startFrame() {
-    uint8_t start_frame[] = {0x00, 0x00, 0x00, 0x00};
-    write(spi_fd, start_frame, sizeof(start_frame));
+void PixelRing::startFrame()
+{
+    // Some LED protocols require special frames at the start.
+    // Adapt this function if necessary based on your LED protocol.
 }
 
-void PixelRing::endFrame() {
-    uint8_t end_frame[] = {0xFF, 0xFF, 0xFF, 0xFF};
-    write(spi_fd, end_frame, sizeof(end_frame));
+void PixelRing::endFrame()
+{
+    // Some LED protocols require special frames at the end.
+    // Adapt this function if necessary based on your LED protocol.
 }
