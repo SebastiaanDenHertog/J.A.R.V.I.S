@@ -7,19 +7,10 @@
 #include <iostream>
 
 // A mock audio preprocessing function that converts audio data to float.
-std::vector<float> preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
-    std::vector<float> floatAudioData;
-    floatAudioData.reserve(dataLength);
-
-    // Normalize audio data to the range [-1, 1] or [0, 1] depending on the requirement.
-    for (uint32_t i = 0; i < dataLength; ++i)
-    {
-        float normalizedValue = static_cast<float>(audioData[i]) / 255.0f; // Example normalization
-        floatAudioData.push_back(normalizedValue);
-    }
-
-    return floatAudioData;
+    float normalizedValue = static_cast<float>(*audioData) / 255.0f; // Example normalization
+    return normalizedValue;
 }
 
 // Run all models and logic in a function to avoid global variables.
@@ -32,13 +23,13 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
     ModelRunner llmModel("models/llm_model.tflite");
 
     // Preprocess audio data.
-    std::vector<float> processedAudio = preprocessAudioData(audioData, dataLength);
+    float processedAudio = preprocessAudioData(audioData, dataLength);
 
     // Run models. Ensure the input type matches.
     float dnnOutput = dnnModel.RunModel(processedAudio);
     std::cout << "dnn output: " << dnnOutput << std::endl;
 
-    float speechOutput = speechModel.RunModel(processedAudio[0]); // Adjust as per the model's input needs.
+    float speechOutput = speechModel.RunModel(processedAudio);
     std::cout << "Speech output: " << speechOutput << std::endl;
     float nlpOutput = nlpModel.RunModel(speechOutput);
 
