@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     
     try
     {
-        const char *devicePath = i2c_device.c_str();
+        const char *devicePath = "/dev/i2c-1";
         uint8_t deviceAddress = 0x3b;
         uint8_t micCount = 4;
         PixelRing pixelring(devicePath, deviceAddress,12);
