@@ -45,18 +45,17 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 int main(int argc, char *argv[])
 {
     int port = 8080;
-    
+    const char *devicePath = "/dev/i2c-1";
+    uint8_t deviceAddress = 0x3b;
+    uint8_t micCount = 4;
+    uint8_t ledCound = 12;
+    PixelRing pixelring(devicePath, deviceAddress, ledCound);
+    ReSpeaker respeaker(devicePath, deviceAddress, micCount);
+    wifiServer wifiserver(port, respeaker);
     try
     {
-        const char *devicePath = "/dev/i2c-1";
-        uint8_t deviceAddress = 0x3b;
-        uint8_t micCount = 4;
-        PixelRing pixelring(devicePath, deviceAddress,12);
         pixelring.setBrightness(15);
         pixelring.startAnimation();
-
-        ReSpeaker respeaker(devicePath, deviceAddress, micCount);
-        wifiServer wifiserver(port, respeaker);
         std::thread t1(&wifiServer::run, &wifiserver); // Fix: Use function pointer and pass object as argument
         t1.detach();
         uint32_t dataLength;
