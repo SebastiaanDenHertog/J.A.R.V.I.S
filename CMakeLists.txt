@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(J.A.R.V.I.S)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -21,15 +22,11 @@ set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
 # Include directories for the project
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-# Include directories for TensorFlow Lite
-include_directories("${TFLITE_SOURCE_DIR}")
-include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
-
 # Add TensorFlow Lite directory to the project
 add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
 
 # Source files
-file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp" "${PROJECT_SOURCE_DIR}/src/*/*.c")
+file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/src/*.c")
 
 # Executable
 add_executable(main "${PROJECT_SOURCE_DIR}/src/main.cpp" ${SOURCES})

@@ -24,7 +24,7 @@ cmake –G"Unix Makefiles" -DTARGET_ARCH=aarch64 ..
 
 # Build the project
 echo "Building the project..."
-make -j -l48
+make -j$(nproc)
 
 # Navigate back to the root project directory
 cd ..
