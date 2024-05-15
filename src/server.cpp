@@ -10,6 +10,8 @@
 #define DEBUG_PRINT(x)
 #endif
 
+int port = 8080;
+
 float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
     float normalizedValue = static_cast<float>(*audioData) / 255.0f;
@@ -87,7 +89,7 @@ int main(int argc, char *argv[])
     std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
     DEBUG_PRINT("Bluetooth thread started.");
 
-    wifiServer wifiserver(8080);
+    wifiServer wifiserver(port);
     try
     {
         DEBUG_PRINT("Starting wifiServer.");

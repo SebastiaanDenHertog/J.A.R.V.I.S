@@ -12,6 +12,12 @@
 #define DEBUG_PRINT(x)
 #endif
 
+int port = 8080;
+const char *devicePath = "/dev/i2c-1";
+uint8_t deviceAddress = 0x3b;
+uint8_t micCount = 4;
+uint8_t ledCount = 12;
+
 float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
     float normalizedValue = static_cast<float>(*audioData) / 255.0f;
@@ -92,7 +98,7 @@ int main(int argc, char *argv[])
     std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
     DEBUG_PRINT("Bluetooth thread started.");
 
-    wifiServer wifiserver(8080);
+    wifiServer wifiserver(port);
     try
     {
         DEBUG_PRINT("Starting wifiServer.");
@@ -105,8 +111,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    PixelRing pixelring("/dev/i2c-1", 0x3b, 12);
-    ReSpeaker respeaker("/dev/i2c-1", 0x3b, 4);
+    PixelRing pixelring(devicePath, deviceAddress, ledCount);
+    ReSpeaker respeaker(devicePath, deviceAddress, micCount);
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
 
