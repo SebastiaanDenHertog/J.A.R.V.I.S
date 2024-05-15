@@ -180,25 +180,7 @@ std::string BluetoothComm::getConnectionData(const std::string &deviceAddress)
     return "";
 }
 
-void BluetoothComm::createConnectionsThread()
-{
-    while (true)
-    {
-        std::vector<BluetoothDevice> devices = this->scanDevices();
-        for (const auto &device : devices)
-        {
-            if (this->connectToDevice(device.address))
-            {
-                std::cout << "Connected to " << device.address << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to connect to " << device.address << std::endl;
-            }
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(10)); // Adjust the sleep duration as needed
-    }
-}
+
 
 void BluetoothComm::handleIncomingConnectionsThread()
 {

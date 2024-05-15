@@ -3,12 +3,13 @@
 #include "BluetoothComm.h"
 #include "Wifi.h"
 
-#if defined(SERVER_BUILD)
+#if defined(SERVER_BUILD) || defined(FULL_BUILD)
 #include "model_runner.h"
-#elif defined(CLIENT_BUILD)
+#endif
+
+#if defined(CLIENT_BUILD) || defined(FULL_BUILD)
 #include "Pixel_Ring.h"
 #include "ReSpeaker.h"
-#include "ClientSpecificHeader.h" // Placeholder for actual client-specific headers
 #endif
 
 // A mock audio preprocessing function that converts audio data to float.
@@ -24,7 +25,7 @@ std::vector<float> preprocessAudioToVector(uint8_t* audioData, uint32_t dataLeng
     return std::vector<float>(dataLength, 0.5f); // Placeholder
 }
 
-#if defined(SERVER_BUILD)
+#if defined(SERVER_BUILD) || defined(FULL_BUILD)
 // Run all models and logic in a function to avoid global variables.
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
@@ -77,33 +78,6 @@ bool checkBluetoothAvailability()
     return true;
 }
 
-void runCommonFunctionality()
-{
-    // Check if the device has Bluetooth capabilities
-    if (!checkBluetoothAvailability())
-    {
-        std::cerr << "Bluetooth is not available on this device." << std::endl;
-        return;
-    }
-
-    BluetoothComm btComm;
-
-    // Initialize Bluetooth communication
-    if (!btComm.initialize())
-    {
-        std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-        return;
-    }
-
-    std::thread createConnectionsThread(&BluetoothComm::createConnectionsThread, &btComm);
-    std::thread handleIncomingConnectionsThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
-
-    createConnectionsThread.join();
-    handleIncomingConnectionsThread.join();
-
-    btComm.terminate();
-}
-
 int main(int argc, char *argv[])
 {
     int port = 8080;
@@ -112,30 +86,61 @@ int main(int argc, char *argv[])
     uint8_t micCount = 4;
     uint8_t ledCount = 12;
 
-#if defined(SERVER_BUILD)
-    PixelRing pixelring(devicePath, deviceAddress, ledCount);
-    ReSpeaker respeaker(devicePath, deviceAddress, micCount);
-    ReSpeaker.initBoard();
-    modelsLogic(ReSpeaker.startCaptureAndGetAudioData(), 1024);
+    // Check if the device has Bluetooth capabilities
+    if (!checkBluetoothAvailability())
+    {
+        std::cerr << "Bluetooth is not available on this device." << std::endl;
+        return -1;
+    }
+
+    BluetoothComm btComm;
+
+    // Initialize Bluetooth communication
+    if (!btComm.initialize())
+    {
+        std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+        return -1;
+    }
+
+    // Start Bluetooth thread
+    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
+
+#if defined(SERVER_BUILD) || defined(FULL_BUILD)
     wifiServer wifiserver(port);
     try
     {
-        pixelring.setBrightness(15);
-        pixelring.startAnimation();
-        std::thread t1(&wifiServer::run, &wifiserver); // Fix: Use function pointer and pass object as argument
-        t1.detach();
+        wifiserver.run();
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
         return -1;
     }
-    pixelring.stopAnimation();
-#elif defined(CLIENT_BUILD)
-    wificlient wificlient(port);
-    std::cout << "Client build: Initializing client components..." << std::endl;
 #endif
-    runCommonFunctionality();
+
+#if defined(CLIENT_BUILD) || defined(FULL_BUILD)
+    PixelRing pixelring(devicePath, deviceAddress, ledCount);
+    ReSpeaker respeaker(devicePath, deviceAddress, micCount);
+    respeaker.initBoard();
+    modelsLogic(respeaker.startCaptureAndGetAudioData(), 1024);
+    pixelring.setBrightness(15);
+    pixelring.startAnimation();
+
+    // Keep the client task running
+    while (true)
+    {
+        // Add client-specific periodic tasks here
+    }
+#endif
+
+    // Main loop or additional functionality
+    while (true)
+    {
+        // Add any periodic checks or functionality here
+    }
+
+    bluetoothThread.join();
+    btComm.terminate();
 
     std::cout << "Application finished." << std::endl;
     return 0;
