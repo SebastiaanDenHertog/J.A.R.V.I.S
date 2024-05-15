@@ -47,18 +47,19 @@ endif()
 # Source files
 if(BUILD_COMPONENT STREQUAL "full")
     file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp")
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES})
 elseif(BUILD_COMPONENT STREQUAL "server")
     file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*.cpp")
     set(SOURCES ${SERVER_SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES})
     add_definitions(-DSERVER_BUILD)
 elseif(BUILD_COMPONENT STREQUAL "client")
     file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*.cpp")
     set(SOURCES ${CLIENT_SOURCES} )
+    # Main executable
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES})
     add_definitions(-DCLIENT_BUILD)
 endif()
-
-# Main executable
-add_executable(main "${PROJECT_SOURCE_DIR}/src/main.cpp" ${SOURCES})
 
 # Link against TensorFlow Lite and other libraries
 if(TARGET_OS STREQUAL "linux")
