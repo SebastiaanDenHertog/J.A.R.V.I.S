@@ -1,6 +1,6 @@
 #include "Wifi.h"
 
-wifiServer::wifiServer(int port, ReSpeaker &respeaker) : port(port), respeaker(respeaker)
+wifiServer::wifiServer(int port) : port(port)
 {
     setupServerSocket();
     bindSocket();
@@ -22,17 +22,6 @@ void wifiServer::session(int clientSd)
     if (request.find("GET /data ") != std::string::npos)
     {
         uint32_t dataLength;
-        uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
-        if (audioData != nullptr)
-        {
-            sendHttpResponse(clientSd, audioData, dataLength, "200 OK", "application/octet-stream");
-            delete[] audioData;
-        }
-        else
-        {
-            sendHttpResponse(clientSd, reinterpret_cast<const uint8_t *>("No data"), 7, "404 Not Found", "text/plain");
-        }
-        respeaker.stopCapture();
     }
     else
     {

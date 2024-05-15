@@ -13,7 +13,7 @@
 class wifiServer
 {
 public:
-    wifiServer(int port, ReSpeaker &respeaker);
+    wifiServer(int port);
     ~wifiServer();
     void run();
     void setupServerSocket();
