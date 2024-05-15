@@ -3,27 +3,18 @@ project(J.A.R.V.I.S)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(DEBUG_MODE "Enable debug prints" OFF)
+
+if(DEBUG_MODE)
+    add_definitions(-DDEBUG_MODE)
+endif()
+
 # Option to select the architecture, default is x86_64
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64)")
 
 # Option to select the build component, default is full build
 set(BUILD_COMPONENT "full" CACHE STRING "Build component (full, server, or client)")
 
-# Option to select the operating system, default is linux
-set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
-
-# Include the toolchain file based on the architecture and OS
-if(TARGET_ARCH STREQUAL "aarch64" AND TARGET_OS STREQUAL "linux")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/aarch64_linux_toolchain.cmake")
-    message(STATUS "Using aarch64 Linux toolchain")
-elseif(TARGET_ARCH STREQUAL "x86_64" AND TARGET_OS STREQUAL "linux")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/x86_64_linux_toolchain.cmake")
-    message(STATUS "Using x86_64 Linux toolchain")
-elseif(TARGET_ARCH STREQUAL "x86" AND TARGET_OS STREQUAL "windows")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/x86_windows_toolchain.cmake")
-    message(STATUS "Using x86 Windows toolchain")
-else()
-    message(FATAL_ERROR "Unsupported combination of TARGET_ARCH and TARGET_OS")
 # Option to select the operating system, default is linux
 set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
 

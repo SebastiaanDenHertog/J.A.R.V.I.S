@@ -10,6 +10,13 @@
 #if defined(CLIENT_BUILD) || defined(FULL_BUILD)
 #include "Pixel_Ring.h"
 #include "ReSpeaker.h"
+#include "ClientSpecificHeader.h" // Placeholder for actual client-specific headers
+#endif
+
+#ifdef DEBUG_MODE
+#define DEBUG_PRINT(x) std::cout << x << std::endl
+#else
+#define DEBUG_PRINT(x)
 #endif
 
 // A mock audio preprocessing function that converts audio data to float.
@@ -29,40 +36,45 @@ std::vector<float> preprocessAudioToVector(uint8_t* audioData, uint32_t dataLeng
 // Run all models and logic in a function to avoid global variables.
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
+    DEBUG_PRINT("Starting modelsLogic function.");
+
     // Load models.
     ModelRunner dnnModel("models/dnn_model.tflite");
     ModelRunner speechModel("models/whisper_english.tflite");
     ModelRunner nlpModel("models/nlp_model.tflite");
     ModelRunner llmModel("models/llm_model.tflite");
 
+    DEBUG_PRINT("Models loaded.");
+
     // Preprocess audio data.
     float processedAudio = preprocessAudioData(audioData, dataLength);
     std::vector<float> processedAudioVector = preprocessAudioToVector(audioData, dataLength);
 
+    DEBUG_PRINT("Audio data preprocessed.");
+
     // Run models. Ensure the input type matches.
     float dnnOutput = dnnModel.RunModel(processedAudio);
-    std::cout << "dnn output: " << dnnOutput << std::endl;
+    DEBUG_PRINT("dnn output: " << dnnOutput);
 
     std::vector<float> speechOutput = speechModel.RunModel(processedAudioVector);
-    std::cout << "Speech output: ";
+    DEBUG_PRINT("Speech output: ");
     for (const auto& val : speechOutput) {
-        std::cout << val << " ";
+        DEBUG_PRINT(val << " ");
     }
-    std::cout << std::endl;
 
     std::vector<float> nlpOutput = nlpModel.RunModel(speechOutput);
-    std::cout << "NLP output: ";
+    DEBUG_PRINT("NLP output: ");
     for (const auto& val : nlpOutput) {
-        std::cout << val << " ";
+        DEBUG_PRINT(val << " ");
     }
-    std::cout << std::endl;
 
     std::vector<float> llmOutput = llmModel.RunModel({0.5f}); // Placeholder input
-    std::cout << "LLM output: ";
+    DEBUG_PRINT("LLM output: ");
     for (const auto& val : llmOutput) {
-        std::cout << val << " ";
+        DEBUG_PRINT(val << " ");
     }
-    std::cout << std::endl;
+
+    DEBUG_PRINT("Completed modelsLogic function.");
 }
 #endif
 
@@ -80,6 +92,10 @@ bool checkBluetoothAvailability()
 
 int main(int argc, char *argv[])
 {
+#ifdef DEBUG_MODE
+    std::cout << "Debug mode is ON" << std::endl;
+#endif
+
     int port = 8080;
     const char *devicePath = "/dev/i2c-1";
     uint8_t deviceAddress = 0x3b;
@@ -92,6 +108,7 @@ int main(int argc, char *argv[])
         std::cerr << "Bluetooth is not available on this device." << std::endl;
         return -1;
     }
+    DEBUG_PRINT("Bluetooth is available.");
 
     BluetoothComm btComm;
 
@@ -101,15 +118,19 @@ int main(int argc, char *argv[])
         std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
         return -1;
     }
+    DEBUG_PRINT("Bluetooth communication initialized.");
 
     // Start Bluetooth thread
     std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
+    DEBUG_PRINT("Bluetooth thread started.");
 
 #if defined(SERVER_BUILD) || defined(FULL_BUILD)
     wifiServer wifiserver(port);
     try
     {
+        DEBUG_PRINT("Starting wifiServer.");
         wifiserver.run();
+        DEBUG_PRINT("wifiServer running.");
     }
     catch (const std::exception &e)
     {
@@ -122,9 +143,14 @@ int main(int argc, char *argv[])
     PixelRing pixelring(devicePath, deviceAddress, ledCount);
     ReSpeaker respeaker(devicePath, deviceAddress, micCount);
     respeaker.initBoard();
+    DEBUG_PRINT("ReSpeaker initialized.");
+    
     modelsLogic(respeaker.startCaptureAndGetAudioData(), 1024);
+    DEBUG_PRINT("modelsLogic executed.");
+
     pixelring.setBrightness(15);
     pixelring.startAnimation();
+    DEBUG_PRINT("PixelRing animation started.");
 
     // Keep the client task running
     while (true)
@@ -141,6 +167,7 @@ int main(int argc, char *argv[])
 
     bluetoothThread.join();
     btComm.terminate();
+    DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
 
     std::cout << "Application finished." << std::endl;
     return 0;

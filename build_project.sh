@@ -20,7 +20,7 @@ cd "$BUILD_DIR"
 
 # Run CMake to configure the project and generate the build system
 echo "Running CMake..."
-cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
+cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full -DDEBUG_MODE=ON ..
 
 # Build the project
 echo "Building the project..."
