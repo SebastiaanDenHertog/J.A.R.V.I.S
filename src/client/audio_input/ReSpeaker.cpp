@@ -2,8 +2,8 @@
 
 ReSpeaker::ReSpeaker(const char *device_path, uint8_t addr, uint8_t count) : device_addr(addr), mic_count(count)
 {
-  strncpy(i2c_device, device_path, sizeof(i2c_device) - 1); // Copy the string safely
-  i2c_device[sizeof(i2c_device) - 1] = '\0';                // Ensure null-termination
+  strncpy(i2c_device, device_path, sizeof(i2c_device) - 1); 
+  i2c_device[sizeof(i2c_device) - 1] = '\0'; 
 
   i2c_fd = open(i2c_device, O_RDWR);
   if (i2c_fd < 0)
@@ -65,7 +65,7 @@ void ReSpeaker::initBoard()
   sleep(200);         
   initBuffer(0x20, 0x08);
   sendI2C(databuf, 2); 
-                       
+                      
 }
 
 void ReSpeaker::setVolume(uint8_t vol)
@@ -90,7 +90,7 @@ uint8_t *ReSpeaker::startCaptureAndGetAudioData(uint32_t &dataLength)
   sendI2C(databuf, 2); // Sample resolution 32 bit, additional configuration for capture
 
   // Example buffer size, adjust according to your needs
-  dataLength = 256;
+  dataLength = 1024;
   uint8_t *audioData = new uint8_t[dataLength];
   uint32_t bytesRead = readI2C(audioData, dataLength);
   if (bytesRead == 0)

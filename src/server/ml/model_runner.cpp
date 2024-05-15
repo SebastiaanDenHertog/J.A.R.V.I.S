@@ -59,3 +59,24 @@ float ModelRunner::RunModel(float input_data)
 
     return *interpreter_->typed_output_tensor<float>(0);
 }
+
+std::vector<float> ModelRunner::RunModel(const std::vector<float>& input_data)
+{
+    if (!IsLoaded())
+    {
+        std::cerr << "Model is not loaded properly." << std::endl;
+        return {};
+    }
+
+    float* input = interpreter_->typed_input_tensor<float>(0);
+    std::memcpy(input, input_data.data(), input_data.size() * sizeof(float));
+
+    if (interpreter_->Invoke() != kTfLiteOk)
+    {
+        std::cerr << "Failed to invoke!" << std::endl;
+        return {};
+    }
+
+    const float* output = interpreter_->typed_output_tensor<float>(0);
+    return std::vector<float>(output, output + interpreter_->tensor(interpreter_->outputs()[0])->bytes / sizeof(float));
+}

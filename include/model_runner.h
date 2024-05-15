@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/interpreter.h"
 
@@ -15,7 +16,10 @@ private:
 public:
     explicit ModelRunner(const std::string& model_path);
     bool IsLoaded() const;
+
+    // Handle both float and array input
     float RunModel(float input_data);
+    std::vector<float> RunModel(const std::vector<float>& input_data);
 };
 
 #endif // MODEL_RUNNER_H

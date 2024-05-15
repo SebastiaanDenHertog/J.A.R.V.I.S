@@ -1,4 +1,4 @@
-#include "wifi_server.h"
+#include "Wifi.h"
 
 wifiServer::wifiServer(int port, ReSpeaker &respeaker) : port(port), respeaker(respeaker)
 {

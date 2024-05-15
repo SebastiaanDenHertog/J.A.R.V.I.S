@@ -1,5 +1,5 @@
-#ifndef WIFI_SERVER_H
-#define WIFI_SERVER_H
+#ifndef WIFI_H
+#define WIFI_H
 
 #include <iostream>
 #include <sys/socket.h>
