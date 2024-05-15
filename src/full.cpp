@@ -4,7 +4,6 @@
 #include "Wifi.h"
 #include "Pixel_Ring.h"
 #include "ReSpeaker.h"
-#include "ClientSpecificHeader.h"
 #include "model_runner.h"
 
 #ifdef DEBUG_MODE

@@ -3,7 +3,6 @@
 #include "BluetoothComm.h"
 #include "Pixel_Ring.h"
 #include "ReSpeaker.h"
-#include "ClientSpecificHeader.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
