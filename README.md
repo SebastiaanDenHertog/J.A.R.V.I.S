@@ -12,3 +12,18 @@ rm libtorch-shared-with-deps-latest.zip
 in the mlpackchange cmakefile.txt to 
 file(READ ${CMAKE_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS) -> file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS)
 
+Building the Project change this in the build_project file you use
+
+You can specify the target architecture, build component, and operating system when running CMake:
+
+For AArch64 Linux:
+``cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
+make -j$(nproc)``
+
+For x86_64 Linux:
+``cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
+make -j$(nproc)``
+
+For Windows x86:
+``cmake -DTARGET_ARCH=x86 -DTARGET_OS=windows -DBUILD_COMPONENT=full ..
+cmake --build . -- -j %NUMBER_OF_PROCESSORS%``
