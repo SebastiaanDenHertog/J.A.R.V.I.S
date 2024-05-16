@@ -32,8 +32,13 @@ else()
     message(FATAL_ERROR "Unsupported combination of TARGET_ARCH and TARGET_OS")
 endif()
 
-# add Boots to build
-
+# Find Boost
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "Boost not found!")
+endif()
 
 # Include directories for the project
 include_directories("${PROJECT_SOURCE_DIR}/include")
@@ -66,14 +71,9 @@ endif()
 
 # Link against TensorFlow Lite and other libraries
 if(TARGET_OS STREQUAL "linux")
-    target_link_libraries(main PRIVATE tensorflow-lite -lbluetooth -lstdc++ -lm)
+    target_link_libraries(main PRIVATE Boost::boost tensorflow-lite -lbluetooth -lstdc++ -lm -pthread)
 elseif(TARGET_OS STREQUAL "windows")
-    target_link_libraries(main PRIVATE tensorflow-lite -lbluetooth -lstdc++)
-endif()
-if(TARGET_OS STREQUAL "linux")
-    target_link_libraries(main PRIVATE tensorflow-lite -lbluetooth -lstdc++ -lm)
-elseif(TARGET_OS STREQUAL "windows")
-    target_link_libraries(main PRIVATE tensorflow-lite -lbluetooth -lstdc++)
+    target_link_libraries(main PRIVATE Boost::boost tensorflow-lite -lbluetooth -lstdc++ -pthread)
 endif()
 
 # Compiler options

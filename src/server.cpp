@@ -1,8 +1,14 @@
 #include <iostream>
 #include <thread>
+#include <unordered_set>
+#include <cstdlib>
+#include <algorithm>
 #include "BluetoothComm.h"
 #include "Wifi.h"
 #include "model_runner.h"
+#include "authorization_api.h"
+#include "web_service.h"
+#include <boost/make_shared.hpp>
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -18,7 +24,7 @@ float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
     return normalizedValue;
 }
 
-std::vector<float> preprocessAudioToVector(uint8_t* audioData, uint32_t dataLength)
+std::vector<float> preprocessAudioToVector(uint8_t *audioData, uint32_t dataLength)
 {
     return std::vector<float>(dataLength, 0.5f);
 }
@@ -44,19 +50,22 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 
     std::vector<float> speechOutput = speechModel.RunModel(processedAudioVector);
     DEBUG_PRINT("Speech output: ");
-    for (const auto& val : speechOutput) {
+    for (const auto &val : speechOutput)
+    {
         DEBUG_PRINT(val << " ");
     }
 
     std::vector<float> nlpOutput = nlpModel.RunModel(speechOutput);
     DEBUG_PRINT("NLP output: ");
-    for (const auto& val : nlpOutput) {
+    for (const auto &val : nlpOutput)
+    {
         DEBUG_PRINT(val << " ");
     }
 
     std::vector<float> llmOutput = llmModel.RunModel({0.5f});
     DEBUG_PRINT("LLM output: ");
-    for (const auto& val : llmOutput) {
+    for (const auto &val : llmOutput)
+    {
         DEBUG_PRINT(val << " ");
     }
 
@@ -70,6 +79,29 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
+
+    // Check command line arguments.
+    if (std::getenv("PORT") == NULL || std::getenv("THREADS") == NULL)
+    {
+        std::cerr << "Usage: web_service\n"
+                  << "Please define the PORT and THREADS environment variables\n";
+        return EXIT_FAILURE;
+    }
+
+    unsigned short web_server_port = static_cast<unsigned short>(std::atoi(std::getenv("PORT")));
+    int threads = std::max<int>(1, std::atoi(std::getenv("THREADS")));
+
+    std::unordered_set<std::string> allowed_keys;
+    allowed_keys.insert("SampleKey");
+    boost::shared_ptr<authorization_api> auth = boost::make_shared<authorization_api>(allowed_keys);
+    boost::shared_ptr<web_service_context> ctx = boost::make_shared<web_service_context>(threads, auth);
+
+    std::make_shared<web_service>(
+        ctx,
+        "0.0.0.0",
+        web_server_port,
+        "web_service")
+        ->run();
 
     if (!checkBluetoothAvailability())
     {
@@ -102,7 +134,20 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    while (true) {}
+    // Run the I/O service on the requested number of threads
+    std::vector<std::thread> v;
+    v.reserve(threads - 1);
+    for (auto i = threads - 1; i > 0; --i)
+        v.emplace_back(
+            [&ctx]
+            {
+                ctx->get_ioc()->run();
+            });
+    ctx->get_ioc()->run();
+
+    while (true)
+    {
+    }
 
     bluetoothThread.join();
     btComm.terminate();
