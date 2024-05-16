@@ -3,6 +3,7 @@
 #include "BluetoothComm.h"
 #include "Pixel_Ring.h"
 #include "ReSpeaker.h"
+#include "Wifi.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -17,11 +18,25 @@ uint8_t ledCount = 12;
 
 bool checkBluetoothAvailability();
 
+void receiveData(wifiClient &client, int clientSd)
+{
+    client.session(clientSd);
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
+
+    if (argc != 3)
+    {
+        std::cerr << "Usage: " << argv[0] << " <Server IP> <Port>" << std::endl;
+        return 1;
+    }
+
+    const char *serverIP = argv[1];
+    int port = std::stoi(argv[2]);
 
     if (!checkBluetoothAvailability())
     {
@@ -50,8 +65,37 @@ int main(int argc, char *argv[])
     pixelring.startAnimation();
     DEBUG_PRINT("PixelRing animation started.");
 
+    wifiClient client(port);
+
+    client.setupClientSocket();
+
+    // Set server address
+    client.servAddr.sin_family = AF_INET;
+    client.servAddr.sin_port = htons(port);
+    inet_pton(AF_INET, serverIP, &client.servAddr.sin_addr);
+
+    if (client.connectToServer())
+    {
+        std::cout << "Connected to server at " << serverIP << std::endl;
+
+        // Start a thread to receive data
+        std::thread receiveThread(receiveData, std::ref(client), client.serverSd);
+        receiveThread.detach();
+
+        // Simulating sending data to the server
+        // This part can be expanded as needed
+        std::string data = "Hello, server!";
+        send(client.serverSd, data.c_str(), data.length(), 0);
+    }
+    else
+    {
+        std::cerr << "Failed to connect to server at " << serverIP << std::endl;
+        return 1;
+    }
+
     while (true)
     {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     bluetoothThread.join();

@@ -1,13 +1,13 @@
 #include "Wifi.h"
 
-wifiServer::wifiServer(int port) : port(port), respeaker(respeaker)
+wifiClient::wifiClient(int port) : port(port)
 {
-    setupServerSocket();
+    setupClientSocket();
     bindSocket();
     listenForClients();
 }
 
-void wifiServer::session(int clientSd)
+void wifiClient::session(int clientSd)
 {
     char buffer[1024];
     memset(buffer, 0, 1024);
@@ -22,6 +22,7 @@ void wifiServer::session(int clientSd)
     if (request.find("GET /data ") != std::string::npos)
     {
         uint32_t dataLength;
+        // Handle the GET /data request
     }
     else
     {
@@ -29,13 +30,12 @@ void wifiServer::session(int clientSd)
     }
 }
 
-// Destructor
-wifiServer::~wifiServer()
+wifiClient::~wifiClient()
 {
     closeSocket(serverSd);
 }
 
-void wifiServer::run()
+void wifiClient::run()
 {
     sockaddr_in newSockAddr;
     int newSd;
@@ -44,7 +44,7 @@ void wifiServer::run()
     closeSocket(newSd);
 }
 
-void wifiServer::setupServerSocket()
+void wifiClient::setupClientSocket()
 {
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSd < 0)
@@ -57,7 +57,7 @@ void wifiServer::setupServerSocket()
     servAddr.sin_port = htons(port);
 }
 
-void wifiServer::bindSocket()
+void wifiClient::bindSocket()
 {
     int bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
     if (bindStatus < 0)
@@ -67,13 +67,43 @@ void wifiServer::bindSocket()
     }
 }
 
-void wifiServer::listenForClients()
+void wifiClient::listenForClients()
 {
     listen(serverSd, 5); // Listen for up to 5 requests at a time
     std::cout << "Waiting for a client to connect..." << std::endl;
 }
 
-void wifiServer::acceptClient(sockaddr_in &newSockAddr, int &newSd)
+void wifiClient::searchForHost(const char *hostname)
+{
+    struct hostent *host = gethostbyname(hostname);
+    if (host == NULL)
+    {
+        std::cerr << "Error searching for host" << std::endl;
+        exit(0);
+    }
+
+    struct in_addr **addr_list = (struct in_addr **)host->h_addr_list;
+    for (int i = 0; addr_list[i] != NULL; i++)
+    {
+        servAddr.sin_addr = *addr_list[i];
+        // Try to connect to the host with the given IP address and port
+        if (connectToServer())
+        {
+            std::cout << "Connected to server at " << inet_ntoa(servAddr.sin_addr) << std::endl;
+            return;
+        }
+    }
+    std::cerr << "Failed to connect to any host" << std::endl;
+    exit(0);
+}
+
+bool wifiClient::connectToServer()
+{
+    int connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+    return connectionStatus >= 0;
+}
+
+void wifiClient::acceptClient(sockaddr_in &newSockAddr, int &newSd)
 {
     socklen_t newSockAddrSize = sizeof(newSockAddr);
     newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
@@ -85,12 +115,12 @@ void wifiServer::acceptClient(sockaddr_in &newSockAddr, int &newSd)
     std::cout << "Connected with client!" << std::endl;
 }
 
-void wifiServer::closeSocket(int sd)
+void wifiClient::closeSocket(int sd)
 {
     close(sd);
 }
 
-void wifiServer::sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType)
+void wifiClient::sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType)
 {
     std::ostringstream httpResponse;
     httpResponse << "HTTP/1.1 " << statusCode << "\r\n";
