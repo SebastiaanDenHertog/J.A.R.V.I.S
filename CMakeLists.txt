@@ -40,9 +40,6 @@ else()
     message(FATAL_ERROR "Boost not found!")
 endif()
 
-# Include directories for the project
-include_directories("${PROJECT_SOURCE_DIR}/include/*/*")
-
 if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
     set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
@@ -52,19 +49,26 @@ if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
 endif()
 
+# Include directories for the project
+include_directories("${PROJECT_SOURCE_DIR}/include/additions")
+include_directories("${PROJECT_SOURCE_DIR}/include/audio_input")
+include_directories("${PROJECT_SOURCE_DIR}/include/bluethoothcomm")
+include_directories("${PROJECT_SOURCE_DIR}/include/ml")
+include_directories("${PROJECT_SOURCE_DIR}/include/web_server")
+include_directories("${PROJECT_SOURCE_DIR}/include/wifi")
+
 # Source files
 if(BUILD_COMPONENT STREQUAL "full")
-    file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*.cpp")
+    file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*/*.cpp")
     add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES})
 elseif(BUILD_COMPONENT STREQUAL "server")
-    file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*.cpp")
+    file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*/*.cpp")
     set(SOURCES ${SERVER_SOURCES})
     add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES})
     add_definitions(-DSERVER_BUILD)
 elseif(BUILD_COMPONENT STREQUAL "client")
-    file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*.cpp")
+    file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*/*.cpp")
     set(SOURCES ${CLIENT_SOURCES} )
-    # Main executable
     add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES})
     add_definitions(-DCLIENT_BUILD)
 endif()
