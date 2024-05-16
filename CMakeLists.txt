@@ -41,7 +41,7 @@ else()
 endif()
 
 # Include directories for the project
-include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("${PROJECT_SOURCE_DIR}/include/*/*")
 
 if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
