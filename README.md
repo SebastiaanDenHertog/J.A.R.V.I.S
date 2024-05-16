@@ -31,3 +31,5 @@ For Windows x86:
 cmake --build . -- -j %NUMBER_OF_PROCESSORS%``
 
 -bash: ./build_project.sh: /bin/bash^M: bad interpreter: No such file or directory: FIX -> sed -i -e 's/\r$//' build_project.sh
+
+sudo apt install libboost-all-dev

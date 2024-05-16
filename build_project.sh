@@ -5,6 +5,8 @@ TENSORFLOW_LITE_BRANCH="master" # Adjust this as needed
 # Name of the build directory
 BUILD_DIR="build"
 
+# install boost
+sudo apt install libboost-all-dev
 
 # Check if the build directory exists
 if [ -d "$BUILD_DIR" ]; then
