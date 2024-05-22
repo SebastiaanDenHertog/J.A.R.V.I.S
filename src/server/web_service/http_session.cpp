@@ -1,26 +1,27 @@
-#include "http_session.h"
+#include <boost/asio.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/shared_ptr.hpp>
 
-#include <boost/log/trivial.hpp>
-#include <boost/asio/bind_executor.hpp>
-#include "http_error_handlers.h"
-#include "http_path.h"
-
-#include <iostream>
-
+#include <functional>
+#include <map>
+#include <string>
+#include <utility>
 #include "http_session.h"
 
 http_session::http_session(
-  const boost::shared_ptr<web_service_context>& ctx,
-  tcp::socket socket,
-  std::function<void(boost::system::error_code, char const *)> error_handler,
-  const std::map<std::string, RouteHandler> &route_handlers)
-  : socket_(std::move(socket)), error_handler_(error_handler), route_handlers_(route_handlers), strand_(socket_.get_executor()), timer_(socket_.get_executor().context(),
-  (std::chrono::steady_clock::time_point::max)()),
-  queue_(*this),
-  ctx_(ctx)
+    const boost::shared_ptr<web_service_context> &ctx,
+    tcp::socket socket,
+    std::function<void(boost::system::error_code, const char *)> error_handler,
+    const std::map<std::string, RouteHandler> &route_handlers)
+    : socket_(std::move(socket)),
+      error_handler_(std::move(error_handler)),
+      route_handlers_(route_handlers),
+      strand_(boost::asio::make_strand(socket_.get_executor())),
+      timer_(strand_.context(), std::chrono::steady_clock::time_point::max()),
+      queue_(*this),
+      ctx_(ctx)
 {
 }
-
 void http_session::run()
 {
   // Run the timer. The timer is operated
@@ -37,12 +38,12 @@ void http_session::do_read()
 
   // Read a request
   http::async_read(socket_, buffer_, req_,
-    boost::asio::bind_executor(
-      strand_,
-      std::bind(
-        &http_session::on_read,
-        shared_from_this(),
-        std::placeholders::_1)));
+                   boost::asio::bind_executor(
+                       strand_,
+                       std::bind(
+                           &http_session::on_read,
+                           shared_from_this(),
+                           std::placeholders::_1)));
 }
 
 void http_session::on_timer(boost::system::error_code ec)
@@ -62,12 +63,12 @@ void http_session::on_timer(boost::system::error_code ec)
 
   // Wait on the timer
   timer_.async_wait(
-    boost::asio::bind_executor(
-      strand_,
-      std::bind(
-        &http_session::on_timer,
-        shared_from_this(),
-        std::placeholders::_1)));
+      boost::asio::bind_executor(
+          strand_,
+          std::bind(
+              &http_session::on_timer,
+              shared_from_this(),
+              std::placeholders::_1)));
 }
 
 void http_session::on_read(boost::system::error_code ec)
@@ -125,29 +126,31 @@ void http_session::do_close()
 }
 
 template <
-  class Body, class Allocator,
-  class Send>
-  void http_session::handle_request(
+    class Body, class Allocator,
+    class Send>
+void http_session::handle_request(
     http::request<Body, http::basic_fields<Allocator>> &&req,
     Send &&send)
 {
-  BOOST_LOG_TRIVIAL(info) << req.method() << "\t" << req.target().to_string();
+  BOOST_LOG_TRIVIAL(logging::trivial::info) << req.method() << "\t" << req.target().to_string();
 
   auto auth_it = req.base().find(http::field::authorization);
   std::string auth_header;
 
-  if (auth_it != req.base().end()) {
+  if (auth_it != req.base().end())
+  {
     auth_header = auth_it->value().to_string();
   }
 
-  if (!ctx_->get_authorization()->is_authorized(auth_header)) {
+  if (!ctx_->get_authorization()->is_authorized(auth_header))
+  {
     return send(http_error_handlers::unauthorized());
   }
 
   // Make sure we can handle the method
   if (req.method() != http::verb::get &&
-    req.method() != http::verb::head &&
-    req.method() != http::verb::post)
+      req.method() != http::verb::head &&
+      req.method() != http::verb::post)
     return send(http_error_handlers::bad_request("Unknown HTTP-method"));
 
   // Find any routes that can be handled.

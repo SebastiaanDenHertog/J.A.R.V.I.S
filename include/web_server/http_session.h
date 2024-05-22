@@ -4,9 +4,14 @@
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
 
 #include <memory>
 #include <vector>
+
+#include "http_path.h"
 
 #include "common.h"
 

@@ -9,6 +9,10 @@
 #include "authorization_api.h"
 #include "web_service.h"
 #include <boost/make_shared.hpp>
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/optional_debug_tools.h>
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -18,56 +22,90 @@
 
 int port = 8080;
 
-float preprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
-    float normalizedValue = static_cast<float>(*audioData) / 255.0f;
-    return normalizedValue;
+    std::vector<float> processedData;
+    // Example: Convert uint8_t data to float and normalize (assuming 8-bit PCM)
+    for (uint32_t i = 0; i < dataLength; ++i)
+    {
+        processedData.push_back(static_cast<float>(audioData[i]) / 255.0f);
+    }
+    // Further processing like resampling, MFCC extraction can be added here
+    return processedData;
 }
 
-std::vector<float> preprocessAudioToVector(uint8_t *audioData, uint32_t dataLength)
+std::string PostprocessOutput(const std::vector<float> &outputData)
 {
-    return std::vector<float>(dataLength, 0.5f);
+    // Example: Convert the output data to a string
+    // This will depend on your specific model's output format
+    std::string result;
+    // Assuming outputData contains character indices or probabilities
+    for (float val : outputData)
+    {
+        char c = static_cast<char>(val); // Simplified for example
+        result += c;
+    }
+    return result;
 }
 
 void modelsLogic(uint8_t *audioData, uint32_t dataLength)
 {
     DEBUG_PRINT("Starting modelsLogic function.");
 
-    ModelRunner dnnModel("models/dnn_model.tflite");
-    ModelRunner speechModel("models/whisper_english.tflite");
-    ModelRunner nlpModel("models/nlp_model.tflite");
-    ModelRunner llmModel("models/llm_model.tflite");
+    // Load the TFLite models
+    auto model = tflite::FlatBufferModel::BuildFromFile("models/whisper_english.tflite");
+    if (!model)
+    {
+        std::cerr << "Failed to load model" << std::endl;
+        return;
+    }
+
+    // Build the interpreter
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    std::unique_ptr<tflite::Interpreter>interpreter;
+    tflite::InterpreterBuilder(*model, resolver)(&amp; interpreter);
+    if (!interpreter)
+    {
+        std::cerr << "Failed to create interpreter" << std::endl;
+        return;
+    }
+
+    // Allocate tensor buffers
+    if (interpreter->AllocateTensors() != kTfLiteOk)
+    {
+        std::cerr << "Failed to allocate tensors" << std::endl;
+        return;
+    }
 
     DEBUG_PRINT("Models loaded.");
 
-    float processedAudio = preprocessAudioData(audioData, dataLength);
-    std::vector<float> processedAudioVector = preprocessAudioToVector(audioData, dataLength);
-
+    // Preprocess audio data
+    std::vector<
+        float>
+        processedAudio = PreprocessAudioData(audioData, dataLength);
     DEBUG_PRINT("Audio data preprocessed.");
 
-    float dnnOutput = dnnModel.RunModel(processedAudio);
-    DEBUG_PRINT("dnn output: " << dnnOutput);
+    // Copy preprocessed data to input tensor
+    float *input = interpreter->typed_tensor<
+        float>(interpreter->inputs()[0]);
+    std::copy(processedAudio.begin(), processedAudio.end(), input);
 
-    std::vector<float> speechOutput = speechModel.RunModel(processedAudioVector);
-    DEBUG_PRINT("Speech output: ");
-    for (const auto &val : speechOutput)
+    // Run inference
+    if (interpreter->Invoke() != kTfLiteOk)
     {
-        DEBUG_PRINT(val << " ");
+        std::cerr << "Failed to invoke TFLite interpreter" << std::endl;
+        return;
     }
 
-    std::vector<float> nlpOutput = nlpModel.RunModel(speechOutput);
-    DEBUG_PRINT("NLP output: ");
-    for (const auto &val : nlpOutput)
-    {
-        DEBUG_PRINT(val << " ");
-    }
+    // Process output
+    auto output = interpreter->typed_output_tensor<float>(0);
+    std::vector<
+        float>
+        outputData(output, output + interpreter->tensor(interpreter->outputs()[0])->bytes / sizeof(float));
+    std::string result = PostprocessOutput(outputData);
 
-    std::vector<float> llmOutput = llmModel.RunModel({0.5f});
-    DEBUG_PRINT("LLM output: ");
-    for (const auto &val : llmOutput)
-    {
-        DEBUG_PRINT(val << " ");
-    }
+    // Output result
+    DEBUG_PRINT("Recognized text: " << result);
 
     DEBUG_PRINT("Completed modelsLogic function.");
 }
@@ -133,6 +171,9 @@ int main(int argc, char *argv[])
         std::cerr << "Error: " << e.what() << std::endl;
         return -1;
     }
+    // needs network get reqest to start the audio capture
+    // modelsLogic(startCaptureAndGetAudioData(), 1024);
+    // DEBUG_PRINT("modelsLogic executed.");
 
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;
