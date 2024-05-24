@@ -98,3 +98,21 @@ uint8_t *ReSpeaker::startCaptureAndGetAudioData(uint32_t &dataLength)
   }
   return audioData;
 }
+
+void ReSpeaker::startCaptureAndUpdateAudioData(soundData &data)
+{
+  initBuffer(0x33, 0x7f);
+  sendI2C(databuf, 2);
+
+  uint32_t dataLength = 1024;
+  uint8_t *audioData = new uint8_t[dataLength];
+  uint32_t bytesRead = readI2C(audioData, dataLength);
+  if (bytesRead == 0)
+  {
+    std::cerr << "Failed to read audio data.\n";
+    delete[] audioData;
+    return;
+  }
+  data.update(audioData, dataLength);
+  delete[] audioData;
+}

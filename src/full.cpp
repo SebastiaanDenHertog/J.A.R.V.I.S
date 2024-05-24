@@ -30,8 +30,9 @@ uint8_t ledCount = 12;
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
+soundData audioData;
 
-std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(NULL);
     if (dev_id < 0)
@@ -48,7 +49,6 @@ std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
     hci_close_dev(sock);
     return true;
 }
-
 
 std::string PostprocessOutput(const std::vector<float> &outputData)
 {
@@ -125,17 +125,14 @@ int main(int argc, char *argv[])
     ReSpeaker respeaker(devicePath, deviceAddress, micCount);
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
-    uint32_t bufferSize = 1024;
-    uint8_t *rawAudioData = respeaker.startCaptureAndGetAudioData(bufferSize);
 
-    ModelRunner ModelRunner("models/whisper_english.tflite");
-    ModelRunner.modelsLogic(soundData);
+    std::thread audioThread([&respeaker, &audioData]()
+                            { respeaker.startCaptureAndUpdateAudioData(audioData); });
 
     std::thread modelThread([&audioData]()
-    {
+                            {
         ModelRunner modelRunner("models/whisper_english.tflite");
-        modelRunner.modelsLogic(audioData);
-    });
+        modelRunner.modelsLogic(audioData); });
 
     DEBUG_PRINT("modelsLogic executed.");
 
@@ -164,7 +161,7 @@ int main(int argc, char *argv[])
         bluetoothComm->terminate();
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
-    
+
     audioThread.join();
     modelThread.join();
 

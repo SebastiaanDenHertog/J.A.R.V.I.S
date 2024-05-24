@@ -14,17 +14,41 @@
 #include <vector>
 #include <mutex>
 
-struct SoundData {
+struct SoundData
+{
     uint8_t *data;
     size_t length;
     int clientSd;
 
-    SoundData(size_t len, int sd) : length(len), clientSd(sd) {
+    SoundData(size_t len, int sd) : length(len), clientSd(sd)
+    {
         data = new uint8_t[length];
     }
 
-    ~SoundData() {
+    ~SoundData()
+    {
         delete[] data;
+    }
+};
+
+struct soundData
+{
+    uint8_t *audioData;
+    uint32_t dataLength;
+
+    soundData() : audioData(nullptr), dataLength(0) {}
+
+    ~soundData()
+    {
+        delete[] audioData;
+    }
+
+    void update(uint8_t *newData, uint32_t newLength)
+    {
+        delete[] audioData;
+        audioData = new uint8_t[newLength];
+        std::copy(newData, newData + newLength, audioData);
+        dataLength = newLength;
     }
 };
 
