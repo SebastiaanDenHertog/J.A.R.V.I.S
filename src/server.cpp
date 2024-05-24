@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <cstdlib>
 #include <algorithm>
+#include <memory>
 #include "BluetoothComm.h"
 #include "Wifi.h"
 #include "model_runner.h"
@@ -99,6 +100,12 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
+        if (bluetoothComm)
+        {
+            bluetoothThread.join();
+            bluetoothComm->terminate();
+            DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+        }
         return -1;
     }
 
@@ -113,8 +120,13 @@ int main(int argc, char *argv[])
             });
     ctx->get_ioc()->run();
 
-    while (true)
+    // Wait for all threads to finish
+    for (auto &t : v)
     {
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     if (bluetoothComm)
