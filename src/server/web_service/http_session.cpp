@@ -17,7 +17,7 @@ http_session::http_session(
       error_handler_(std::move(error_handler)),
       route_handlers_(route_handlers),
       strand_(boost::asio::make_strand(socket_.get_executor())),
-      timer_(strand_.context(), std::chrono::steady_clock::time_point::max()),
+      timer_(socket_.get_executor()),
       queue_(*this),
       ctx_(ctx)
 {

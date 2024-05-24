@@ -22,95 +22,23 @@
 
 int port = 8080;
 
-std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+bool checkBluetoothAvailability()
 {
-    std::vector<float> processedData;
-    // Example: Convert uint8_t data to float and normalize (assuming 8-bit PCM)
-    for (uint32_t i = 0; i < dataLength; ++i)
+    int dev_id = hci_get_route(NULL);
+    if (dev_id < 0)
     {
-        processedData.push_back(static_cast<float>(audioData[i]) / 255.0f);
+        return false;
     }
-    // Further processing like resampling, MFCC extraction can be added here
-    return processedData;
+
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+    {
+        return false;
+    }
+
+    hci_close_dev(sock);
+    return true;
 }
-
-std::string PostprocessOutput(const std::vector<float> &outputData)
-{
-    // Example: Convert the output data to a string
-    // This will depend on your specific model's output format
-    std::string result;
-    // Assuming outputData contains character indices or probabilities
-    for (float val : outputData)
-    {
-        char c = static_cast<char>(val); // Simplified for example
-        result += c;
-    }
-    return result;
-}
-
-void modelsLogic(uint8_t *audioData, uint32_t dataLength)
-{
-    DEBUG_PRINT("Starting modelsLogic function.");
-
-    // Load the TFLite models
-    auto model = tflite::FlatBufferModel::BuildFromFile("models/whisper_english.tflite");
-    if (!model)
-    {
-        std::cerr << "Failed to load model" << std::endl;
-        return;
-    }
-
-    // Build the interpreter
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    std::unique_ptr<tflite::Interpreter>interpreter;
-    tflite::InterpreterBuilder(*model, resolver)(&amp; interpreter);
-    if (!interpreter)
-    {
-        std::cerr << "Failed to create interpreter" << std::endl;
-        return;
-    }
-
-    // Allocate tensor buffers
-    if (interpreter->AllocateTensors() != kTfLiteOk)
-    {
-        std::cerr << "Failed to allocate tensors" << std::endl;
-        return;
-    }
-
-    DEBUG_PRINT("Models loaded.");
-
-    // Preprocess audio data
-    std::vector<
-        float>
-        processedAudio = PreprocessAudioData(audioData, dataLength);
-    DEBUG_PRINT("Audio data preprocessed.");
-
-    // Copy preprocessed data to input tensor
-    float *input = interpreter->typed_tensor<
-        float>(interpreter->inputs()[0]);
-    std::copy(processedAudio.begin(), processedAudio.end(), input);
-
-    // Run inference
-    if (interpreter->Invoke() != kTfLiteOk)
-    {
-        std::cerr << "Failed to invoke TFLite interpreter" << std::endl;
-        return;
-    }
-
-    // Process output
-    auto output = interpreter->typed_output_tensor<float>(0);
-    std::vector<
-        float>
-        outputData(output, output + interpreter->tensor(interpreter->outputs()[0])->bytes / sizeof(float));
-    std::string result = PostprocessOutput(outputData);
-
-    // Output result
-    DEBUG_PRINT("Recognized text: " << result);
-
-    DEBUG_PRINT("Completed modelsLogic function.");
-}
-
-bool checkBluetoothAvailability();
 
 int main(int argc, char *argv[])
 {
@@ -148,22 +76,22 @@ int main(int argc, char *argv[])
     }
     DEBUG_PRINT("Bluetooth is available.");
 
-    BluetoothComm btComm;
-    if (!btComm.initialize())
+    BluetoothComm BluetoothComm;
+    if (!BluetoothComm.initialize())
     {
         std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
         return -1;
     }
     DEBUG_PRINT("Bluetooth communication initialized.");
 
-    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
+    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &BluetoothComm);
     DEBUG_PRINT("Bluetooth thread started.");
 
-    wifiServer wifiserver(port);
     try
     {
         DEBUG_PRINT("Starting wifiServer.");
-        wifiserver.run();
+        wifiServer server(port);
+        server.run();
         DEBUG_PRINT("wifiServer running.");
     }
     catch (const std::exception &e)
@@ -171,9 +99,6 @@ int main(int argc, char *argv[])
         std::cerr << "Error: " << e.what() << std::endl;
         return -1;
     }
-    // needs network get reqest to start the audio capture
-    // modelsLogic(startCaptureAndGetAudioData(), 1024);
-    // DEBUG_PRINT("modelsLogic executed.");
 
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;
@@ -191,7 +116,7 @@ int main(int argc, char *argv[])
     }
 
     bluetoothThread.join();
-    btComm.terminate();
+    BluetoothComm.terminate();
     DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
 
     std::cout << "Application finished." << std::endl;

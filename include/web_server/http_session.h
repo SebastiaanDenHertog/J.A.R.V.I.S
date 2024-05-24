@@ -97,7 +97,7 @@ class http_session : public std::enable_shared_from_this<http_session>
   http::request<http::string_body> req_;
   std::function<void(boost::system::error_code, const char *)> error_handler_;
   std::map<std::string, RouteHandler> route_handlers_;
-  boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+  boost::asio::strand<boost::asio::any_io_executor> strand_;
   boost::asio::steady_timer timer_;
   queue queue_;
   boost::shared_ptr<web_service_context> ctx_;

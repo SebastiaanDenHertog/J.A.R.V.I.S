@@ -1,8 +1,7 @@
-// ReSpeaker.h
 #ifndef RESPEAKER_H
 #define RESPEAKER_H
 
-#include <cstring> 
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
 #include <fcntl.h>

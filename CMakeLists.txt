@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(J.A.R.V.I.S)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -33,23 +34,21 @@ else()
 endif()
 
 # Find Boost
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system thread filesystem log log_setup regex date_time chrono atomic)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
+    add_definitions(-DBOOST_LOG_DYN_LINK) # Necessary if using dynamic linking for Boost.Log
 else()
     message(FATAL_ERROR "Boost not found!")
 endif()
 
 find_package(OpenSSL REQUIRED)
-
 if(OpenSSL_FOUND)
     message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")
     include_directories(${OPENSSL_INCLUDE_DIR})
 else()
     message(FATAL_ERROR "OpenSSL not found: ${OPENSSL_VERSION}")
 endif()
-
-
 
 if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
@@ -67,28 +66,31 @@ include_directories("${PROJECT_SOURCE_DIR}/include/bluethoothcomm")
 include_directories("${PROJECT_SOURCE_DIR}/include/ml")
 include_directories("${PROJECT_SOURCE_DIR}/include/web_server")
 include_directories("${PROJECT_SOURCE_DIR}/include/wifi")
+include_directories("${PROJECT_SOURCE_DIR}/include/mediaplayer")
+
+file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
 
 # Source files
 if(BUILD_COMPONENT STREQUAL "full")
     file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*/*.cpp")
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES} ${DEFEALT_SOURCES})
 elseif(BUILD_COMPONENT STREQUAL "server")
     file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*/*.cpp")
     set(SOURCES ${SERVER_SOURCES})
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES} ${DEFEALT_SOURCES})
     add_definitions(-DSERVER_BUILD)
 elseif(BUILD_COMPONENT STREQUAL "client")
     file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*/*.cpp")
     set(SOURCES ${CLIENT_SOURCES} )
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES} ${DEFEALT_SOURCES})
     add_definitions(-DCLIENT_BUILD)
 endif()
 
 # Link against TensorFlow Lite and other libraries
 if(TARGET_OS STREQUAL "linux")
-    target_link_libraries(main PRIVATE Boost::boost tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread)
+    target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread)
 elseif(TARGET_OS STREQUAL "windows")
-    target_link_libraries(main PRIVATE Boost::boost tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread)
+    target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread)
 endif()
 
 # Compiler options

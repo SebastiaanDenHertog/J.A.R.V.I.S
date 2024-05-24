@@ -131,8 +131,8 @@ std::vector<BluetoothDevice> BluetoothComm::scanDevices()
     {
         char addr[19] = {0};
         char name[248] = {0};
-        ba2str(&(ii+i)->bdaddr, addr);
-        if (hci_read_remote_name(sock, &(ii+i)->bdaddr, sizeof(name), name, 0) < 0)
+        ba2str(&(ii + i)->bdaddr, addr);
+        if (hci_read_remote_name(sock, &(ii + i)->bdaddr, sizeof(name), name, 0) < 0)
         {
             strcpy(name, "[unknown]");
         }
@@ -179,8 +179,6 @@ std::string BluetoothComm::getConnectionData(const std::string &deviceAddress)
     std::cerr << "No connection found for the specified device address." << std::endl;
     return "";
 }
-
-
 
 void BluetoothComm::handleIncomingConnectionsThread()
 {

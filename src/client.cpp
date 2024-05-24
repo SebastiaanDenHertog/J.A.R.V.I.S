@@ -18,11 +18,6 @@ uint8_t ledCount = 12;
 
 bool checkBluetoothAvailability();
 
-void receiveData(wifiClient &client, int clientSd)
-{
-    client.session(clientSd);
-}
-
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
@@ -65,37 +60,28 @@ int main(int argc, char *argv[])
     pixelring.startAnimation();
     DEBUG_PRINT("PixelRing animation started.");
 
-    wifiClient client(port);
-
-    client.setupClientSocket();
-
-    // Set server address
-    client.servAddr.sin_family = AF_INET;
-    client.servAddr.sin_port = htons(port);
-    inet_pton(AF_INET, serverIP, &client.servAddr.sin_addr);
-
-    if (client.connectToServer())
+    try
     {
-        std::cout << "Connected to server at " << serverIP << std::endl;
+        wifiClient client(port);
+        client.connectToServer();
 
-        // Start a thread to receive data
-        std::thread receiveThread(receiveData, std::ref(client), client.serverSd);
-        receiveThread.detach();
+        while (true)
+        {
+            uint32_t dataLength;
+            uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
+            if (audioData != nullptr)
+            {
+                client.sendSoundData(audioData, dataLength);
+                delete[] audioData;
+            }
 
-        // Simulating sending data to the server
-        // This part can be expanded as needed
-        std::string data = "Hello, server!";
-        send(client.serverSd, data.c_str(), data.length(), 0);
+            std::this_thread::sleep_for(std::chrono::seconds(1)); // Adjust the frequency of sending data as needed
+        }
     }
-    else
+    catch (const std::exception &e)
     {
-        std::cerr << "Failed to connect to server at " << serverIP << std::endl;
+        std::cerr << "Exception: " << e.what() << std::endl;
         return 1;
-    }
-
-    while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     bluetoothThread.join();

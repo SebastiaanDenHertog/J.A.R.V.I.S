@@ -4,6 +4,32 @@
 #include <iostream>
 #include <cstring>
 
+std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
+{
+    std::vector<float> processedData;
+    // Example: Convert uint8_t data to float and normalize (assuming 8-bit PCM)
+    for (uint32_t i = 0; i < dataLength; ++i)
+    {
+        processedData.push_back(static_cast<float>(audioData[i]) / 255.0f);
+    }
+    // Further processing like resampling, MFCC extraction can be added here
+    return processedData;
+}
+
+std::string PostprocessOutput(const std::vector<float> &outputData)
+{
+    // Example: Convert the output data to a string
+    // This will depend on your specific model's output format
+    std::string result;
+    // Assuming outputData contains character indices or probabilities
+    for (float val : outputData)
+    {
+        char c = static_cast<char>(val); // Simplified for example
+        result += c;
+    }
+    return result;
+}
+
 bool ModelRunner::CreateInterpreter()
 {
     tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -60,7 +86,7 @@ float ModelRunner::RunModel(float input_data)
     return *interpreter_->typed_output_tensor<float>(0);
 }
 
-std::vector<float> ModelRunner::RunModel(const std::vector<float>& input_data)
+std::vector<float> ModelRunner::RunModel(const std::vector<float> &input_data)
 {
     if (!IsLoaded())
     {
@@ -68,7 +94,7 @@ std::vector<float> ModelRunner::RunModel(const std::vector<float>& input_data)
         return {};
     }
 
-    float* input = interpreter_->typed_input_tensor<float>(0);
+    float *input = interpreter_->typed_input_tensor<float>(0);
     std::memcpy(input, input_data.data(), input_data.size() * sizeof(float));
 
     if (interpreter_->Invoke() != kTfLiteOk)
@@ -77,6 +103,55 @@ std::vector<float> ModelRunner::RunModel(const std::vector<float>& input_data)
         return {};
     }
 
-    const float* output = interpreter_->typed_output_tensor<float>(0);
+    const float *output = interpreter_->typed_output_tensor<float>(0);
     return std::vector<float>(output, output + interpreter_->tensor(interpreter_->outputs()[0])->bytes / sizeof(float));
+}
+
+void ModelRunner::modelsLogic(SoundData *soundData)
+{
+
+    // Load the TFLite models
+
+    if (!model_)
+    {
+        std::cerr << "Failed to load model" << std::endl;
+        return;
+    }
+
+    // Build the interpreter
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    std::unique_ptr<tflite::Interpreter> interpreter;
+    tflite::InterpreterBuilder(*model_, resolver)(&interpreter);
+    if (!interpreter)
+    {
+        std::cerr << "Failed to create interpreter" << std::endl;
+        return;
+    }
+
+    // Allocate tensor buffers
+    if (interpreter->AllocateTensors() != kTfLiteOk)
+    {
+        std::cerr << "Failed to allocate tensors" << std::endl;
+        return;
+    }
+
+    // Preprocess audio data
+    std::vector<float> processedAudio = PreprocessAudioData(soundData->data, soundData->length);
+
+    // Copy preprocessed data to input tensor
+    float *input = interpreter->typed_tensor<
+        float>(interpreter->inputs()[0]);
+    std::copy(processedAudio.begin(), processedAudio.end(), input);
+
+    // Run inference
+    if (interpreter->Invoke() != kTfLiteOk)
+    {
+        std::cerr << "Failed to invoke TFLite interpreter" << std::endl;
+        return;
+    }
+
+    // Process output
+    auto output = interpreter->typed_output_tensor<float>(0);
+    std::vector<float> outputData(output, output + interpreter->tensor(interpreter->outputs()[0])->bytes / sizeof(float));
+    std::string result = PostprocessOutput(outputData);
 }
