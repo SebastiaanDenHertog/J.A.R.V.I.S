@@ -27,6 +27,9 @@ const char *devicePath = "/dev/i2c-1";
 uint8_t deviceAddress = 0x3b;
 uint8_t micCount = 4;
 uint8_t ledCount = 12;
+bool setbluetooth = false;
+std::unique_ptr<BluetoothComm> bluetoothComm;
+std::thread bluetoothThread;
 
 std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
@@ -111,7 +114,23 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
     DEBUG_PRINT("Completed modelsLogic function.");
 }
 
-bool checkBluetoothAvailability();
+bool checkBluetoothAvailability()
+{
+    int dev_id = hci_get_route(NULL);
+    if (dev_id < 0)
+    {
+        return false;
+    }
+
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+    {
+        return false;
+    }
+
+    hci_close_dev(sock);
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -145,21 +164,26 @@ int main(int argc, char *argv[])
     if (!checkBluetoothAvailability())
     {
         std::cerr << "Bluetooth is not available on this device." << std::endl;
-        return -1;
     }
-    DEBUG_PRINT("Bluetooth is available.");
-
-    BluetoothComm btComm;
-    if (!btComm.initialize())
+    else
     {
-        std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-        return -1;
+        setbluetooth = true;
+        DEBUG_PRINT("Bluetooth is available.");
     }
-    DEBUG_PRINT("Bluetooth communication initialized.");
 
-    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
-    DEBUG_PRINT("Bluetooth thread started.");
+    if (setbluetooth)
+    {
+        bluetoothComm = std::make_unique<BluetoothComm>();
+        if (!bluetoothComm->initialize())
+        {
+            std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+            return -1;
+        }
+        DEBUG_PRINT("Bluetooth communication initialized.");
 
+        bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
+        DEBUG_PRINT("Bluetooth thread started.");
+    }
     wifiServer wifiserver(port);
     try
     {
@@ -178,7 +202,10 @@ int main(int argc, char *argv[])
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
     uint32_t bufferSize = 1024;
-    uint8_t* rawAudioData = respeaker.startCaptureAndGetAudioData(bufferSize);
+    uint8_t *rawAudioData = respeaker.startCaptureAndGetAudioData(bufferSize);
+
+    ModelRunner ModelRunner("models/whisper_english.tflite");
+    ModelRunner.modelsLogic(soundData);
 
     std::vector<int16_t> audioData(rawAudioData, rawAudioData + bufferSize);
 
@@ -203,10 +230,12 @@ int main(int argc, char *argv[])
     {
     }
 
-    bluetoothThread.join();
-    btComm.terminate();
-    DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
-
+    if (bluetoothComm)
+    {
+        bluetoothThread.join();
+        bluetoothComm->terminate();
+        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    }
     std::cout << "Application finished." << std::endl;
     return 0;
 }

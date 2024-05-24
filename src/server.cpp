@@ -23,6 +23,9 @@
 
 int port = 8080;
 bool setbluetooth = false;
+std::unique_ptr<BluetoothComm> bluetoothComm;
+std::thread bluetoothThread;
+std::thread wifiThread;
 
 bool checkBluetoothAvailability()
 {
@@ -70,13 +73,10 @@ int main(int argc, char *argv[])
     else
     {
         setbluetooth = true;
+        DEBUG_PRINT("Bluetooth is available.");
     }
-    DEBUG_PRINT("Bluetooth is available.");
 
-    std::unique_ptr<BluetoothComm> bluetoothComm;
-    std::thread bluetoothThread;
-
-    if (!setbluetooth)
+    if (setbluetooth)
     {
         bluetoothComm = std::make_unique<BluetoothComm>();
         if (!bluetoothComm->initialize())
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     {
         DEBUG_PRINT("Starting wifiServer.");
         wifiServer server(port);
-        server.run();
+        wifiThread = std::thread(&wifiServer::run, &server);
         DEBUG_PRINT("wifiServer running.");
     }
     catch (const std::exception &e)
@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
             bluetoothComm->terminate();
             DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
         }
-        return -1;
     }
 
     // Run the I/O service on the requested number of threads
@@ -129,13 +128,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (bluetoothComm)
-    {
-        bluetoothThread.join();
-        bluetoothComm->terminate();
-        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
-    }
-
+    wifiThread.join();
     std::cout << "Application finished." << std::endl;
     return 0;
 }

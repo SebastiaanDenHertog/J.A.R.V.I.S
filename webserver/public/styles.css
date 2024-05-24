@@ -1,0 +1,68 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    font-family: 'Arial', sans-serif;
+    color: #00e5ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    position: relative;
+    width: 80%;
+    max-width: 1200px;
+}
+
+.holo-display {
+    position: relative;
+    perspective: 1000px;
+}
+
+.holo-screen {
+    position: relative;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #00e5ff;
+    border-radius: 10px;
+    padding: 20px;
+    transform: rotateX(15deg);
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotateX(15deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotateX(15deg);
+    }
+}
+
+.data-section {
+    margin-top: 20px;
+}
+
+.data-section h2 {
+    margin: 0;
+    border-bottom: 1px solid #00e5ff;
+    padding-bottom: 5px;
+}
+
+.data-section p,
+.data-section ul {
+    margin: 10px 0 0 0;
+}
+
+.data-section ul {
+    padding-left: 20px;
+}
+
+.data-section ul li {
+    margin-bottom: 5px;
+}

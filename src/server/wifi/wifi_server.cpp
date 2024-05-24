@@ -73,7 +73,6 @@ void wifiServer::acceptClient()
     int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
     if (newSd < 0)
     {
-        std::cerr << "Error accepting request from client!" << std::endl;
         return;
     }
     std::cout << "Connected with client!" << std::endl;
