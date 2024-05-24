@@ -33,89 +33,6 @@ std::thread bluetoothThread;
 
 std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
-    std::vector<float> processedData;
-    // Example: Convert uint8_t data to float and normalize (assuming 8-bit PCM)
-    for (uint32_t i = 0; i < dataLength; ++i)
-    {
-        processedData.push_back(static_cast<float>(audioData[i]) / 255.0f);
-    }
-    // Further processing like resampling, MFCC extraction can be added here
-    return processedData;
-}
-
-std::string PostprocessOutput(const std::vector<float> &outputData)
-{
-    // Example: Convert the output data to a string
-    // This will depend on your specific model's output format
-    std::string result;
-    // Assuming outputData contains character indices or probabilities
-    for (float val : outputData)
-    {
-        char c = static_cast<char>(val); // Simplified for example
-        result += c;
-    }
-    return result;
-}
-
-void modelsLogic(uint8_t *audioData, uint32_t dataLength)
-{
-    DEBUG_PRINT("Starting modelsLogic function.");
-
-    // Load the TFLite models
-    auto model = tflite::FlatBufferModel::BuildFromFile("models/whisper_english.tflite");
-    if (!model)
-    {
-        std::cerr << "Failed to load model" << std::endl;
-        return;
-    }
-
-    // Build the interpreter
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
-    if (!interpreter)
-    {
-        std::cerr << "Failed to create interpreter" << std::endl;
-        return;
-    }
-
-    // Allocate tensor buffers
-    if (interpreter->AllocateTensors() != kTfLiteOk)
-    {
-        std::cerr << "Failed to allocate tensors" << std::endl;
-        return;
-    }
-
-    DEBUG_PRINT("Models loaded.");
-
-    // Preprocess audio data
-    std::vector<float> processedAudio = PreprocessAudioData(audioData, dataLength);
-    DEBUG_PRINT("Audio data preprocessed.");
-
-    // Copy preprocessed data to input tensor
-    float *input = interpreter->typed_tensor<float>(interpreter->inputs()[0]);
-    std::copy(processedAudio.begin(), processedAudio.end(), input);
-
-    // Run inference
-    if (interpreter->Invoke() != kTfLiteOk)
-    {
-        std::cerr << "Failed to invoke TFLite interpreter" << std::endl;
-        return;
-    }
-
-    // Process output
-    auto output = interpreter->typed_output_tensor<float>(0);
-    std::vector<float> outputData(output, output + interpreter->tensor(interpreter->outputs()[0])->bytes / sizeof(float));
-    std::string result = PostprocessOutput(outputData);
-
-    // Output result
-    DEBUG_PRINT("Recognized text: " << result);
-
-    DEBUG_PRINT("Completed modelsLogic function.");
-}
-
-bool checkBluetoothAvailability()
-{
     int dev_id = hci_get_route(NULL);
     if (dev_id < 0)
     {
@@ -132,22 +49,29 @@ bool checkBluetoothAvailability()
     return true;
 }
 
+
+std::string PostprocessOutput(const std::vector<float> &outputData)
+{
+    // Example: Convert the output data to a string
+    // This will depend on your specific model's output format
+    std::string result;
+    // Assuming outputData contains character indices or probabilities
+    for (float val : outputData)
+    {
+        char c = static_cast<char>(val); // Simplified for example
+        result += c;
+    }
+    return result;
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
 
-    // Check command line arguments.
-    if (std::getenv("PORT") == NULL || std::getenv("THREADS") == NULL)
-    {
-        std::cerr << "Usage: web_service\n"
-                  << "Please define the PORT and THREADS environment variables\n";
-        return EXIT_FAILURE;
-    }
-
-    unsigned short web_server_port = static_cast<unsigned short>(std::atoi(std::getenv("PORT")));
-    int threads = std::max<int>(1, std::atoi(std::getenv("THREADS")));
+    unsigned short web_server_port = 8081;
+    int threads = 10;
 
     std::unordered_set<std::string> allowed_keys;
     allowed_keys.insert("SampleKey");
@@ -207,7 +131,11 @@ int main(int argc, char *argv[])
     ModelRunner ModelRunner("models/whisper_english.tflite");
     ModelRunner.modelsLogic(soundData);
 
-    std::vector<int16_t> audioData(rawAudioData, rawAudioData + bufferSize);
+    std::thread modelThread([&audioData]()
+    {
+        ModelRunner modelRunner("models/whisper_english.tflite");
+        modelRunner.modelsLogic(audioData);
+    });
 
     DEBUG_PRINT("modelsLogic executed.");
 
@@ -236,6 +164,10 @@ int main(int argc, char *argv[])
         bluetoothComm->terminate();
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
+    
+    audioThread.join();
+    modelThread.join();
+
     std::cout << "Application finished." << std::endl;
     return 0;
 }

@@ -72,9 +72,11 @@ int main(int argc, char *argv[])
     }
     else
     {
+        DEBUG_PRINT("Bluetooth is available.");
         setbluetooth = true;
         DEBUG_PRINT("Bluetooth is available.");
     }
+    DEBUG_PRINT("Bluetooth is available.");
 
     if (setbluetooth)
     {
