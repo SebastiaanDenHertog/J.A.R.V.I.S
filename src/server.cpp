@@ -69,9 +69,10 @@ int main(int argc, char *argv[])
     }
     else
     {
+        DEBUG_PRINT("Bluetooth is available.");
         setbluetooth = true;
     }
-    DEBUG_PRINT("Bluetooth is available.");
+    
 
     std::unique_ptr<BluetoothComm> bluetoothComm;
     std::thread bluetoothThread;

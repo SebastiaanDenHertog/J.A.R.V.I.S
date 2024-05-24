@@ -27,6 +27,25 @@ const char *devicePath = "/dev/i2c-1";
 uint8_t deviceAddress = 0x3b;
 uint8_t micCount = 4;
 uint8_t ledCount = 12;
+bool setbluetooth = false;
+
+bool checkBluetoothAvailability()
+{
+    int dev_id = hci_get_route(NULL);
+    if (dev_id < 0)
+    {
+        return false;
+    }
+
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+    {
+        return false;
+    }
+
+    hci_close_dev(sock);
+    return true;
+}
 
 std::vector<float> PreprocessAudioData(uint8_t *audioData, uint32_t dataLength)
 {
@@ -111,21 +130,14 @@ void modelsLogic(uint8_t *audioData, uint32_t dataLength)
     DEBUG_PRINT("Completed modelsLogic function.");
 }
 
-bool checkBluetoothAvailability();
-
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
 
-    // Check command line arguments.
-    if (std::getenv("PORT") == NULL || std::getenv("THREADS") == NULL)
-    {
-        std::cerr << "Usage: web_service\n"
-                  << "Please define the PORT and THREADS environment variables\n";
-        return EXIT_FAILURE;
-    }
+    unsigned short web_server_port = 8081;
+    int threads = 10;
 
     unsigned short web_server_port = static_cast<unsigned short>(std::atoi(std::getenv("PORT")));
     int threads = std::max<int>(1, std::atoi(std::getenv("THREADS")));
@@ -145,9 +157,18 @@ int main(int argc, char *argv[])
     if (!checkBluetoothAvailability())
     {
         std::cerr << "Bluetooth is not available on this device." << std::endl;
-        return -1;
     }
-    DEBUG_PRINT("Bluetooth is available.");
+    else
+    {
+        DEBUG_PRINT("Bluetooth is available.");
+        setbluetooth = true;
+    }
+
+ std::unique_ptr<BluetoothComm> bluetoothComm;
+    std::thread bluetoothThread;
+
+    if (!setbluetooth)
+    {
 
     BluetoothComm btComm;
     if (!btComm.initialize())
@@ -159,6 +180,7 @@ int main(int argc, char *argv[])
 
     std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
     DEBUG_PRINT("Bluetooth thread started.");
+    }
 
     wifiServer wifiserver(port);
     try
@@ -203,9 +225,12 @@ int main(int argc, char *argv[])
     {
     }
 
-    bluetoothThread.join();
-    btComm.terminate();
-    DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    if (bluetoothComm)
+    {
+        bluetoothThread.join();
+        bluetoothComm->terminate();
+        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    }
 
     std::cout << "Application finished." << std::endl;
     return 0;
