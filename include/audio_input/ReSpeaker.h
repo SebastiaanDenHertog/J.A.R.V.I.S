@@ -29,7 +29,6 @@ private:
   uint8_t databuf[2];
   void sendI2C(const uint8_t *buf, uint32_t sz);
   uint32_t readI2C(uint8_t *buf, uint32_t sz);
-  void initBuffer(uint8_t reg, uint8_t val);
 };
 
 #endif // RESPEAKER_H
