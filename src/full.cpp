@@ -177,9 +177,10 @@ int main(int argc, char *argv[])
     ReSpeaker respeaker(devicePath, deviceAddress, micCount);
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
+    uint32_t bufferSize = 1024;
+    uint8_t* rawAudioData = respeaker.startCaptureAndGetAudioData(bufferSize);
 
-    auto audioData = respeaker.startCaptureAndGetAudioData(1024);
-    std::vector<float> audioDataVec(audioData.begin(), audioData.end()); 
+    std::vector<int16_t> audioData(rawAudioData, rawAudioData + bufferSize);
 
     DEBUG_PRINT("modelsLogic executed.");
 

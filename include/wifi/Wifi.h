@@ -9,6 +9,7 @@
 #include <sstream>
 #include <cstring>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 class wifiServer
 {
@@ -23,7 +24,7 @@ public:
     void session(int clientSd);
     void sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType);
     void closeSocket(int sd);
-    vac
+    
 
 private:
     int port;
