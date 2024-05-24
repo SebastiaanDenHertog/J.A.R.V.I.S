@@ -16,7 +16,23 @@ uint8_t deviceAddress = 0x3b;
 uint8_t micCount = 4;
 uint8_t ledCount = 12;
 
-bool checkBluetoothAvailability();
+bool checkBluetoothAvailability()
+{
+    int dev_id = hci_get_route(NULL);
+    if (dev_id < 0)
+    {
+        return false;
+    }
+
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+    {
+        return false;
+    }
+
+    hci_close_dev(sock);
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
