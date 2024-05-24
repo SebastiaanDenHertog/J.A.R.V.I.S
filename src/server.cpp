@@ -21,6 +21,7 @@
 #endif
 
 int port = 8080;
+bool setbluetooth = false;
 
 bool checkBluetoothAvailability()
 {
@@ -46,16 +47,8 @@ int main(int argc, char *argv[])
     std::cout << "Debug mode is ON" << std::endl;
 #endif
 
-    // Check command line arguments.
-    if (std::getenv("PORT") == NULL || std::getenv("THREADS") == NULL)
-    {
-        std::cerr << "Usage: web_service\n"
-                  << "Please define the PORT and THREADS environment variables\n";
-        return EXIT_FAILURE;
-    }
-
-    unsigned short web_server_port = static_cast<unsigned short>(std::atoi(std::getenv("PORT")));
-    int threads = std::max<int>(1, std::atoi(std::getenv("THREADS")));
+    unsigned short web_server_port = 8081;
+    int threads = 10;
 
     std::unordered_set<std::string> allowed_keys;
     allowed_keys.insert("SampleKey");
@@ -72,20 +65,29 @@ int main(int argc, char *argv[])
     if (!checkBluetoothAvailability())
     {
         std::cerr << "Bluetooth is not available on this device." << std::endl;
-        return -1;
+    }
+    else
+    {
+        setbluetooth = true;
     }
     DEBUG_PRINT("Bluetooth is available.");
 
-    BluetoothComm BluetoothComm;
-    if (!BluetoothComm.initialize())
-    {
-        std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-        return -1;
-    }
-    DEBUG_PRINT("Bluetooth communication initialized.");
+    std::unique_ptr<BluetoothComm> bluetoothComm;
+    std::thread bluetoothThread;
 
-    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &BluetoothComm);
-    DEBUG_PRINT("Bluetooth thread started.");
+    if (!setbluetooth)
+    {
+        bluetoothComm = std::make_unique<BluetoothComm>();
+        if (!bluetoothComm->initialize())
+        {
+            std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+            return -1;
+        }
+        DEBUG_PRINT("Bluetooth communication initialized.");
+
+        bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
+        DEBUG_PRINT("Bluetooth thread started.");
+    }
 
     try
     {
@@ -115,9 +117,12 @@ int main(int argc, char *argv[])
     {
     }
 
-    bluetoothThread.join();
-    BluetoothComm.terminate();
-    DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    if (bluetoothComm)
+    {
+        bluetoothThread.join();
+        bluetoothComm->terminate();
+        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    }
 
     std::cout << "Application finished." << std::endl;
     return 0;
