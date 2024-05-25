@@ -126,11 +126,10 @@ int main(int argc, char *argv[])
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
 
-    std::thread audioThread([&respeaker, &audioData]()
-                            { respeaker.startCaptureAndUpdateAudioData(audioData); });
+    std::thread audioThread([&respeaker, audioDataPtr = &audioData]()
+                            { respeaker.startCaptureAndUpdateAudioData(*audioDataPtr); });
 
-    std::thread modelThread([&audioData]()
-                            {
+    std::thread modelThread([&audioData](){
         ModelRunner modelRunner("models/whisper_english.tflite");
         modelRunner.modelsLogic(audioData); });
 
