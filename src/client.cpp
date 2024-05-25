@@ -1,7 +1,8 @@
 #include <iostream>
 #include <thread>
+#include <fstream>
 #include "BluetoothComm.h"
-#include "Pixel_Ring.h"
+#include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "Wifi.h"
 
@@ -11,10 +12,28 @@
 #define DEBUG_PRINT(x)
 #endif
 
-const char *devicePath = "/dev/i2c-1";
-uint8_t deviceAddress = 0x3b;
+const char *spiDevicePath = "/dev/spidev0.1";
+const char *i2cDevicePath = "/dev/i2c-1";
+uint8_t i2cDeviceAddress = 0x3b;
 uint8_t micCount = 4;
 uint8_t ledCount = 12;
+bool setbluetooth = false;
+std::unique_ptr<BluetoothComm> bluetoothComm;
+std::thread bluetoothThread;
+
+void setGPIOHigh()
+{
+    std::ofstream gpioFile("/sys/class/gpio/gpio5/value");
+    if (gpioFile.is_open())
+    {
+        gpioFile << "1";
+        gpioFile.close();
+    }
+    else
+    {
+        std::cerr << "Failed to open GPIO file." << std::endl;
+    }
+}
 
 bool checkBluetoothAvailability()
 {
@@ -52,34 +71,46 @@ int main(int argc, char *argv[])
     if (!checkBluetoothAvailability())
     {
         std::cerr << "Bluetooth is not available on this device." << std::endl;
-        return -1;
     }
-    DEBUG_PRINT("Bluetooth is available.");
-
-    BluetoothComm btComm;
-    if (!btComm.initialize())
+    else
     {
-        std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-        return -1;
+        setbluetooth = true;
+        DEBUG_PRINT("Bluetooth is available.");
     }
-    DEBUG_PRINT("Bluetooth communication initialized.");
 
-    std::thread bluetoothThread(&BluetoothComm::handleIncomingConnectionsThread, &btComm);
-    DEBUG_PRINT("Bluetooth thread started.");
+    if (setbluetooth)
+    {
+        bluetoothComm = std::make_unique<BluetoothComm>();
+        if (!bluetoothComm->initialize())
+        {
+            std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+            return -1;
+        }
+        DEBUG_PRINT("Bluetooth communication initialized.");
 
-    PixelRing pixelring(devicePath, deviceAddress, ledCount);
-    ReSpeaker respeaker(devicePath, deviceAddress, micCount);
-    respeaker.initBoard();
-    DEBUG_PRINT("ReSpeaker initialized.");
+        bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
+        DEBUG_PRINT("Bluetooth thread started.");
+    }
 
-    pixelring.setBrightness(15);
-    pixelring.startAnimation();
-    DEBUG_PRINT("PixelRing animation started.");
+    // Check if GPIO5 exists and set it high if it does
+    if (std::ifstream("/sys/class/gpio/gpio5").good())
+    {
+        setGPIOHigh();
+    }
+
+    PixelRing pixelring(spiDevicePath, ledCount);
+    ReSpeaker respeaker(i2cDevicePath, i2cDeviceAddress, micCount);
 
     try
     {
-        wifiClient client(port);
-        client.connectToServer();
+        respeaker.initBoard();
+        DEBUG_PRINT("ReSpeaker initialized.");
+
+        pixelring.setBrightness(15);
+        pixelring.startAnimation();
+        DEBUG_PRINT("PixelRing animation started.");
+
+        wifiClient client(port, serverIP);
 
         while (true)
         {
@@ -97,11 +128,18 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Exception: " << e.what() << std::endl;
+        pixelring.stopAnimation();
         return 1;
     }
 
-    bluetoothThread.join();
-    btComm.terminate();
+    if (bluetoothComm)
+    {
+        bluetoothThread.join();
+        bluetoothComm->terminate();
+        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
+    }
+
+    pixelring.stopAnimation();
     DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
 
     std::cout << "Application finished." << std::endl;

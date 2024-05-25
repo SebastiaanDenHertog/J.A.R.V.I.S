@@ -31,6 +31,21 @@ bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 soundData audioData;
+const char *spiDevicePath = "/dev/spidev0.0";
+
+void setGPIOHigh()
+{
+    std::ofstream gpioFile("/sys/class/gpio/gpio5/value");
+    if (gpioFile.is_open())
+    {
+        gpioFile << "1";
+        gpioFile.close();
+    }
+    else
+    {
+        std::cerr << "Failed to open GPIO file." << std::endl;
+    }
+}
 
 bool checkBluetoothAvailability()
 {
@@ -121,7 +136,13 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    PixelRing pixelring(devicePath, deviceAddress, ledCount);
+    // Check if GPIO5 exists and set it high if it does
+    if (std::ifstream("/sys/class/gpio/gpio5").good())
+    {
+        setGPIOHigh();
+    }
+
+    PixelRing pixelring(spiDevicePath, ledCount);
     ReSpeaker respeaker(devicePath, deviceAddress, micCount);
     respeaker.initBoard();
     DEBUG_PRINT("ReSpeaker initialized.");
@@ -161,7 +182,7 @@ int main(int argc, char *argv[])
         bluetoothComm->terminate();
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
-
+    pixelring.stopAnimation();
     audioThread.join();
     modelThread.join();
 

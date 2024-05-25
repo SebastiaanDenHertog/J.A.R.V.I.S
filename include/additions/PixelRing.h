@@ -1,4 +1,3 @@
-
 #ifndef PIXEL_RING_H
 #define PIXEL_RING_H
 
@@ -12,7 +11,7 @@
 class PixelRing
 {
 public:
-    PixelRing(const std::string &i2c_device, int i2c_address, int num_leds);
+    PixelRing(const std::string &spi_device, int num_leds);
     ~PixelRing();
 
     void startAnimation();
@@ -24,8 +23,7 @@ public:
     void off();
 
 private:
-    int i2c_fd;
-    int i2c_address;
+    int spi_fd;
     std::vector<uint8_t> leds;
     int num_leds;
     uint8_t global_brightness;
@@ -36,6 +34,9 @@ private:
     void animationLoop();
     void startFrame();
     void endFrame();
+    void spiOpen(const std::string &device);
+    void spiClose();
+    void spiWrite(const std::vector<uint8_t> &data);
 };
 
-#endif
+#endif // PIXEL_RING_H

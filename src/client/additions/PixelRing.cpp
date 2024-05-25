@@ -1,24 +1,15 @@
-#include "Pixel_Ring.h"
-#include <sys/ioctl.h>
-#include <linux/i2c-dev.h>
+#include "PixelRing.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdexcept>
 #include <iostream>
+#include <sys/ioctl.h>
+#include <linux/spi/spidev.h>
 
-PixelRing::PixelRing(const std::string &i2c_device, int i2c_address, int num_leds)
-    : num_leds(num_leds), global_brightness(31), running(false), i2c_address(i2c_address)
+PixelRing::PixelRing(const std::string &spi_device, int num_leds)
+    : num_leds(num_leds), global_brightness(31), running(false)
 {
-    i2c_fd = open(i2c_device.c_str(), O_RDWR);
-    if (i2c_fd < 0)
-    {
-        throw std::runtime_error("Failed to open I2C device");
-    }
-    if (ioctl(i2c_fd, I2C_SLAVE, i2c_address) < 0)
-    {
-        close(i2c_fd);
-        throw std::runtime_error("Failed to set I2C address");
-    }
+    spiOpen(spi_device);
     leds.resize(num_leds * 4, 0);
     clear();
 }
@@ -28,7 +19,7 @@ PixelRing::~PixelRing()
     stopAnimation();
     off();
     show();
-    close(i2c_fd);
+    spiClose();
 }
 
 void PixelRing::startAnimation()
@@ -51,7 +42,6 @@ void PixelRing::animationLoop()
     while (running)
     {
         std::lock_guard<std::mutex> guard(lock);
-        // Example animation: cycle colors
         setColor(255, 0, 0); // Red
         show();
         sleep(1);
@@ -91,10 +81,7 @@ void PixelRing::show()
 {
     std::lock_guard<std::mutex> guard(lock);
     startFrame();
-    if (write(i2c_fd, leds.data(), leds.size()) != leds.size())
-    {
-        std::cerr << "Error writing to I2C device" << std::endl;
-    }
+    spiWrite(leds);
     endFrame();
 }
 
@@ -116,12 +103,51 @@ void PixelRing::off()
 
 void PixelRing::startFrame()
 {
-    // Some LED protocols require special frames at the start.
-    // Adapt this function if necessary based on your LED protocol.
+    std::vector<uint8_t> start_frame(4, 0);
+    spiWrite(start_frame);
 }
 
 void PixelRing::endFrame()
 {
-    // Some LED protocols require special frames at the end.
-    // Adapt this function if necessary based on your LED protocol.
+    std::vector<uint8_t> end_frame((num_leds + 15) / 16, 0);
+    spiWrite(end_frame);
+}
+
+void PixelRing::spiOpen(const std::string &device)
+{
+    spi_fd = open(device.c_str(), O_RDWR);
+    if (spi_fd < 0)
+    {
+        throw std::runtime_error("Failed to open SPI device");
+    }
+
+    uint8_t mode = SPI_MODE_0;
+    uint8_t bits = 8;
+    uint32_t speed = 8000000;
+
+    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0)
+    {
+        throw std::runtime_error("Failed to set SPI mode");
+    }
+    if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0)
+    {
+        throw std::runtime_error("Failed to set SPI bits per word");
+    }
+    if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
+    {
+        throw std::runtime_error("Failed to set SPI speed");
+    }
+}
+
+void PixelRing::spiClose()
+{
+    close(spi_fd);
+}
+
+void PixelRing::spiWrite(const std::vector<uint8_t> &data)
+{
+    if (write(spi_fd, data.data(), data.size()) != static_cast<ssize_t>(data.size()))
+    {
+        std::cerr << "Error writing to SPI device" << std::endl;
+    }
 }

@@ -77,9 +77,8 @@ private:
 class wifiClient
 {
 public:
-    wifiClient(int port);
+    wifiClient(int port, const char *serverIp);
     ~wifiClient();
-    void run();
     void setupClientSocket();
     void connectToServer();
     void session(SoundData *soundData);
@@ -88,6 +87,7 @@ public:
     void closeSocket(int sd);
 
 private:
+    const char *serverIp;
     int port;
     int serverSd;
     sockaddr_in servAddr;

@@ -187,8 +187,6 @@ void BluetoothComm::handleIncomingConnectionsThread()
         // Placeholder example for handling incoming connection requests
         // Replace this with actual handling code
 
-        std::cout << "Handling incoming connection requests..." << std::endl;
-
         // Simulate incoming connection request handling
         std::this_thread::sleep_for(std::chrono::seconds(5)); // Adjust the sleep duration as needed
     }
