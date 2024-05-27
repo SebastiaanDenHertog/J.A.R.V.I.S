@@ -1,15 +1,11 @@
 #include "PixelRing.h"
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdexcept>
 #include <iostream>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
+#include <unistd.h>
 
-PixelRing::PixelRing(const std::string &spi_device, int num_leds)
-    : num_leds(num_leds), global_brightness(31), running(false)
+PixelRing::PixelRing(const std::string &spi_device, spi_config_t *spiConfig, int num_leds)
+    : gpio(spi_device.c_str(), spiConfig), num_leds(num_leds), global_brightness(31), running(false)
 {
-    spiOpen(spi_device);
     leds.resize(num_leds * 4, 0);
     clear();
 }
@@ -19,7 +15,6 @@ PixelRing::~PixelRing()
     stopAnimation();
     off();
     show();
-    spiClose();
 }
 
 void PixelRing::startAnimation()
@@ -113,41 +108,7 @@ void PixelRing::endFrame()
     spiWrite(end_frame);
 }
 
-void PixelRing::spiOpen(const std::string &device)
-{
-    spi_fd = open(device.c_str(), O_RDWR);
-    if (spi_fd < 0)
-    {
-        throw std::runtime_error("Failed to open SPI device");
-    }
-
-    uint8_t mode = SPI_MODE_0;
-    uint8_t bits = 8;
-    uint32_t speed = 8000000;
-
-    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0)
-    {
-        throw std::runtime_error("Failed to set SPI mode");
-    }
-    if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0)
-    {
-        throw std::runtime_error("Failed to set SPI bits per word");
-    }
-    if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
-    {
-        throw std::runtime_error("Failed to set SPI speed");
-    }
-}
-
-void PixelRing::spiClose()
-{
-    close(spi_fd);
-}
-
 void PixelRing::spiWrite(const std::vector<uint8_t> &data)
 {
-    if (write(spi_fd, data.data(), data.size()) != static_cast<ssize_t>(data.size()))
-    {
-        std::cerr << "Error writing to SPI device" << std::endl;
-    }
+    gpio.spi->xfer(const_cast<uint8_t *>(data.data()), data.size(), nullptr, 0);
 }
