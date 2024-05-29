@@ -1,10 +1,11 @@
 #include <iostream>
 #include <thread>
-#include <fstream>
+#include <memory>
 #include "BluetoothComm.h"
 #include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "Wifi.h"
+#include "HardwareInterface.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -12,7 +13,7 @@
 #define DEBUG_PRINT(x)
 #endif
 
-const char *spiDevicePath = "/dev/spidev0.1";
+const char *spiDevicePath = "/dev/spidev0.0";
 const char *i2cDevicePath = "/dev/i2c-1";
 uint8_t i2cDeviceAddress = 0x3b;
 uint8_t micCount = 4;
@@ -20,20 +21,7 @@ uint8_t ledCount = 12;
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
-
-void setGPIOHigh()
-{
-    std::ofstream gpioFile("/sys/class/gpio/gpio5/value");
-    if (gpioFile.is_open())
-    {
-        gpioFile << "1";
-        gpioFile.close();
-    }
-    else
-    {
-        std::cerr << "Failed to open GPIO file." << std::endl;
-    }
-}
+spi_config_t spiConfig;
 
 bool checkBluetoothAvailability()
 {
@@ -92,17 +80,21 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread started.");
     }
 
-    // Check if GPIO5 exists and set it high if it does
-    if (std::ifstream("/sys/class/gpio/gpio5").good())
-    {
-        setGPIOHigh();
-    }
-
-    PixelRing pixelring(spiDevicePath, ledCount);
-    ReSpeaker respeaker(i2cDevicePath, i2cDeviceAddress, micCount);
-
     try
     {
+        spiConfig.mode = 0;
+        spiConfig.speed = 8000000;
+        spiConfig.delay = 0;
+        spiConfig.bits_per_word = 8;
+
+        GPIO gpio(spiDevicePath, &spiConfig);
+        gpio.setDirection(5, true);
+        gpio.setValue(5, true);
+        std::cerr << "Successfully set GPIO5 high." << std::endl;
+
+        ReSpeaker respeaker(i2cDevicePath, i2cDeviceAddress, micCount);
+        PixelRing pixelring(spiDevicePath, &spiConfig, ledCount);
+
         respeaker.initBoard();
         DEBUG_PRINT("ReSpeaker initialized.");
 
@@ -128,7 +120,6 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Exception: " << e.what() << std::endl;
-        pixelring.stopAnimation();
         return 1;
     }
 
@@ -139,9 +130,7 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
-    pixelring.stopAnimation();
-    DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
-
+    DEBUG_PRINT("PixelRing animation stopped.");
     std::cout << "Application finished." << std::endl;
     return 0;
 }

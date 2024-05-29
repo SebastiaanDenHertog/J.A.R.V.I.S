@@ -7,11 +7,12 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include "HardwareInterface.h"
 
 class PixelRing
 {
 public:
-    PixelRing(const std::string &spi_device, int num_leds);
+    PixelRing(const std::string &spi_device, spi_config_t *spiConfig, int num_leds);
     ~PixelRing();
 
     void startAnimation();
@@ -23,7 +24,7 @@ public:
     void off();
 
 private:
-    int spi_fd;
+    GPIO gpio;
     std::vector<uint8_t> leds;
     int num_leds;
     uint8_t global_brightness;
@@ -34,8 +35,6 @@ private:
     void animationLoop();
     void startFrame();
     void endFrame();
-    void spiOpen(const std::string &device);
-    void spiClose();
     void spiWrite(const std::vector<uint8_t> &data);
 };
 
