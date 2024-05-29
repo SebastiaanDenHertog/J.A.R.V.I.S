@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(J.A.R.V.I.S)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -8,6 +10,27 @@ option(DEBUG_MODE "Enable debug prints" OFF)
 
 if(DEBUG_MODE)
     add_definitions(-DDEBUG_MODE)
+endif()
+
+if ( ( UNIX AND NOT APPLE ) OR USE_X11 )
+  if ( NOT NO_X11_DEPS )
+  find_package( X11  )
+    if ( X11_FOUND )
+      message (STATUS "Will compile using X11 Libraries  (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)" )
+      link_libraries( ${X11_LIBRARIES} )
+      include_directories( ${X11_INCLUDE_DIR} )
+    else ()
+      message (STATUS "X11 libraries not found, will compile without X11 dependence" )
+    endif ()
+  else()
+    message (STATUS "will compile without X11 dependence" )
+  endif()
+endif()
+
+if( UNIX AND NOT APPLE )
+ add_definitions( -DSUPPRESS_AVAHI_COMPAT_WARNING )
+else()
+  set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 endif()
 
 # Option to select the architecture, default is x86_64
@@ -57,6 +80,10 @@ if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
     # Add TensorFlow Lite directory to the project
     add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
+    add_subdirectory( lib/AirPlayServer/lib/llhttp )
+    add_subdirectory( lib/AirPlayServer/lib//playfair )
+    add_subdirectory( lib/AirPlayServer/lib )
+    add_subdirectory( lib/AirPlayServer/renderers )
 endif()
 
 # Include directories for the project
@@ -67,6 +94,7 @@ include_directories("${PROJECT_SOURCE_DIR}/include/ml")
 include_directories("${PROJECT_SOURCE_DIR}/include/web_server")
 include_directories("${PROJECT_SOURCE_DIR}/include/wifi")
 include_directories("${PROJECT_SOURCE_DIR}/include/mediaplayer")
+include_directories("${PROJECT_SOURCE_DIR}/include/AirPlayServer")
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
 

@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
     std::make_shared<web_service>(
         ctx,
-        "0.0.0.0",
+        "192.168.30.11",
         web_server_port,
         "web_service")
         ->run();
@@ -100,12 +100,6 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        if (bluetoothComm)
-        {
-            bluetoothThread.join();
-            bluetoothComm->terminate();
-            DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
-        }
     }
 
     // Run the I/O service on the requested number of threads
@@ -126,6 +120,12 @@ int main(int argc, char *argv[])
         {
             t.join();
         }
+    }
+    if (bluetoothComm)
+    {
+        bluetoothThread.join();
+        bluetoothComm->terminate();
+        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
     wifiThread.join();

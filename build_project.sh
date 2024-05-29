@@ -6,7 +6,7 @@ TENSORFLOW_LITE_BRANCH="master" # Adjust this as needed
 BUILD_DIR="build"
 
 # install boost
-sudo apt install libboost-all-dev
+sudo apt install libboost-all-dev libssl-dev libplist-dev libavahi-compat-libdnssd-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
 # Check if the build directory exists
 if [ -d "$BUILD_DIR" ]; then
@@ -22,7 +22,7 @@ cd "$BUILD_DIR"
 
 # Run CMake to configure the project and generate the build system
 echo "Running CMake..."
-cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full -DDEBUG_MODE=ON ..
+cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_COMPONENT=server -DDEBUG_MODE=ON ..
 
 # Build the project
 echo "Building the project..."
