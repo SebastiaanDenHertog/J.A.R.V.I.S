@@ -35,7 +35,7 @@ public:
     ~GPIO();
     void setDirection(int pin, bool output);
     void setValue(int pin, bool value);
-SpiManager *spi;
+    SpiManager *spi;
 
 private:
     uint8_t txBuffer[2];
