@@ -9,7 +9,7 @@
 #include <tensorflow/lite/optional_debug_tools.h>
 #include "BluetoothComm.h"
 #include "Wifi.h"
-#include "Pixel_Ring.h"
+#include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "model_runner.h"
 #include "authorization_api.h"

@@ -1,5 +1,5 @@
-#ifndef PIXEL_RING_H
-#define PIXEL_RING_H
+#ifndef PIXELRING_H
+#define PIXELRING_H
 
 #include <vector>
 #include <cstdint>
@@ -38,4 +38,4 @@ private:
     void spiWrite(const std::vector<uint8_t> &data);
 };
 
-#endif // PIXEL_RING_H
+#endif
