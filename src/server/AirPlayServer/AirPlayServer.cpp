@@ -47,56 +47,57 @@ std::string config_file = "";
 #define LOCAL 1
 #define OCTETS 6
 
-AirPlayServer::AirPlayServer() : server_name(DEFAULT_NAME),
-                                 audio_sync(false),
-                                 video_sync(true),
-                                 audio_delay_alac(0),
-                                 audio_delay_aac(0),
-                                 relaunch_video(false),
-                                 reset_loop(false),
-                                 open_connections(0),
-                                 videosink("autovideosink"),
-                                 use_video(true),
-                                 compression_type(0),
-                                 audiosink("autoaudiosink"),
-                                 audiodelay(-1),
-                                 use_audio(true),
-                                 new_window_closing_behavior(true),
-                                 close_window(false),
-                                 video_parser("h264parse"),
-                                 video_decoder("decodebin"),
-                                 video_converter("videoconvert"),
-                                 show_client_FPS_data(false),
-                                 max_ntp_timeouts(NTP_TIMEOUT_LIMIT),
-                                 video_dumpfile(nullptr),
-                                 video_dumpfile_name("videodump"),
-                                 video_dump_limit(0),
-                                 video_dumpfile_count(0),
-                                 video_dump_count(0),
-                                 dump_video(false),
-                                 audio_dumpfile(nullptr),
-                                 audio_dumpfile_name("audiodump"),
-                                 audio_dump_limit(0),
-                                 audio_dumpfile_count(0),
-                                 audio_dump_count(0),
-                                 dump_audio(false),
-                                 audio_type(0x00),
-                                 previous_audio_type(0x00),
-                                 fullscreen(false),
-                                 do_append_hostname(true),
-                                 use_random_hw_addr(false),
-                                 debug_log(DEFAULT_DEBUG_LOG),
-                                 bt709_fix(false),
-                                 max_connections(2),
-                                 remote_clock_offset(0),
-                                 restrict_clients(false),
-                                 setup_legacy_pairing(false),
-                                 require_password(false),
-                                 pin(0),
-                                 registration_list(false),
-                                 db_low(-30.0),
-                                 db_high(0.0),
-                                 taper_volume(false)
+AirPlayServer::AirPlayServer(int port, const char *Name) : server_name(Name),
+                                                           audio_sync(false),
+                                                           video_sync(true),
+                                                           audio_delay_alac(0),
+                                                           audio_delay_aac(0),
+                                                           relaunch_video(false),
+                                                           reset_loop(false),
+                                                           open_connections(0),
+                                                           videosink("autovideosink"),
+                                                           use_video(true),
+                                                           compression_type(0),
+                                                           audiosink("autoaudiosink"),
+                                                           audiodelay(-1),
+                                                           use_audio(true),
+                                                           new_window_closing_behavior(true),
+                                                           close_window(false),
+                                                           video_parser("h264parse"),
+                                                           video_decoder("decodebin"),
+                                                           video_converter("videoconvert"),
+                                                           show_client_FPS_data(false),
+                                                           max_ntp_timeouts(NTP_TIMEOUT_LIMIT),
+                                                           video_dumpfile(nullptr),
+                                                           video_dumpfile_name("videodump"),
+                                                           video_dump_limit(0),
+                                                           video_dumpfile_count(0),
+                                                           video_dump_count(0),
+                                                           dump_video(false),
+                                                           audio_dumpfile(nullptr),
+                                                           audio_dumpfile_name("audiodump"),
+                                                           audio_dump_limit(0),
+                                                           audio_dumpfile_count(0),
+                                                           audio_dump_count(0),
+                                                           dump_audio(false),
+                                                           audio_type(0x00),
+                                                           previous_audio_type(0x00),
+                                                           fullscreen(false),
+                                                           do_append_hostname(true),
+                                                           use_random_hw_addr(false),
+                                                           debug_log(DEFAULT_DEBUG_LOG),
+                                                           bt709_fix(false),
+                                                           max_connections(2),
+                                                           remote_clock_offset(0),
+                                                           restrict_clients(false),
+                                                           setup_legacy_pairing(false),
+                                                           require_password(false),
+                                                           pin(0),
+                                                           registration_list(false),
+                                                           db_low(-30.0),
+                                                           db_high(0.0),
+                                                           taper_volume(false),
+                                                           raop_port(port)
 {
     std::fill(std::begin(display), std::end(display), 0);
     std::fill(std::begin(tcp), std::end(tcp), 0);
@@ -372,7 +373,6 @@ void AirPlayServer::append_hostname()
 #endif
 }
 
-
 std::string AirPlayServer::random_mac()
 {
     char str[3];
@@ -389,146 +389,6 @@ std::string AirPlayServer::random_mac()
         mac_address = mac_address + str;
     }
     return mac_address;
-}
-
-void AirPlayServer::process_metadata(int count, const std::string &dmap_tag, const unsigned char *metadata, int datalen)
-{
-    int dmap_type = 0;
-    /* DMAP metadata items can be strings (dmap_type = 9); other types are byte, short, int, long, date, and list.  *
-     * The DMAP item begins with a 4-character (4-letter) "dmap_tag" string that identifies the type.               */
-
-    if (debug_log)
-    {
-        printf("%d: dmap_tag [%s], %d\n", count, dmap_tag, datalen);
-    }
-
-    /* UTF-8 String-type DMAP tags seen in Apple Music Radio are processed here.   *
-     * (DMAP tags "asal", "asar", "ascp", "asgn", "minm" ). TODO expand this */
-
-    if (datalen == 0)
-    {
-        return;
-    }
-
-    if (dmap_tag[0] == 'a' && dmap_tag[1] == 's')
-    {
-        dmap_type = 9;
-        switch (dmap_tag[2])
-        {
-        case 'a':
-            switch (dmap_tag[3])
-            {
-            case 'a':
-                printf("Album artist: "); /*asaa*/
-                break;
-            case 'l':
-                printf("Album: "); /*asal*/
-                break;
-            case 'r':
-                printf("Artist: "); /*asar*/
-                break;
-            default:
-                dmap_type = 0;
-                break;
-            }
-            break;
-        case 'c':
-            switch (dmap_tag[3])
-            {
-            case 'm':
-                printf("Comment: "); /*ascm*/
-                break;
-            case 'n':
-                printf("Content description: "); /*ascn*/
-                break;
-            case 'p':
-                printf("Composer: "); /*ascp*/
-                break;
-            case 't':
-                printf("Category: "); /*asct*/
-                break;
-            default:
-                dmap_type = 0;
-                break;
-            }
-            break;
-        case 's':
-            switch (dmap_tag[3])
-            {
-            case 'a':
-                printf("Sort Artist: "); /*assa*/
-                break;
-            case 'c':
-                printf("Sort Composer: "); /*assc*/
-                break;
-            case 'l':
-                printf("Sort Album artist: "); /*assl*/
-                break;
-            case 'n':
-                printf("Sort Name: "); /*assn*/
-                break;
-            case 's':
-                printf("Sort Series: "); /*asss*/
-                break;
-            case 'u':
-                printf("Sort Album: "); /*assu*/
-                break;
-            default:
-                dmap_type = 0;
-                break;
-            }
-            break;
-        default:
-            if (strcmp(dmap_tag.c_str(), "asdt") == 0)
-            {
-                printf("Description: ");
-            }
-            else if (strcmp(dmap_tag.c_str(), "asfm") == 0)
-            {
-                printf("Format: ");
-            }
-            else if (strcmp(dmap_tag.c_str(), "asgn") == 0)
-            {
-                printf("Genre: ");
-            }
-            else if (strcmp(dmap_tag.c_str(), "asky") == 0)
-            {
-                printf("Keywords: ");
-            }
-            else if (strcmp(dmap_tag.c_str(), "aslc") == 0)
-            {
-                printf("Long Content Description: ");
-            }
-            else
-            {
-                dmap_type = 0;
-            }
-            break;
-        }
-    }
-    else if (strcmp(dmap_tag.c_str(), "minm") == 0)
-    {
-        dmap_type = 9;
-        printf("Title: ");
-    }
-
-    if (dmap_type == 9)
-    {
-        char *str = (char *)calloc(1, datalen + 1);
-        memcpy(str, metadata, datalen);
-        printf("%s", str);
-        free(str);
-    }
-    else if (debug_log)
-    {
-        for (int i = 0; i < datalen; i++)
-        {
-            if (i > 0 && i % 16 == 0)
-                printf("\n");
-            printf("%2.2x ", (int)metadata[i]);
-        }
-    }
-    printf("\n");
 }
 
 int AirPlayServer::parse_dmap_header(const unsigned char *metadata, char *tag, int *len)
@@ -640,7 +500,6 @@ char *AirPlayServer::create_pin_display(char *pin_str, int margin, int gap)
     snprintf(pos, 2, "\n");
     return pin_image;
 }
-
 
 #ifdef _WIN32
 struct signal_handler
@@ -2458,7 +2317,7 @@ void AirPlayServer::initialize(int argc, char *argv[])
     log_level = debug_log ? LOGGER_DEBUG : LOGGER_INFO;
 }
 
-void AirPlayServer::start(int argc, char *argv[])
+void AirPlayServer::run(int argc, char *argv[])
 {
     raop_callbacks_t raop_cbs;
     memset(&raop_cbs, 0, sizeof(raop_cbs));

@@ -9,6 +9,7 @@
 #include "model_runner.h"
 #include "authorization_api.h"
 #include "web_service.h"
+#include "AirPlayServer.h"
 #include <boost/make_shared.hpp>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
@@ -21,10 +22,14 @@
 #define DEBUG_PRINT(x)
 #endif
 
-int port = 8080;
+int port = 8081;
+unsigned short web_server_port = 8082;
+int threads = 10;
+
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
+std::thread AirPlayServerThread;
 std::thread wifiThread;
 
 bool checkBluetoothAvailability()
@@ -50,9 +55,6 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
-
-    unsigned short web_server_port = 8081;
-    int threads = 10;
 
     std::unordered_set<std::string> allowed_keys;
     allowed_keys.insert("SampleKey");
@@ -102,6 +104,18 @@ int main(int argc, char *argv[])
         std::cerr << "Error: " << e.what() << std::endl;
     }
 
+    try
+    {
+        DEBUG_PRINT("Starting AirPlayServer.");
+        AirPlayServer airplayserver(8080, "JARVIS");
+        AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
+                                          { airplayserver.run(argc, argv); });
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;
     v.reserve(threads - 1);
@@ -129,6 +143,7 @@ int main(int argc, char *argv[])
     }
 
     wifiThread.join();
+    AirPlayServerThread.join();
     std::cout << "Application finished." << std::endl;
     return 0;
 }

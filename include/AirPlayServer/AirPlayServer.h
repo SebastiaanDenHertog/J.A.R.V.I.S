@@ -50,9 +50,9 @@ size_t write_coverart(const char *filename, const void *image, size_t len);
 class AirPlayServer
 {
 public:
-    AirPlayServer();
+    AirPlayServer(int port, const char *name);
     void initialize(int argc, char *argv[]);
-    void start(int argc, char *argv[]);
+    void run(int argc, char *argv[]);
     void stop();
     void reset();
     void restart();
@@ -70,7 +70,6 @@ private:
     void append_hostname();
     bool validate_mac(char *mac_address);
     std::string random_mac();
-    void process_metadata(int count, const std::string &dmap_tag, const unsigned char *metadata, int datalen);
     int parse_dmap_header(const unsigned char *metadata, char *tag, int *len);
     int parse_hw_addr(std::string str, std::vector<char> &hw_addr);
     const char *get_homedir();
@@ -182,7 +181,7 @@ private:
 
     // Define constants
     static constexpr const char *DEFAULT_NAME = "UxPlay";
-    static constexpr bool DEFAULT_DEBUG_LOG = false;
+    static constexpr bool DEFAULT_DEBUG_LOG = true;
     static constexpr unsigned int NTP_TIMEOUT_LIMIT = 5;
     static constexpr int SECOND_IN_USECS = 1000000;
     static constexpr int SECOND_IN_NSECS = 1000000000UL;
