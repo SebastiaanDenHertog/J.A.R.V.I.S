@@ -23,7 +23,7 @@ videoflip_t videoflip[2] = {NONE, NONE};
 static unsigned char mark[] = {0x00, 0x00, 0x00, 0x01};
 static std::string coverart_filename = "";
 static unsigned short display[5] = {0}, tcp[3] = {0}, udp[3] = {0};
-static int max_connections = 2;
+static int nohold = 0;
 static unsigned short raop_port;
 static unsigned short airplay_port;
 static std::vector<std::string> allowed_clients;
@@ -97,7 +97,7 @@ AirPlayServer::AirPlayServer(int port, const char *Name) : server_name(Name),
                                                            db_low(-30.0),
                                                            db_high(0.0),
                                                            taper_volume(false),
-                                                           raop_port(port)
+                                 raop_port(port)
 {
     std::fill(std::begin(display), std::end(display), 0);
     std::fill(std::begin(tcp), std::end(tcp), 0);
@@ -165,6 +165,35 @@ size_t write_coverart(const char *filename, const void *image, size_t len)
     size_t count = fwrite(image, 1, len, fp);
     fclose(fp);
     return count;
+}
+
+std::string AirPlayServer::find_uxplay_config_file()
+{
+    std::string no_config_file = "";
+    const char *homedir = NULL;
+    const char *uxplayrc = NULL;
+    std::string config0, config1, config2;
+    struct stat sb;
+    uxplayrc = getenv("UXPLAYRC"); /* first look for $UXPLAYRC */
+    if (uxplayrc)
+    {
+        config0 = uxplayrc;
+        if (stat(config0.c_str(), &sb) == 0)
+            return config0;
+    }
+    homedir = get_homedir();
+    if (homedir)
+    {
+        config1 = homedir;
+        config1.append("/.uxplayrc");
+        if (stat(config1.c_str(), &sb) == 0)
+            return config1; /* look for ~/.uxplayrc */
+        config2 = homedir;
+        config2.append("/.config/uxplayrc"); /* look for ~/.config/uxplayrc */
+        if (stat(config2.c_str(), &sb) == 0)
+            return config2;
+    }
+    return no_config_file;
 }
 
 std::string AirPlayServer::find_mac()
@@ -373,6 +402,34 @@ void AirPlayServer::append_hostname()
 #endif
 }
 
+bool AirPlayServer::validate_mac(char *mac_address)
+{
+    char c;
+    if (strlen(mac_address) != 17)
+        return false;
+    for (int i = 0; i < 17; i++)
+    {
+        c = *(mac_address + i);
+        if (i % 3 == 2)
+        {
+            if (c != ':')
+                return false;
+        }
+        else
+        {
+            if (c < '0')
+                return false;
+            if (c > '9' && c < 'A')
+                return false;
+            if (c > 'F' && c < 'a')
+                return false;
+            if (c > 'f')
+                return false;
+        }
+    }
+    return true;
+}
+
 std::string AirPlayServer::random_mac()
 {
     char str[3];
@@ -389,6 +446,146 @@ std::string AirPlayServer::random_mac()
         mac_address = mac_address + str;
     }
     return mac_address;
+}
+
+void AirPlayServer::process_metadata(int count, const std::string &dmap_tag, const unsigned char *metadata, int datalen)
+{
+    int dmap_type = 0;
+    /* DMAP metadata items can be strings (dmap_type = 9); other types are byte, short, int, long, date, and list.  *
+     * The DMAP item begins with a 4-character (4-letter) "dmap_tag" string that identifies the type.               */
+
+    if (debug_log)
+    {
+        printf("%d: dmap_tag [%s], %d\n", count, dmap_tag, datalen);
+    }
+
+    /* UTF-8 String-type DMAP tags seen in Apple Music Radio are processed here.   *
+     * (DMAP tags "asal", "asar", "ascp", "asgn", "minm" ). TODO expand this */
+
+    if (datalen == 0)
+    {
+        return;
+    }
+
+    if (dmap_tag[0] == 'a' && dmap_tag[1] == 's')
+    {
+        dmap_type = 9;
+        switch (dmap_tag[2])
+        {
+        case 'a':
+            switch (dmap_tag[3])
+            {
+            case 'a':
+                printf("Album artist: "); /*asaa*/
+                break;
+            case 'l':
+                printf("Album: "); /*asal*/
+                break;
+            case 'r':
+                printf("Artist: "); /*asar*/
+                break;
+            default:
+                dmap_type = 0;
+                break;
+            }
+            break;
+        case 'c':
+            switch (dmap_tag[3])
+            {
+            case 'm':
+                printf("Comment: "); /*ascm*/
+                break;
+            case 'n':
+                printf("Content description: "); /*ascn*/
+                break;
+            case 'p':
+                printf("Composer: "); /*ascp*/
+                break;
+            case 't':
+                printf("Category: "); /*asct*/
+                break;
+            default:
+                dmap_type = 0;
+                break;
+            }
+            break;
+        case 's':
+            switch (dmap_tag[3])
+            {
+            case 'a':
+                printf("Sort Artist: "); /*assa*/
+                break;
+            case 'c':
+                printf("Sort Composer: "); /*assc*/
+                break;
+            case 'l':
+                printf("Sort Album artist: "); /*assl*/
+                break;
+            case 'n':
+                printf("Sort Name: "); /*assn*/
+                break;
+            case 's':
+                printf("Sort Series: "); /*asss*/
+                break;
+            case 'u':
+                printf("Sort Album: "); /*assu*/
+                break;
+            default:
+                dmap_type = 0;
+                break;
+            }
+            break;
+        default:
+            if (strcmp(dmap_tag.c_str(), "asdt") == 0)
+            {
+                printf("Description: ");
+            }
+            else if (strcmp(dmap_tag.c_str(), "asfm") == 0)
+            {
+                printf("Format: ");
+            }
+            else if (strcmp(dmap_tag.c_str(), "asgn") == 0)
+            {
+                printf("Genre: ");
+            }
+            else if (strcmp(dmap_tag.c_str(), "asky") == 0)
+            {
+                printf("Keywords: ");
+            }
+            else if (strcmp(dmap_tag.c_str(), "aslc") == 0)
+            {
+                printf("Long Content Description: ");
+            }
+            else
+            {
+                dmap_type = 0;
+            }
+            break;
+        }
+    }
+    else if (strcmp(dmap_tag.c_str(), "minm") == 0)
+    {
+        dmap_type = 9;
+        printf("Title: ");
+    }
+
+    if (dmap_type == 9)
+    {
+        char *str = (char *)calloc(1, datalen + 1);
+        memcpy(str, metadata, datalen);
+        printf("%s", str);
+        free(str);
+    }
+    else if (debug_log)
+    {
+        for (int i = 0; i < datalen; i++)
+        {
+            if (i > 0 && i % 16 == 0)
+                printf("\n");
+            printf("%2.2x ", (int)metadata[i]);
+        }
+    }
+    printf("\n");
 }
 
 int AirPlayServer::parse_dmap_header(const unsigned char *metadata, char *tag, int *len)
@@ -501,6 +698,7 @@ char *AirPlayServer::create_pin_display(char *pin_str, int margin, int gap)
     return pin_image;
 }
 
+
 #ifdef _WIN32
 struct signal_handler
 {
@@ -610,6 +808,24 @@ bool AirPlayServer::validate_mac(char *mac_address)
         }
     }
     return true;
+}
+
+std::string AirPlayServer::random_mac()
+{
+    char str[3];
+    int octet = rand() % 64;
+    octet = (octet << 1) + LOCAL;
+    octet = (octet << 1) + MULTICAST;
+    snprintf(str, 3, "%02x", octet);
+    std::string mac_address(str);
+    for (int i = 1; i < OCTETS; i++)
+    {
+        mac_address = mac_address + ":";
+        octet = rand() % 256;
+        snprintf(str, 3, "%02x", octet);
+        mac_address = mac_address + str;
+    }
+    return mac_address;
 }
 
 bool AirPlayServer::option_has_value(const int i, const int argc, std::string option, const char *next_arg)
@@ -1444,6 +1660,35 @@ void AirPlayServer::process_metadata(int count, const char *dmap_tag, const unsi
     printf("\n");
 }
 
+int AirPlayServer::parse_dmap_header(const unsigned char *metadata, char *tag, int *len)
+{
+    const unsigned char *header = metadata;
+
+    bool istag = true;
+    for (int i = 0; i < 4; i++)
+    {
+        tag[i] = (char)*header;
+        if (!isalpha(tag[i]))
+        {
+            istag = false;
+        }
+        header++;
+    }
+
+    *len = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        *len <<= 8;
+        *len += (int)*header;
+        header++;
+    }
+    if (!istag || *len < 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int AirPlayServer::register_dnssd()
 {
     int dnssd_error;
@@ -1941,7 +2186,6 @@ extern "C" void AirPlayServer::display_pin(void *cls, char *pin)
         free(image);
     }
 }
-
 void AirPlayServer::audio_set_metadata(void *cls, const void *buffer, int buflen)
 {
     AirPlayServer *server = static_cast<AirPlayServer *>(cls);
