@@ -17,7 +17,7 @@ const char *spiDevicePath = "/dev/spidev0.0";
 const char *i2cDevicePath = "/dev/i2c-1";
 uint8_t i2cDeviceAddress = 0x3b;
 uint8_t micCount = 4;
-uint8_t ledCount = 12;
+uint8_t ledCount = 16;
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;

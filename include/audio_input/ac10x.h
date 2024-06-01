@@ -1,3 +1,4 @@
+
 /*
  * ac10x.h
  *
@@ -21,43 +22,43 @@
 #ifndef __AC10X_H__
 #define __AC10X_H__
 
-#define AC101_I2C_ID		4
-#define _MASTER_AC108		0
-#define _MASTER_AC101		1
-#define _MASTER_MULTI_CODEC	_MASTER_AC101
+#define AC101_I2C_ID 4
+#define _MASTER_AC108 0
+#define _MASTER_AC101 1
+#define _MASTER_MULTI_CODEC _MASTER_AC101
 
 /* enable headset detecting & headset button pressing */
 #define CONFIG_AC101_SWITCH_DETECT
 
 /* obsolete */
-#define CONFIG_AC10X_TRIG_LOCK	0
-
+#define CONFIG_AC10X_TRIG_LOCK 0
 
 #ifdef AC101_DEBG
-    #define AC101_DBG(format,args...)  printk("[AC101] %s() L%d " format, __func__, __LINE__, ##args)
+#define AC101_DBG(format, args...) printk("[AC101] %s() L%d " format, __func__, __LINE__, ##args)
 #else
-    #define AC101_DBG(...)
+#define AC101_DBG(...)
 #endif
-
 
 #include "sound-compatible-4.18.h"
 
 #ifdef CONFIG_AC101_SWITCH_DETECT
-enum headphone_mode_u {
+enum headphone_mode_u
+{
 	HEADPHONE_IDLE,
 	FOUR_HEADPHONE_PLUGIN,
 	THREE_HEADPHONE_PLUGIN,
 };
 #endif
 
-struct ac10x_priv {
+struct ac10x_priv
+{
 	struct i2c_client *i2c[4];
-	struct regmap* i2cmap[4];
+	struct regmap *i2cmap[4];
 	int codec_cnt;
 	unsigned sysclk;
-#define _FREQ_24_576K		24576000
-#define _FREQ_22_579K		22579200
-	unsigned mclk;	/* master clock or aif_clock/aclk */
+#define _FREQ_24_576K 24576000
+#define _FREQ_22_579K 22579200
+	unsigned mclk; /* master clock or aif_clock/aclk */
 	int clk_id;
 	unsigned char i2s_mode;
 	unsigned char data_protocol;
@@ -68,7 +69,7 @@ struct ac10x_priv {
 	/* member for ac101 .begin */
 	struct snd_soc_codec *codec;
 	struct i2c_client *i2c101;
-	struct regmap* regmap101;
+	struct regmap *regmap101;
 
 	struct mutex dac_mutex;
 	u8 dac_enable;
@@ -76,10 +77,10 @@ struct ac10x_priv {
 	u8 aif1_clken;
 
 	struct work_struct codec_resume;
-	struct gpio_desc* gpiod_spk_amp_gate;
+	struct gpio_desc *gpiod_spk_amp_gate;
 
-	#ifdef CONFIG_AC101_SWITCH_DETECT
-	struct gpio_desc* gpiod_irq;
+#ifdef CONFIG_AC101_SWITCH_DETECT
+	struct gpio_desc *gpiod_irq;
 	long irq;
 	volatile int irq_cntr;
 	volatile int pullout_cntr;
@@ -89,21 +90,20 @@ struct ac10x_priv {
 	struct work_struct work_switch;
 	struct work_struct work_clear_irq;
 
-	struct input_dev* inpdev;
-	#endif
+	struct input_dev *inpdev;
+#endif
 	/* member for ac101 .end */
 };
-
 
 /* AC101 DAI operations */
 int ac101_audio_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *codec_dai);
 void ac101_aif_shutdown(struct snd_pcm_substream *substream, struct snd_soc_dai *codec_dai);
 int ac101_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt);
 int ac101_hw_params(struct snd_pcm_substream *substream,
-	struct snd_pcm_hw_params *params,
-	struct snd_soc_dai *codec_dai);
+					struct snd_pcm_hw_params *params,
+					struct snd_soc_dai *codec_dai);
 int ac101_trigger(struct snd_pcm_substream *substream, int cmd,
-	 	  struct snd_soc_dai *dai);
+				  struct snd_soc_dai *dai);
 int ac101_aif_mute(struct snd_soc_dai *codec_dai, int mute);
 
 /* codec driver specific */
@@ -121,6 +121,6 @@ int ac101_remove(struct i2c_client *i2c);
 /* seeed voice card export */
 int seeed_voice_card_register_set_clock(int stream, int (*set_clock)(int, struct snd_pcm_substream *, int, struct snd_soc_dai *));
 
-int ac10x_fill_regcache(struct device* dev, struct regmap* map);
+int ac10x_fill_regcache(struct device *dev, struct regmap *map);
 
-#endif//__AC10X_H__
+#endif //__AC10X_H__

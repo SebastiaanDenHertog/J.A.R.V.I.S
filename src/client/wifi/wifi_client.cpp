@@ -27,11 +27,17 @@ void wifiClient::connectToServer()
     servAddr.sin_addr.s_addr = inet_addr(serverIp);
     servAddr.sin_port = htons(port); // Add this line to set the port
 
-    int connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
-    if (connectionStatus < 0)
+    int connectionStatus = -1;
+    while (connectionStatus < 0)
     {
-        std::cerr << "Error connecting to server" << std::endl;
+        connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+        if (connectionStatus < 0)
+        {
+            std::cerr << "Error connecting to server. Retrying in 5 seconds..." << std::endl;
+            sleep(5);
+        }
     }
+    std::cout << "Successfully connected to the server." << std::endl;
 }
 
 void wifiClient::sendSoundData(const uint8_t *data, size_t length)
