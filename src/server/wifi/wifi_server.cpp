@@ -10,7 +10,7 @@ void processSoundData(const SoundData *inputData, uint8_t *outputData)
     }
 }
 
-wifiServer::wifiServer(int port) : port(port)
+wifiServer::wifiServer(int wifi_port) : wifi_port(wifi_port)
 {
     setupServerSocket();
     bindSocket();
@@ -31,7 +31,7 @@ wifiServer::~wifiServer()
 
 void wifiServer::run()
 {
-    std::cout << "Server running on port " << port << std::endl;
+    
     while (true)
     {
         acceptClient();
@@ -48,8 +48,9 @@ void wifiServer::setupServerSocket()
     }
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(port);
+    servAddr.sin_port = htons(wifi_port);
     std::cout << "Server socket created" << std::endl;
+    std::cout << "Server running on port " << std::to_string(wifi_port) << std::endl;
 }
 
 void wifiServer::bindSocket()
@@ -64,6 +65,7 @@ void wifiServer::bindSocket()
 
 void wifiServer::listenForClients()
 {
+    std::cout << "Server running on port " << std::to_string(wifi_port) << std::endl;
     std::cout << "Waiting for a client to connect..." << std::endl;
     listen(serverSd, 100); // Listen for up to 5 requests at a time
 }

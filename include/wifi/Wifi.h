@@ -55,7 +55,7 @@ struct soundData
 class wifiServer
 {
 public:
-    wifiServer(int port);
+    wifiServer(int wifi_port);
     ~wifiServer();
     void run();
     void setupServerSocket();
@@ -67,7 +67,7 @@ public:
     void closeSocket(int sd);
 
 private:
-    int port;
+    int wifi_port;
     int serverSd;
     sockaddr_in servAddr;
     std::vector<std::thread> clientThreads;
@@ -77,7 +77,7 @@ private:
 class wifiClient
 {
 public:
-    wifiClient(int port, const char *serverIp);
+    wifiClient(int wifi_port, const char *serverIp);
     ~wifiClient();
     void setupClientSocket();
     void connectToServer();
@@ -88,7 +88,7 @@ public:
 
 private:
     const char *serverIp;
-    int port;
+    int wifi_port;
     int serverSd;
     sockaddr_in servAddr;
 };
