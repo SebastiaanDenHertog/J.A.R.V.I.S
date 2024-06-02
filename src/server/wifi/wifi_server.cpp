@@ -31,7 +31,6 @@ wifiServer::~wifiServer()
 
 void wifiServer::run()
 {
-    
     while (true)
     {
         acceptClient();
@@ -43,14 +42,13 @@ void wifiServer::setupServerSocket()
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSd < 0)
     {
-        std::cerr << "Error establishing the server socket" << std::endl;
+        std::cerr << "Error establishing the WifiServer socket" << std::endl;
         exit(0);
     }
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(wifi_port);
-    std::cout << "Server socket created" << std::endl;
-    std::cout << "Server running on port " << std::to_string(wifi_port) << std::endl;
+    std::cout << "WifiServer socket created" << std::endl;
 }
 
 void wifiServer::bindSocket()
@@ -60,14 +58,14 @@ void wifiServer::bindSocket()
     {
         std::cerr << "Error binding socket to local address" << std::endl;
     }
-    std::cout << "Server socket bound to address" << std::endl;
+    std::cout << "WifiServer socket bound to address" << std::endl;
 }
 
 void wifiServer::listenForClients()
 {
-    std::cout << "Server running on port " << std::to_string(wifi_port) << std::endl;
+    std::cout << "WifiServer running on port " << std::to_string(wifi_port) << std::endl;
     std::cout << "Waiting for a client to connect..." << std::endl;
-    listen(serverSd, 100); // Listen for up to 5 requests at a time
+    listen(serverSd, 5); // Listen for up to 5 requests at a time
 }
 
 void wifiServer::acceptClient()
@@ -77,6 +75,7 @@ void wifiServer::acceptClient()
     int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
     if (newSd < 0)
     {
+        std::cerr << "Error accepting client connection" << std::endl;
         return;
     }
     std::cout << "Connected with client!" << std::endl;
