@@ -97,13 +97,15 @@ int main(int argc, char *argv[])
     {
         DEBUG_PRINT("Starting wifiServer.");
         wifiServer server(wifi_port);
-        wifiThread = std::thread(&wifiServer::run, &server);
+        std::thread wifiThread(&wifiServer::run, &server);
+        wifiThread.detach(); // Detach thread so it runs independently
         DEBUG_PRINT("wifiServer running.");
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
     }
+
 
     try
     {

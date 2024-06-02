@@ -1,6 +1,6 @@
 #include "Wifi.h"
 
-wifiClient::wifiClient(int port, const char *serverIp) : serverIp(serverIp), port(port)
+wifiClient::wifiClient(int wifi_port, const char *serverIp) : serverIp(serverIp), wifi_port(wifi_port)
 {
     setupClientSocket();
     connectToServer();
@@ -17,15 +17,15 @@ void wifiClient::setupClientSocket()
     if (serverSd < 0)
     {
         std::cerr << "Error establishing the client socket" << std::endl;
+        exit(0);
     }
     servAddr.sin_family = AF_INET;
-    servAddr.sin_port = htons(port);
+    servAddr.sin_port = htons(wifi_port);
 }
 
 void wifiClient::connectToServer()
 {
     servAddr.sin_addr.s_addr = inet_addr(serverIp);
-    servAddr.sin_port = htons(port); // Add this line to set the port
 
     int connectionStatus = -1;
     while (connectionStatus < 0)

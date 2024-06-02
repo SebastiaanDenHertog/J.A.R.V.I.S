@@ -6,6 +6,7 @@
 #include "ReSpeaker.h"
 #include "Wifi.h"
 #include "HardwareInterface.h"
+#include "AirPlayServer.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -22,6 +23,9 @@ bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 spi_config_t spiConfig;
+std::thread AirPlayServerThread;
+
+int AirPlayServer_port = 8080;
 
 bool checkBluetoothAvailability()
 {
@@ -79,6 +83,20 @@ int main(int argc, char *argv[])
         bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
         DEBUG_PRINT("Bluetooth thread started.");
     }
+    try
+    {
+        argc = NULL;
+        argv = NULL;
+        DEBUG_PRINT("Starting AirPlayServer.");
+        AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
+        airplayserver.initialize(argc, argv);
+        AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
+                                          { airplayserver.run(argc, argv); });
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
 
     try
     {
@@ -129,6 +147,8 @@ int main(int argc, char *argv[])
         bluetoothComm->terminate();
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
+
+    AirPlayServerThread.join();
 
     DEBUG_PRINT("PixelRing animation stopped.");
     std::cout << "Application finished." << std::endl;
