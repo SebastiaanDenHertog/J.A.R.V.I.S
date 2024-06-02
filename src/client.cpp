@@ -29,20 +29,28 @@ int AirPlayServer_port = 8080;
 
 bool checkBluetoothAvailability()
 {
-    int dev_id = hci_get_route(NULL);
-    if (dev_id < 0)
+    try
     {
+        int dev_id = hci_get_route(NULL);
+        if (dev_id < 0)
+        {
+            return false;
+        }
+
+        int sock = hci_open_dev(dev_id);
+        if (sock < 0)
+        {
+            return false;
+        }
+
+        hci_close_dev(sock);
+        return true;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Bluetooth availability check failed: " << e.what() << std::endl;
         return false;
     }
-
-    int sock = hci_open_dev(dev_id);
-    if (sock < 0)
-    {
-        return false;
-    }
-
-    hci_close_dev(sock);
-    return true;
 }
 
 int main(int argc, char *argv[])
@@ -60,42 +68,41 @@ int main(int argc, char *argv[])
     const char *serverIP = argv[1];
     int port = std::stoi(argv[2]);
 
-    if (!checkBluetoothAvailability())
-    {
-        std::cerr << "Bluetooth is not available on this device." << std::endl;
-    }
-    else
-    {
-        setbluetooth = true;
-        DEBUG_PRINT("Bluetooth is available.");
-    }
-
-    if (setbluetooth)
-    {
-        bluetoothComm = std::make_unique<BluetoothComm>();
-        if (!bluetoothComm->initialize())
-        {
-            std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-            return -1;
-        }
-        DEBUG_PRINT("Bluetooth communication initialized.");
-
-        bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
-        DEBUG_PRINT("Bluetooth thread started.");
-    }
     try
     {
+        if (checkBluetoothAvailability())
+        {
+            setbluetooth = true;
+            DEBUG_PRINT("Bluetooth is available.");
+        }
+        std::cerr << "Bluetooth is not available on this device." << std::endl;
+
+        if (setbluetooth)
+        {
+            bluetoothComm = std::make_unique<BluetoothComm>();
+            if (!bluetoothComm->initialize())
+            {
+                std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+            }
+            DEBUG_PRINT("Bluetooth communication initialized.");
+
+            bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
+            DEBUG_PRINT("Bluetooth thread started.");
+        }
+
+        DEBUG_PRINT("Starting AirPlayServer.");
         argc = NULL;
         argv = NULL;
-        DEBUG_PRINT("Starting AirPlayServer.");
         AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
         airplayserver.initialize(argc, argv);
         AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
                                           { airplayserver.run(argc, argv); });
+        DEBUG_PRINT("AirPlayServer started.");
+        AirPlayServerThread.detach();
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
     }
 
     try
@@ -124,15 +131,22 @@ int main(int argc, char *argv[])
 
         while (true)
         {
-            uint32_t dataLength;
-            uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
-            if (audioData != nullptr)
+            try
             {
-                client.sendSoundData(audioData, dataLength);
-                delete[] audioData;
-            }
+                uint32_t dataLength;
+                uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
+                if (audioData != nullptr)
+                {
+                    client.sendSoundData(audioData, dataLength);
+                    delete[] audioData;
+                }
 
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // Adjust the frequency of sending data as needed
+                std::this_thread::sleep_for(std::chrono::seconds(1)); // Adjust the frequency of sending data as needed
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Error during audio data capture or sending: " << e.what() << std::endl;
+            }
         }
     }
     catch (const std::exception &e)
@@ -147,8 +161,6 @@ int main(int argc, char *argv[])
         bluetoothComm->terminate();
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
-
-    AirPlayServerThread.join();
 
     DEBUG_PRINT("PixelRing animation stopped.");
     std::cout << "Application finished." << std::endl;

@@ -1,6 +1,6 @@
 #include "Wifi.h"
 
-wifiClient::wifiClient(int wifi_port, const char *serverIp) : serverIp(serverIp), wifi_port(wifi_port)
+wifiClient::wifiClient(int wifi_port, const char *serverIp) : serverIp(serverIp), wifi_port(wifi_port), serverSd(-1)
 {
     setupClientSocket();
     connectToServer();
@@ -16,7 +16,7 @@ void wifiClient::setupClientSocket()
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSd < 0)
     {
-        std::cerr << "Error establishing the client socket" << std::endl;
+        perror("Error establishing the client socket");
         exit(0);
     }
     servAddr.sin_family = AF_INET;
@@ -33,7 +33,7 @@ void wifiClient::connectToServer()
         connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
         if (connectionStatus < 0)
         {
-            std::cerr << "Error connecting to server. Retrying in 5 seconds..." << std::endl;
+            perror("Error connecting to server. Retrying in 5 seconds...");
             sleep(5);
         }
     }
@@ -58,7 +58,7 @@ void wifiClient::receiveResponse()
     int bytesReceived = recv(serverSd, buffer, 1024, 0);
     if (bytesReceived < 0)
     {
-        std::cerr << "Failed to read data from server." << std::endl;
+        perror("Failed to read data from server");
         return;
     }
 
@@ -67,5 +67,8 @@ void wifiClient::receiveResponse()
 
 void wifiClient::closeSocket(int sd)
 {
-    close(sd);
+    if (sd >= 0)
+    {
+        close(sd);
+    }
 }
