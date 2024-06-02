@@ -658,7 +658,6 @@ char *AirPlayServer::create_pin_display(char *pin_str, int margin, int gap)
     return pin_image;
 }
 
-
 #ifdef _WIN32
 struct signal_handler
 {
@@ -2468,7 +2467,7 @@ void AirPlayServer::run(int argc, char *argv[])
     raop_cbs.check_register = &AirPlayServer::check_register;
     raop_cbs.export_dacp = &AirPlayServer::export_dacp;
     raop_cbs.cls = this;
-    
+
 #ifdef _WIN32 /*  use utf-8 terminal output; don't buffer stdout in WIN32 when debug_log = false */
     SetConsoleOutputCP(CP_UTF8);
     if (!debug_log)
@@ -2478,7 +2477,6 @@ void AirPlayServer::run(int argc, char *argv[])
 #endif
 
     LOGI("An Open-Source AirPlay mirroring and audio-streaming server.");
-
 
     if (audiosink == "0")
     {
@@ -2540,7 +2538,7 @@ void AirPlayServer::run(int argc, char *argv[])
             videosink.append(" fullscreen-toggle-mode=alt-enter");
         }
         log(LOGGER_INFO, "d3d11videosink is being used with option fullscreen-toggle-mode=alt-enter\n"
-             "Use Alt-Enter key combination to toggle into/out of full-screen mode");
+                         "Use Alt-Enter key combination to toggle into/out of full-screen mode");
     }
 
     if (bt709_fix && use_video)

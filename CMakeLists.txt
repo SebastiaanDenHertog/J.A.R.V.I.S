@@ -75,7 +75,6 @@ else()
 endif()
 
 
-
 if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
     set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
@@ -83,26 +82,29 @@ if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
     # Add TensorFlow Lite directory to the project
     add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
-    # Find GLIB using pkg-config
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GLIB2 REQUIRED glib-2.0)
-
-    include_directories(${GLIB2_INCLUDE_DIRS})
-    link_directories(${GLIB2_LIBRARY_DIRS})
-    add_definitions(${GLIB2_CFLAGS_OTHER})
-    if( UNIX AND NOT APPLE )
-    add_definitions( -DSUPPRESS_AVAHI_COMPAT_WARNING )
-    else()
-    set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
-    endif()
-    add_subdirectory( include/AirPlayServer/lib/llhttp )
-    add_subdirectory( include/AirPlayServer/lib/playfair )
-    add_subdirectory( include/AirPlayServer/lib )
-    add_subdirectory( include/AirPlayServer/renderers )
-    if  ( GST_MACOS )
-     add_definitions( -DGST_MACOS )
-     message ( STATUS "define GST_MACOS" )
 endif()
+
+
+# Find GLIB using pkg-config
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
+add_definitions(${GLIB2_CFLAGS_OTHER})
+if( UNIX AND NOT APPLE )
+add_definitions( -DSUPPRESS_AVAHI_COMPAT_WARNING )
+else()
+set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+endif()
+add_subdirectory( include/AirPlayServer/lib/llhttp )
+add_subdirectory( include/AirPlayServer/lib/playfair )
+add_subdirectory( include/AirPlayServer/lib )
+add_subdirectory( include/AirPlayServer/renderers )
+if  ( GST_MACOS )
+    add_definitions( -DGST_MACOS )
+    message ( STATUS "define GST_MACOS" )
+
 
 if  ( GST_124 )
      add_definitions( -DGST_124 )
@@ -148,13 +150,13 @@ if(TARGET_OS STREQUAL "linux")
     if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} ${AIRPLAYSERVER_PATH} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     else()
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c)
+        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
 elseif(TARGET_OS STREQUAL "windows")
         if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
             target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} renderers airplay -lX11)
         else()
-            target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c) 
+            target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11) 
         endif()
 endif()
 
