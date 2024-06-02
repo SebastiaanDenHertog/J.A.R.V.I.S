@@ -6,7 +6,7 @@
 #include <vector>
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/interpreter.h"
-#include "Wifi.h"
+#include "NetworkManager.h"
 
 class ModelRunner {
 private:

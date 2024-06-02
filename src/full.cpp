@@ -8,7 +8,7 @@
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/optional_debug_tools.h>
 #include "BluetoothComm.h"
-#include "Wifi.h"
+#include "NetworkManager.h"
 #include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "model_runner.h"
@@ -123,12 +123,14 @@ int main(int argc, char *argv[])
         bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
         DEBUG_PRINT("Bluetooth thread started.");
     }
-    wifiServer wifiserver(port);
+
     try
     {
-        DEBUG_PRINT("Starting wifiServer.");
-        wifiserver.run();
-        DEBUG_PRINT("wifiServer running.");
+        DEBUG_PRINT("Starting NetworkManager.");
+        NetworkManager networkManager(port);
+        std::thread networkThread(&NetworkManager::runServer, &networkManager);
+        networkThread.detach(); // Detach thread so it runs independently
+        DEBUG_PRINT("NetworkManager running.");
     }
     catch (const std::exception &e)
     {
@@ -150,7 +152,8 @@ int main(int argc, char *argv[])
     std::thread audioThread([&respeaker, audioDataPtr = &audioData]()
                             { respeaker.startCaptureAndUpdateAudioData(*audioDataPtr); });
 
-    std::thread modelThread([&audioData](){
+    std::thread modelThread([&audioData]()
+                            {
         ModelRunner modelRunner("models/whisper_english.tflite");
         modelRunner.modelsLogic(audioData); });
 

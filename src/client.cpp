@@ -4,7 +4,7 @@
 #include "BluetoothComm.h"
 #include "PixelRing.h"
 #include "ReSpeaker.h"
-#include "Wifi.h"
+#include "NetworkManager.h"
 #include "HardwareInterface.h"
 #include "AirPlayServer.h"
 
@@ -75,7 +75,10 @@ int main(int argc, char *argv[])
             setbluetooth = true;
             DEBUG_PRINT("Bluetooth is available.");
         }
-        std::cerr << "Bluetooth is not available on this device." << std::endl;
+        else
+        {
+            std::cerr << "Bluetooth is not available on this device." << std::endl;
+        }
 
         if (setbluetooth)
         {
@@ -83,6 +86,7 @@ int main(int argc, char *argv[])
             if (!bluetoothComm->initialize())
             {
                 std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+                return 1;
             }
             DEBUG_PRINT("Bluetooth communication initialized.");
 
@@ -91,8 +95,6 @@ int main(int argc, char *argv[])
         }
 
         DEBUG_PRINT("Starting AirPlayServer.");
-        argc = NULL;
-        argv = NULL;
         AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
         airplayserver.initialize(argc, argv);
         AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
@@ -127,7 +129,8 @@ int main(int argc, char *argv[])
         pixelring.startAnimation();
         DEBUG_PRINT("PixelRing animation started.");
 
-        wifiClient client(port, serverIP);
+        NetworkManager client(port, serverIP);
+        client.connectClient();
 
         while (true)
         {

@@ -10,11 +10,10 @@
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/optional_debug_tools.h>
 #include "BluetoothComm.h"
-#include "Wifi.h"
+#include "NetworkManager.h"
 #include "model_runner.h"
 #include "authorization_api.h"
 #include "web_service.h"
-#include "AirPlayServer.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -22,16 +21,14 @@
 #define DEBUG_PRINT(x)
 #endif
 
-int AirPlayServer_port = 8080;
-int wifi_port = 8081;
+int network_port = 8081;
 unsigned short web_server_port = 8082;
 int threads = 10;
 
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
-std::thread AirPlayServerThread;
-std::thread wifiThread;
+std::thread networkThread;
 
 bool checkBluetoothAvailability()
 {
@@ -93,31 +90,19 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread started.");
     }
 
+    NetworkManager *server = nullptr;
     try
     {
-        DEBUG_PRINT("Starting wifiServer.");
-        wifiServer server(wifi_port);
-        std::thread wifiThread(&wifiServer::run, &server);
-        wifiThread.detach(); // Detach thread so it runs independently
-        DEBUG_PRINT("wifiServer running.");
+        DEBUG_PRINT("Starting NetworkManager.");
+        server = new NetworkManager(network_port);
+        networkThread = std::thread(&NetworkManager::runServer, server);
+        DEBUG_PRINT("NetworkManager running.");
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-    }
-
-
-    try
-    {
-        DEBUG_PRINT("Starting AirPlayServer.");
-        AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
-        airplayserver.initialize(argc, argv);
-        AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
-                                          { airplayserver.run(argc, argv); });
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
+        delete server;
+        return -1;
     }
 
     // Run the I/O service on the requested number of threads
@@ -146,8 +131,11 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
-    wifiThread.join();
-    AirPlayServerThread.join();
+    if (networkThread.joinable())
+    {
+        networkThread.join();
+    }
+    delete server;
     std::cout << "Application finished." << std::endl;
     return 0;
 }

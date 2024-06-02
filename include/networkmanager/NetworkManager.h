@@ -1,5 +1,5 @@
-#ifndef WIFI_H
-#define WIFI_H
+#ifndef NETWORK_MANAGER_H
+#define NETWORK_MANAGER_H
 
 #include <iostream>
 #include <sys/socket.h>
@@ -52,45 +52,34 @@ struct soundData
     }
 };
 
-class wifiServer
+class NetworkManager
 {
 public:
-    wifiServer(int wifi_port);
-    ~wifiServer();
-    void run();
+    NetworkManager(int port, const char *serverIp = nullptr);
+    ~NetworkManager();
+    void runServer();
+    void connectClient();
+    void sendSoundData(const uint8_t *data, size_t length);
+    void receiveResponse();
+
+private:
     void setupServerSocket();
     void bindSocket();
     void listenForClients();
     void acceptClient();
+    void setupClientSocket();
+    void connectToServer();
     void session(SoundData *soundData);
     void sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType);
     void closeSocket(int sd);
+    static void processSoundData(const SoundData *inputData, uint8_t *outputData);
 
-private:
-    int wifi_port;
+    int port;
+    const char *serverIp;
     int serverSd;
     sockaddr_in servAddr;
     std::vector<std::thread> clientThreads;
     std::mutex clientMutex;
 };
 
-class wifiClient
-{
-public:
-    wifiClient(int wifi_port, const char *serverIp);
-    ~wifiClient();
-    void setupClientSocket();
-    void connectToServer();
-    void session(SoundData *soundData);
-    void sendSoundData(const uint8_t *data, size_t length);
-    void receiveResponse();
-    void closeSocket(int sd);
-
-private:
-    const char *serverIp;
-    int wifi_port;
-    int serverSd;
-    sockaddr_in servAddr;
-};
-
-#endif // WIFI_SERVER_H
+#endif // NETWORK_MANAGER_H

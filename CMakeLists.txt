@@ -121,7 +121,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/bluethoothcomm"
     "${PROJECT_SOURCE_DIR}/include/ml"
     "${PROJECT_SOURCE_DIR}/include/web_server"
-    "${PROJECT_SOURCE_DIR}/include/wifi"
+    "${PROJECT_SOURCE_DIR}/include/networkmanager"
     "${PROJECT_SOURCE_DIR}/include/mediaplayer"
     "${PROJECT_SOURCE_DIR}/include/AirPlayServer"
     "${PROJECT_SOURCE_DIR}/include/hardwareinterface"
