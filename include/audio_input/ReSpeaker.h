@@ -8,7 +8,7 @@
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include <errno.h>
-#include "Wifi.h"
+#include "NetworkManager.h"
 #include "HardwareInterface.h"
 
 class ReSpeaker

@@ -1,11 +1,10 @@
 #include "NetworkManager.h"
-#include "model_runner.h"
 #include <cerrno>
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp)
-    : port(port), serverIp(serverIp), serverSd(-1)
+NetworkManager::NetworkManager(int port, const char *serverIp, bool isServer)
+    : port(port), serverIp(serverIp), serverSd(-1), isServer(isServer)
 {
     if (serverIp == nullptr)
     {
@@ -118,67 +117,7 @@ void NetworkManager::acceptClient()
     std::cout << "Connected with client! New socket descriptor: " << newSd << std::endl;
 
     std::lock_guard<std::mutex> guard(clientMutex);
-    clientThreads.push_back(std::thread([this, newSd]
-                                        {
-        char buffer[1024];
-        memset(buffer, 0, sizeof(buffer));
-
-        int bytesReceived = recv(newSd, buffer, sizeof(buffer), 0);
-        if (bytesReceived < 0)
-        {
-            perror("Failed to read data from client");
-            closeSocket(newSd);
-            return;
-        }
-
-        // Parse the HTTP request to extract the sound data
-        std::string request(buffer);
-        size_t contentLengthPos = request.find("Content-Length: ");
-        if (contentLengthPos == std::string::npos)
-        {
-            sendHttpResponse(newSd, reinterpret_cast<const uint8_t *>("Bad Request"), 11, "400 Bad Request", "text/plain");
-            closeSocket(newSd);
-            return;
-        }
-
-        contentLengthPos += 16; // Move past "Content-Length: "
-        size_t endOfContentLength = request.find("\r\n", contentLengthPos);
-        size_t contentLength = std::stoi(request.substr(contentLengthPos, endOfContentLength - contentLengthPos));
-
-        size_t headerEnd = request.find("\r\n\r\n");
-        size_t dataStart = headerEnd + 4;
-
-        SoundData *soundData = new SoundData(contentLength, newSd);
-        
-        if (dataStart < request.size())
-        {
-            std::memcpy(soundData->data, buffer + dataStart, request.size() - dataStart);
-        }
-
-        // Receive the rest of the data if it wasn't all received in the first recv call
-        size_t bytesRemaining = contentLength - (request.size() - dataStart);
-        size_t offset = request.size() - dataStart;
-        while (bytesRemaining > 0)
-        {
-            int bytesReceived = recv(newSd, buffer, sizeof(buffer), 0);
-            if (bytesReceived <= 0)
-            {
-                perror("Failed to read remaining data from client");
-                closeSocket(newSd);
-                delete soundData;
-                return;
-            }
-            std::memcpy(soundData->data + offset, buffer, bytesReceived);
-            offset += bytesReceived;
-            bytesRemaining -= bytesReceived;
-        }
-
-        // Process the sound data
-        session(soundData);
-
-        // Clean up
-        delete soundData;
-        closeSocket(newSd); }));
+    clientThreads.push_back(std::thread(&NetworkManager::session, this, newSd));
 }
 
 void NetworkManager::setupClientSocket()
@@ -235,20 +174,82 @@ void NetworkManager::receiveResponse()
     std::cout << "Received response from server: " << std::string(buffer, bytesReceived) << std::endl;
 }
 
-void NetworkManager::session(SoundData *soundData)
+void NetworkManager::session(int clientSd)
 {
-    ModelRunner ModelRunner("models/whisper_english.tflite");
-    ModelRunner.modelsLogic(soundData);
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
 
-    uint8_t *processedData = new uint8_t[soundData->length];
+    int bytesReceived = recv(clientSd, buffer, sizeof(buffer), 0);
+    if (bytesReceived < 0)
+    {
+        perror("Failed to read data from client");
+        closeSocket(clientSd);
+        return;
+    }
 
-    // Process the sound data
-    processSoundData(soundData, processedData);
+    // Parse the HTTP request to extract the sound data
+    std::string request(buffer);
+    size_t contentLengthPos = request.find("Content-Length: ");
+    if (contentLengthPos == std::string::npos)
+    {
+        sendHttpResponse(clientSd, reinterpret_cast<const uint8_t *>("Bad Request"), 11, "400 Bad Request", "text/plain");
+        closeSocket(clientSd);
+        return;
+    }
 
-    // Send the processed data back to the client
-    sendHttpResponse(soundData->clientSd, processedData, soundData->length, "200 OK", "application/octet-stream");
+    contentLengthPos += 16; // Move past "Content-Length: "
+    size_t endOfContentLength = request.find("\r\n", contentLengthPos);
+    size_t contentLength = std::stoi(request.substr(contentLengthPos, endOfContentLength - contentLengthPos));
 
-    delete[] processedData;
+    size_t headerEnd = request.find("\r\n\r\n");
+    size_t dataStart = headerEnd + 4;
+
+    SoundData soundData(contentLength, clientSd);
+
+    if (dataStart < request.size())
+    {
+        std::memcpy(soundData.data, buffer + dataStart, request.size() - dataStart);
+    }
+
+    // Receive the rest of the data if it wasn't all received in the first recv call
+    size_t bytesRemaining = contentLength - (request.size() - dataStart);
+    size_t offset = request.size() - dataStart;
+    while (bytesRemaining > 0)
+    {
+        int bytesReceived = recv(clientSd, buffer, sizeof(buffer), 0);
+        if (bytesReceived <= 0)
+        {
+            perror("Failed to read remaining data from client");
+            closeSocket(clientSd);
+            return;
+        }
+        std::memcpy(soundData.data + offset, buffer, bytesReceived);
+        offset += bytesReceived;
+        bytesRemaining -= bytesReceived;
+    }
+
+    if (isServer)
+    {
+        // Process the sound data only if this is the server
+#ifdef SERVER_MODE
+        ModelRunner modelRunner("models/whisper_english.tflite");
+        modelRunner.modelsLogic(&soundData);
+
+        uint8_t *processedData = new uint8_t[soundData.length];
+        processSoundData(&soundData, processedData);
+
+        // Send the processed data back to the client
+        sendHttpResponse(clientSd, processedData, soundData.length, "200 OK", "application/octet-stream");
+        delete[] processedData;
+#endif
+    }
+    else
+    {
+        // Handle client-specific logic here (if any)
+        std::cout << "Client received data of length: " << soundData.length << std::endl;
+    }
+
+    closeSocket(clientSd);
 }
 
 void NetworkManager::sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType)

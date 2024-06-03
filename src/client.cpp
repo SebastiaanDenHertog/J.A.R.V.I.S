@@ -24,7 +24,7 @@ std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
-
+std::thread NetworkSpeechThread;
 int AirPlayServer_port = 8080;
 
 bool checkBluetoothAvailability()
@@ -51,6 +51,15 @@ bool checkBluetoothAvailability()
         std::cerr << "Bluetooth availability check failed: " << e.what() << std::endl;
         return false;
     }
+}
+
+void send_speech_data(NetworkManager &client)
+{
+    // Example sound data to send
+    const char *soundData = "example sound data";
+    client.sendSoundData(reinterpret_cast<const uint8_t *>(soundData), strlen(soundData));
+
+    client.receiveResponse();
 }
 
 int main(int argc, char *argv[])
@@ -93,6 +102,17 @@ int main(int argc, char *argv[])
             bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
             DEBUG_PRINT("Bluetooth thread started.");
         }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
+        return 1;
+    }
+    try
+    {
+        // Clear argv and argc variables
+        argc = 1;
+        argv = new char *[1];
 
         DEBUG_PRINT("Starting AirPlayServer.");
         AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
@@ -105,8 +125,8 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
+        return 1;
     }
-
     try
     {
         spiConfig.mode = 0;
@@ -128,35 +148,27 @@ int main(int argc, char *argv[])
         pixelring.setBrightness(15);
         pixelring.startAnimation();
         DEBUG_PRINT("PixelRing animation started.");
-
-        NetworkManager client(port, serverIP);
-        client.connectClient();
-
-        while (true)
-        {
-            try
-            {
-                uint32_t dataLength;
-                uint8_t *audioData = respeaker.startCaptureAndGetAudioData(dataLength);
-                if (audioData != nullptr)
-                {
-                    client.sendSoundData(audioData, dataLength);
-                    delete[] audioData;
-                }
-
-                std::this_thread::sleep_for(std::chrono::seconds(1)); // Adjust the frequency of sending data as needed
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error during audio data capture or sending: " << e.what() << std::endl;
-            }
-        }
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
+
+    try
+    {
+        NetworkManager client(port, serverIP, false); // This is a client
+        client.connectClient();
+        NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
+        NetworkSpeechThread.detach();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+
+    std::cout << "Client finished." << std::endl;
 
     if (bluetoothComm)
     {
