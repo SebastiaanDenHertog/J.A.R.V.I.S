@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     try
     {
         DEBUG_PRINT("Starting NetworkManager.");
-        server = new NetworkManager(network_port, nullptr, true); // This is a server
+        server = new NetworkManager(network_port, nullptr); // This is a server
         networkThread = std::thread(&NetworkManager::runServer, server);
         DEBUG_PRINT("NetworkManager running.");
     }

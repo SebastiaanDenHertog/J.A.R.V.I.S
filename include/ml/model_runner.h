@@ -7,20 +7,25 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/interpreter.h"
 #include "NetworkManager.h"
+#ifdef SERVER_MODE
+struct SoundData;
+#endif
 
-class ModelRunner {
+class ModelRunner
+{
 private:
     std::unique_ptr<tflite::FlatBufferModel> model_;
     std::unique_ptr<tflite::Interpreter> interpreter_;
     bool CreateInterpreter();
 
 public:
-    explicit ModelRunner(const std::string& model_path);
-    bool IsLoaded() const;
+#ifdef SERVER_MODE
+    ModelRunner(const std::string &modelPath);
     void modelsLogic(SoundData *soundData);
-    // Handle both float and array input
+#endif
+    bool IsLoaded() const;
     float RunModel(float input_data);
-    std::vector<float> RunModel(const std::vector<float>& input_data);
+    std::vector<float> RunModel(const std::vector<float> &input_data);
 };
 
 #endif // MODEL_RUNNER_H

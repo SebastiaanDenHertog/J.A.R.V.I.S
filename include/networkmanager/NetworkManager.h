@@ -14,10 +14,6 @@
 #include <vector>
 #include <mutex>
 
-#ifdef SERVER_MODE
-#include "model_runner.h"
-#endif
-
 struct SoundData
 {
     uint8_t *data;
@@ -34,6 +30,7 @@ struct SoundData
         delete[] data;
     }
 };
+
 struct soundData
 {
     uint8_t *audioData;
@@ -58,7 +55,7 @@ struct soundData
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp = nullptr, bool isServer = true);
+    NetworkManager(int port, const char *serverIp = nullptr);
     ~NetworkManager();
     void runServer();
     void connectClient();
@@ -83,7 +80,6 @@ private:
     sockaddr_in servAddr;
     std::vector<std::thread> clientThreads;
     std::mutex clientMutex;
-    bool isServer; // Flag to determine if the instance should perform model processing
 };
 
 #endif // NETWORK_MANAGER_H

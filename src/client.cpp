@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        NetworkManager client(port, serverIP, false); // This is a client
+        NetworkManager client(port, serverIP); // This is a client
         client.connectClient();
         NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
         NetworkSpeechThread.detach();

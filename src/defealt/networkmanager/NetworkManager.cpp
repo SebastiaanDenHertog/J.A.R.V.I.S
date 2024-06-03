@@ -1,10 +1,13 @@
 #include "NetworkManager.h"
+#ifdef SERVER_MODE
+#include "model_runner.h"
+#endif
 #include <cerrno>
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp, bool isServer)
-    : port(port), serverIp(serverIp), serverSd(-1), isServer(isServer)
+NetworkManager::NetworkManager(int port, const char *serverIp)
+    : port(port), serverIp(serverIp), serverSd(-1)
 {
     if (serverIp == nullptr)
     {
@@ -228,9 +231,6 @@ void NetworkManager::session(int clientSd)
         bytesRemaining -= bytesReceived;
     }
 
-    if (isServer)
-    {
-        // Process the sound data only if this is the server
 #ifdef SERVER_MODE
         ModelRunner modelRunner("models/whisper_english.tflite");
         modelRunner.modelsLogic(&soundData);
@@ -241,13 +241,12 @@ void NetworkManager::session(int clientSd)
         // Send the processed data back to the client
         sendHttpResponse(clientSd, processedData, soundData.length, "200 OK", "application/octet-stream");
         delete[] processedData;
-#endif
-    }
-    else
-    {
+#else
         // Handle client-specific logic here (if any)
         std::cout << "Client received data of length: " << soundData.length << std::endl;
-    }
+#endif
+    
+    
 
     closeSocket(clientSd);
 }
