@@ -75,4 +75,36 @@ sudo apt install libssl-dev
 # Changelog
 
 # Disclaimer
+All the resources in this repository are written using only freely available information from the internet. The code and related resources are meant for 
+educational purposes only. It is the responsibility of the user to make sure all local laws are adhered to.
+This project makes use of a third-party GPL library for handling FairPlay. The legal status of that library is unclear. Should you be a representative of 
+Apple and have any objections against the legality of the library and its use in this project, please contact the developers and the appropriate steps 
+will be taken.
 
+Given the large number of third-party AirPlay receivers (mostly closed-source) available for purchase, it is our understanding that an open source 
+implementation of the same functionality wouldn't violate any of Apple's rights either.
+
+
+
+# UxPlay authors
+
+_[adapted from fdraschbacher's notes on  RPiPlay antecedents]_
+
+The code in this repository accumulated from various sources over time. Here
+is an attempt at listing the various authors and the components they created:
+
+UxPlay was initially created by **antimof** from RPiPlay, by replacing its Raspberry-Pi-adapted OpenMAX  video 
+and audio rendering system with GStreamer rendering for
+desktop Linux systems; the antimof work on code in `renderers/` was later backported to RPiPlay, and the antimof project became dormant, but was later 
+revived at the [current GitHub site](http://github.com/FDH2/UxPlay)  to serve a wider community of users.
+
+The previous authors of code included in UxPlay by inheritance from RPiPlay include:
+
+* **EstebanKubata**: Created a FairPlay library called [PlayFair](https://github.com/EstebanKubata/playfair). Located in the `lib/playfair` folder. License: GNU GPL
+* **Juho Vähä-Herttua** and contributors: Created an AirPlay audio server called [ShairPlay](https://github.com/juhovh/shairplay), including support for Fairplay based on PlayFair. Most of the code   in `lib/` originally stems from this project. License: GNU LGPLv2.1+
+* **dsafa22**: Created an AirPlay 2 mirroring server [AirplayServer](https://github.com/dsafa22/AirplayServer) (seems gone now), for Android based on ShairPlay.   Code is 
+  preserved [here](https://github.com/jiangban/AirplayServer), and [see here](https://github.com/FDH2/UxPlay/wiki/AirPlay2) for  the description 
+  of the analysis of the AirPlay 2 mirror protocol that made RPiPlay possible, by the AirplayServer author. All 
+  code in `lib/` concerning mirroring is dsafa22's work. License: GNU LGPLv2.1+
+* **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The
+   project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
