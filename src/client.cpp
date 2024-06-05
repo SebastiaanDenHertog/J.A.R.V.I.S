@@ -25,7 +25,6 @@ std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
 std::thread NetworkSpeechThread;
-int AirPlayServer_port = 8080;
 
 bool checkBluetoothAvailability()
 {
@@ -69,21 +68,19 @@ void send_speech_data(NetworkManager &client)
     }
 }
 
+void run_main_loop(AirPlayServer *server)
+{
+    server->main_loop();
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
-
-    if (argc != 3)
-    {
-        std::cerr << "Usage: " << argv[0] << " <Server IP> <Port>" << std::endl;
-        return 1;
-    }
-
     const char *serverIP = argv[1];
     int port = std::stoi(argv[2]);
-
+    
     try
     {
         if (checkBluetoothAvailability())
@@ -102,7 +99,6 @@ int main(int argc, char *argv[])
             if (!bluetoothComm->initialize())
             {
                 std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-                return -1;
             }
             DEBUG_PRINT("Bluetooth communication initialized.");
 
@@ -113,22 +109,43 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
-        return -1;
     }
+
+    std::thread networkThread([&]()
+    {
+        try
+        {
+            std::cout << "Client started." << std::endl;
+            NetworkManager client(port, serverIP, false);
+            client.connectClient();
+
+            if (client.isConnectedToSpecialServer())
+            {
+                NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
+                NetworkSpeechThread.detach();
+            }
+            std::cout << "Client finished." << std::endl;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+    });
+    networkThread.detach();
 
     try
     {
-        // Clear argv and argc variables
-        argc = 1;
-        argv = new char *[1];
-
         DEBUG_PRINT("Starting AirPlayServer.");
-        AirPlayServer airplayserver(AirPlayServer_port, "JARVIS");
-        airplayserver.initialize(argc, argv);
+
+        // Clear argv and argc variables
+        argc -= 3;
+        argv += 3;
+        std::cout << argv[0] << std::endl;
+        AirPlayServer airplayserver;
         AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
-                                          { airplayserver.run(argc, argv); });
+                                          {   airplayserver.run(argc, argv);
+                                              airplayserver.main_loop(); });
         DEBUG_PRINT("AirPlayServer started.");
-        AirPlayServerThread.detach();
     }
     catch (const std::exception &e)
     {
@@ -168,26 +185,6 @@ int main(int argc, char *argv[])
 
     hardwareThread.join();
 
-    try
-    {
-        std::cout << "Client started." << std::endl;
-        NetworkManager client(port, serverIP, false);
-        client.connectClient();
-
-        if (client.isConnectedToSpecialServer())
-        {
-            NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
-            NetworkSpeechThread.detach();
-        }
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return -1;
-    }
-
-    std::cout << "Client finished." << std::endl;
-
     if (bluetoothComm)
     {
         bluetoothThread.join();
@@ -197,5 +194,12 @@ int main(int argc, char *argv[])
 
     DEBUG_PRINT("PixelRing animation stopped.");
     std::cout << "Application finished." << std::endl;
+
+    // Wait for the AirPlayServerThread to finish
+    if (AirPlayServerThread.joinable())
+    {
+        AirPlayServerThread.join();
+    }
+
     return 0;
 }
