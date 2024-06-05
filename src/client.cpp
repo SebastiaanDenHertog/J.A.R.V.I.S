@@ -55,11 +55,18 @@ bool checkBluetoothAvailability()
 
 void send_speech_data(NetworkManager &client)
 {
-    // Example sound data to send
-    const char *soundData = "example sound data";
-    client.sendSoundData(reinterpret_cast<const uint8_t *>(soundData), strlen(soundData));
+    try
+    {
+        // Example sound data to send
+        const char *soundData = "example sound data";
+        client.sendSoundData(reinterpret_cast<const uint8_t *>(soundData), strlen(soundData));
 
-    client.receiveResponse();
+        client.receiveResponse();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error sending speech data: " << e.what() << std::endl;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -95,7 +102,7 @@ int main(int argc, char *argv[])
             if (!bluetoothComm->initialize())
             {
                 std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-                return 1;
+                return -1;
             }
             DEBUG_PRINT("Bluetooth communication initialized.");
 
@@ -106,8 +113,9 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
-        return 1;
+        return -1;
     }
+
     try
     {
         // Clear argv and argc variables
@@ -125,47 +133,57 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
-        return 1;
+        return -1;
     }
+
+    std::thread hardwareThread([&]()
+                               {
+        try
+        {
+            spiConfig.mode = 0;
+            spiConfig.speed = 8000000;
+            spiConfig.delay = 0;
+            spiConfig.bits_per_word = 8;
+
+            GPIO gpio(spiDevicePath, &spiConfig);
+            gpio.setDirection(5, true);
+            gpio.setValue(5, true);
+            std::cerr << "Successfully set GPIO5 high." << std::endl;
+
+            ReSpeaker respeaker(i2cDevicePath, i2cDeviceAddress, micCount);
+            PixelRing pixelring(spiDevicePath, &spiConfig, ledCount);
+
+            respeaker.initBoard();
+            DEBUG_PRINT("ReSpeaker initialized.");
+
+            pixelring.setBrightness(15);
+            pixelring.startAnimation();
+            DEBUG_PRINT("PixelRing animation started.");
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return -1;
+        } });
+
+    hardwareThread.join();
+
     try
     {
-        spiConfig.mode = 0;
-        spiConfig.speed = 8000000;
-        spiConfig.delay = 0;
-        spiConfig.bits_per_word = 8;
-
-        GPIO gpio(spiDevicePath, &spiConfig);
-        gpio.setDirection(5, true);
-        gpio.setValue(5, true);
-        std::cerr << "Successfully set GPIO5 high." << std::endl;
-
-        ReSpeaker respeaker(i2cDevicePath, i2cDeviceAddress, micCount);
-        PixelRing pixelring(spiDevicePath, &spiConfig, ledCount);
-
-        respeaker.initBoard();
-        DEBUG_PRINT("ReSpeaker initialized.");
-
-        pixelring.setBrightness(15);
-        pixelring.startAnimation();
-        DEBUG_PRINT("PixelRing animation started.");
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
-    try
-    {
-        NetworkManager client(port, serverIP); // This is a client
+        std::cout << "Client started." << std::endl;
+        NetworkManager client(port, serverIP, false);
         client.connectClient();
-        NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
-        NetworkSpeechThread.detach();
+
+        if (client.isConnectedToSpecialServer())
+        {
+            NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
+            NetworkSpeechThread.detach();
+        }
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
+        return -1;
     }
 
     std::cout << "Client finished." << std::endl;

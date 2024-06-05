@@ -55,12 +55,13 @@ struct soundData
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp = nullptr);
+    NetworkManager(int port, const char *serverIp = nullptr, bool isServer = true);
     ~NetworkManager();
     void runServer();
     void connectClient();
     void sendSoundData(const uint8_t *data, size_t length);
     void receiveResponse();
+    bool isConnectedToSpecialServer() const; // Method to check special server connection
 
 private:
     void setupServerSocket();
@@ -80,6 +81,8 @@ private:
     sockaddr_in servAddr;
     std::vector<std::thread> clientThreads;
     std::mutex clientMutex;
+    bool isServer;                 // Flag to determine if the instance should perform model processing
+    bool connectedToSpecialServer; // Flag to indicate connection to a special server
 };
 
 #endif // NETWORK_MANAGER_H

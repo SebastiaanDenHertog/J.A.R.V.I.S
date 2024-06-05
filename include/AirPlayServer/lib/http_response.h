@@ -21,7 +21,7 @@ http_response_t *http_response_init(const char *protocol, int code, const char *
 
 void http_response_add_header(http_response_t *response, const char *name, const char *value);
 void http_response_finish(http_response_t *response, const char *data, int datalen);
-
+http_response_t *http_response_revise(http_response_t *response, int new_code, const char * new_message);
 void http_response_set_disconnect(http_response_t *response, int disconnect);
 int http_response_get_disconnect(http_response_t *response);
 

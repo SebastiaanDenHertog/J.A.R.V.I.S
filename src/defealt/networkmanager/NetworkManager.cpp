@@ -6,8 +6,8 @@
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp)
-    : port(port), serverIp(serverIp), serverSd(-1)
+NetworkManager::NetworkManager(int port, const char *serverIp, bool isServer)
+    : port(port), serverIp(serverIp), serverSd(-1), isServer(isServer), connectedToSpecialServer(false)
 {
     if (serverIp == nullptr)
     {
@@ -44,6 +44,17 @@ void NetworkManager::runServer()
 void NetworkManager::connectClient()
 {
     connectToServer();
+
+    // Check if connected to the special server
+    if (std::strcmp(serverIp, "192.168.1.100") == 0) // Replace with your special server IP
+    {
+        connectedToSpecialServer = true;
+    }
+}
+
+bool NetworkManager::isConnectedToSpecialServer() const
+{
+    return connectedToSpecialServer;
 }
 
 void NetworkManager::setupServerSocket()
@@ -231,6 +242,9 @@ void NetworkManager::session(int clientSd)
         bytesRemaining -= bytesReceived;
     }
 
+    if (isServer)
+    {
+        // Process the sound data only if this is the server
 #ifdef SERVER_MODE
         ModelRunner modelRunner("models/whisper_english.tflite");
         modelRunner.modelsLogic(&soundData);
@@ -241,12 +255,13 @@ void NetworkManager::session(int clientSd)
         // Send the processed data back to the client
         sendHttpResponse(clientSd, processedData, soundData.length, "200 OK", "application/octet-stream");
         delete[] processedData;
-#else
+#endif
+    }
+    else
+    {
         // Handle client-specific logic here (if any)
         std::cout << "Client received data of length: " << soundData.length << std::endl;
-#endif
-    
-    
+    }
 
     closeSocket(clientSd);
 }

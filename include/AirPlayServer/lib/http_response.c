@@ -52,6 +52,30 @@ http_response_add_data(http_response_t *response, const char *data, int datalen)
 }
 
 http_response_t *
+http_response_revise(http_response_t *response, int new_code, const char *new_message) {
+    assert(response);
+    char *data = response->data;
+    int datalen = response->data_length;
+    const char *protocol = (const char *) response->data;
+    for (int i = 0; i < response->data_length; i++) {
+        if (*data == ' ') {
+            *data = '\0';
+        } else if (*data == '\n') {
+            data ++;
+            datalen--;
+            break;
+        }
+        data++;
+        datalen--;
+    }
+    http_response_t *revised_response = http_response_init(protocol, new_code, new_message);
+    http_response_add_data(revised_response, data, datalen);
+    free(response->data);
+    free(response);
+    return revised_response;
+}
+
+http_response_t *
 http_response_init(const char *protocol, int code, const char *message)
 {
     http_response_t *response;
