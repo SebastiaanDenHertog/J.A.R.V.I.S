@@ -9,6 +9,9 @@
 NetworkManager::NetworkManager(int port, const char *serverIp, bool isServer)
     : port(port), serverIp(serverIp), serverSd(-1), isServer(isServer), connectedToSpecialServer(false)
 {
+    // print the server ip and port
+    std::cout << "Server IP: " << serverIp << std::endl;
+    std::cout << "Server Port: " << port << std::endl;
     if (serverIp == nullptr)
     {
         setupServerSocket();
@@ -46,7 +49,7 @@ void NetworkManager::connectClient()
     connectToServer();
 
     // Check if connected to the special server
-    if (std::strcmp(serverIp, "192.168.1.100") == 0) // Replace with your special server IP
+    if (std::strcmp(serverIp, "84.106.59.35") == 0) // Replace with your special server IP
     {
         connectedToSpecialServer = true;
     }
