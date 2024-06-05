@@ -49,13 +49,12 @@
 class AirPlayServer
 {
 public:
-    AirPlayServer(int port, const char *name);
-    void initialize(int argc, char *argv[]);
+    AirPlayServer();
     void run(int argc, char *argv[]);
-    void stop();
-    void reset();
     void restart();
     void reconnect();
+    void main_loop();
+    void cleanup();
 
 private:
     bool file_has_write_access(const char *filename);
@@ -110,7 +109,9 @@ private:
     static void register_client(void *cls, const char *device_id, const char *client_pk, const char *client_name);
     static bool check_register(void *cls, const char *client_pk);
     static void report_client_request(void *cls, char *deviceid, char *model, char *name, bool *admit);
-
+    static gboolean sigterm_callback(gpointer loop);
+    static gboolean sigint_callback(gpointer loop);
+    static gboolean reset_callback(gpointer loop);
     static dnssd_t *dnssd;
     static raop_t *raop;
     static logger_t *render_logger;

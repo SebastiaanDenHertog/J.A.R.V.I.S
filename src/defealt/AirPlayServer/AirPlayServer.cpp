@@ -1,5 +1,8 @@
 #include "AirPlayServer.h"
 #include <csignal>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
 // Static member initialization if needed
 dnssd_t *AirPlayServer::dnssd = NULL;
@@ -18,13 +21,9 @@ const unsigned char empty_image[] = {
 
 static unsigned char mark[] = {0x00, 0x00, 0x00, 0x01};
 static std::string coverart_filename = "";
-static unsigned short display[5] = {0}, tcp[3] = {0}, udp[3] = {0};
 static int nohold = 0;
-static unsigned short raop_port;
-static unsigned short airplay_port;
 static std::vector<std::string> allowed_clients;
 static std::vector<std::string> blocked_clients;
-static bool restrict_clients;
 static std::string keyfile = "";
 static std::string mac_address = "";
 static std::string dacpfile = "";
@@ -35,8 +34,8 @@ static std::vector<std::string> registered_keys;
 #define LOCAL 1
 #define OCTETS 6
 
-AirPlayServer::AirPlayServer(int port, const char *name)
-    : server_name(name),
+AirPlayServer::AirPlayServer()
+    : server_name("JARVIS"),
       audio_sync(false),
       video_sync(true),
       audio_delay_alac(0),
@@ -45,7 +44,7 @@ AirPlayServer::AirPlayServer(int port, const char *name)
       reset_loop(false),
       open_connections(0),
       videosink("autovideosink"),
-      use_video(true),
+      use_video(false), // breaks
       compression_type(0),
       audiosink("autoaudiosink"),
       audiodelay(-1),
@@ -85,8 +84,7 @@ AirPlayServer::AirPlayServer(int port, const char *name)
       registration_list(false),
       db_low(-30.0),
       db_high(0.0),
-      taper_volume(false),
-      raop_port(port)
+      taper_volume(false)
 {
     std::fill(std::begin(display), std::end(display), 0);
     std::fill(std::begin(tcp), std::end(tcp), 0);
@@ -2430,45 +2428,79 @@ void AirPlayServer::read_config_file(const char *filename, const char *uxplay_na
     }
 }
 
-void AirPlayServer::initialize(int argc, char *argv[])
+gboolean AirPlayServer::reset_callback(gpointer loop)
 {
-    std::string config_file = find_uxplay_config_file();
-    if (!config_file.empty())
+    AirPlayServer *server = static_cast<AirPlayServer *>(loop);
+    if (server->reset_loop)
     {
-        read_config_file(config_file.c_str(), argv[0]);
+        g_main_loop_quit((GMainLoop *)loop);
     }
-    parse_arguments(argc, argv);
-    log_level = debug_log ? LOGGER_DEBUG : LOGGER_INFO;
+    return TRUE;
+}
+
+gboolean AirPlayServer::sigint_callback(gpointer loop)
+{
+    AirPlayServer *server = static_cast<AirPlayServer *>(loop);
+    server->relaunch_video = false;
+    g_main_loop_quit((GMainLoop *)loop);
+    return TRUE;
+}
+
+gboolean AirPlayServer::sigterm_callback(gpointer loop)
+{
+    AirPlayServer *server = static_cast<AirPlayServer *>(loop);
+    server->relaunch_video = false;
+    g_main_loop_quit((GMainLoop *)loop);
+    return TRUE;
+}
+
+void AirPlayServer::main_loop()
+{
+    guint gst_bus_watch_id = 0;
+    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
+    relaunch_video = false;
+    if (use_video)
+    {
+        relaunch_video = true;
+        gst_bus_watch_id = (guint)video_renderer_listen((void *)loop);
+    }
+    guint reset_watch_id = g_timeout_add(100, (GSourceFunc)reset_callback, (gpointer)loop);
+    guint sigterm_watch_id = g_unix_signal_add(SIGTERM, (GSourceFunc)sigterm_callback, (gpointer)loop);
+    guint sigint_watch_id = g_unix_signal_add(SIGINT, (GSourceFunc)sigint_callback, (gpointer)loop);
+    g_main_loop_run(loop);
+
+    if (gst_bus_watch_id > 0)
+        g_source_remove(gst_bus_watch_id);
+    if (sigint_watch_id > 0)
+        g_source_remove(sigint_watch_id);
+    if (sigterm_watch_id > 0)
+        g_source_remove(sigterm_watch_id);
+    if (reset_watch_id > 0)
+        g_source_remove(reset_watch_id);
+    g_main_loop_unref(loop);
 }
 
 void AirPlayServer::run(int argc, char *argv[])
 {
-    raop_callbacks_t raop_cbs;
-    memset(&raop_cbs, 0, sizeof(raop_cbs));
-    raop_cbs.conn_init = &AirPlayServer::conn_init;
-    raop_cbs.conn_destroy = &AirPlayServer::conn_destroy;
-    raop_cbs.conn_reset = &AirPlayServer::conn_reset;
-    raop_cbs.conn_teardown = &AirPlayServer::conn_teardown;
-    raop_cbs.audio_process = &AirPlayServer::audio_process;
-    raop_cbs.video_process = &AirPlayServer::video_process;
-    raop_cbs.audio_flush = &AirPlayServer::audio_flush;
-    raop_cbs.video_flush = &AirPlayServer::video_flush;
-    raop_cbs.video_pause = &AirPlayServer::video_pause;
-    raop_cbs.video_resume = &AirPlayServer::video_resume;
-    raop_cbs.audio_set_volume = &AirPlayServer::audio_set_volume;
-    raop_cbs.audio_get_format = &AirPlayServer::audio_get_format;
-    raop_cbs.video_report_size = &AirPlayServer::video_report_size;
-    raop_cbs.audio_set_metadata = &AirPlayServer::audio_set_metadata;
-    raop_cbs.audio_set_coverart = &AirPlayServer::audio_set_coverart;
-    raop_cbs.audio_set_progress = &AirPlayServer::audio_set_progress;
-    raop_cbs.report_client_request = &AirPlayServer::report_client_request;
-    raop_cbs.display_pin = &AirPlayServer::display_pin;
-    raop_cbs.register_client = &AirPlayServer::register_client;
-    raop_cbs.check_register = &AirPlayServer::check_register;
-    raop_cbs.export_dacp = &AirPlayServer::export_dacp;
-    raop_cbs.cls = this;
+    std::vector<char> server_hw_addr;
+    std::string config_file = "";
 
-#ifdef _WIN32 /*  use utf-8 terminal output; don't buffer stdout in WIN32 when debug_log = false */
+#ifdef SUPPRESS_AVAHI_COMPAT_WARNING
+    static char avahi_compat_nowarn[] = "AVAHI_COMPAT_NOWARN=1";
+    if (!getenv("AVAHI_COMPAT_NOWARN"))
+        putenv(avahi_compat_nowarn);
+#endif
+
+    config_file = find_uxplay_config_file();
+    if (config_file.length())
+    {
+        read_config_file(config_file.c_str(), argv[0]);
+    }
+    parse_arguments(argc, argv);
+
+    log_level = (debug_log ? LOGGER_DEBUG : LOGGER_INFO);
+
+#ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     if (!debug_log)
     {
@@ -2507,16 +2539,17 @@ void AirPlayServer::run(int argc, char *argv[])
     }
 
 #if __APPLE__
-    log(LOGGER_INFO, "macOS detected: use -nc option as workaround for GStreamer problem");
+    LOGI("macOS detected: use -nc option as workaround for GStreamer problem");
     new_window_closing_behavior = false;
 #endif
 
     if (videosink == "0")
     {
         use_video = false;
-        videosink = "fakesink";
-        log(LOGGER_INFO, "video_disabled");
-        display[3] = 1;
+        videosink.erase();
+        videosink.append("fakesink");
+        LOGI("video_disabled");
+        display[3] = 1; /* set fps to 1 frame per sec when no video will be shown */
     }
 
     if (fullscreen && use_video)
@@ -2537,8 +2570,8 @@ void AirPlayServer::run(int argc, char *argv[])
         {
             videosink.append(" fullscreen-toggle-mode=alt-enter");
         }
-        log(LOGGER_INFO, "d3d11videosink is being used with option fullscreen-toggle-mode=alt-enter\n"
-                         "Use Alt-Enter key combination to toggle into/out of full-screen mode");
+        LOGI("d3d11videosink is being used with option fullscreen-toggle-mode=alt-enter\n"
+             "Use Alt-Enter key combination to toggle into/out of full-screen mode");
     }
 
     if (bt709_fix && use_video)
@@ -2560,7 +2593,7 @@ void AirPlayServer::run(int argc, char *argv[])
         }
     }
 
-    if (require_password && registration_list && !pairing_register.empty())
+    if (require_password && registration_list && strlen(pairing_register.c_str()))
     {
         size_t len = 0;
         std::string key;
@@ -2573,12 +2606,12 @@ void AirPlayServer::run(int argc, char *argv[])
             {
                 line[44] = '\0';
                 std::string pk = line.c_str();
-                registered_keys.push_back(pk);
+                registered_keys.push_back(key.assign(pk));
                 clients++;
             }
             if (clients)
             {
-                log(LOGGER_INFO, "Register %s lists %d pin-registered clients", pairing_register.c_str(), clients);
+                LOGI("Register %s lists %d pin-registered clients", pairing_register.c_str(), clients);
             }
             file.close();
         }
@@ -2589,18 +2622,19 @@ void AirPlayServer::run(int argc, char *argv[])
         const char *homedir = get_homedir();
         if (homedir)
         {
+            keyfile.erase();
             keyfile = homedir;
             keyfile.append("/.uxplay.pem");
         }
         else
         {
-            log(LOGGER_ERR, "could not determine $HOME: public key will not be saved, and so will not be persistent");
+            LOGE("could not determine $HOME: public key wiil not be saved, and so will not be persistent");
         }
     }
 
-    if (!keyfile.empty())
+    if (keyfile != "")
     {
-        log(LOGGER_INFO, "public key storage (for persistence) is in %s", keyfile.c_str());
+        LOGI("public key storage (for persistence) is in %s", keyfile.c_str());
     }
 
     if (do_append_hostname)
@@ -2610,7 +2644,8 @@ void AirPlayServer::run(int argc, char *argv[])
 
     if (!gstreamer_init())
     {
-        log(LOGGER_ERR, "stopping");
+        LOGE("stopping");
+        exit(1);
     }
 
     render_logger = logger_init();
@@ -2623,7 +2658,7 @@ void AirPlayServer::run(int argc, char *argv[])
     }
     else
     {
-        log(LOGGER_INFO, "audio_disabled");
+        LOGI("audio_disabled");
     }
 
     if (use_video)
@@ -2635,96 +2670,62 @@ void AirPlayServer::run(int argc, char *argv[])
 
     if (udp[0])
     {
-        log(LOGGER_INFO, "using network ports UDP %d %d %d TCP %d %d %d", udp[0], udp[1], udp[2], tcp[0], tcp[1], tcp[2]);
+        LOGI("using network ports UDP %d %d %d TCP %d %d %d", udp[0], udp[1], udp[2], tcp[0], tcp[1], tcp[2]);
     }
 
     if (!use_random_hw_addr)
     {
-        if (mac_address.empty())
+        if (strlen(mac_address.c_str()) == 0)
         {
             mac_address = find_mac();
-            log(LOGGER_INFO, "using system MAC address %s", mac_address.c_str());
+            LOGI("using system MAC address %s", mac_address.c_str());
         }
         else
         {
-            log(LOGGER_INFO, "using user-set MAC address %s", mac_address.c_str());
+            LOGI("using user-set MAC address %s", mac_address.c_str());
         }
     }
     if (mac_address.empty())
     {
         srand(time(NULL) * getpid());
         mac_address = random_mac();
-        log(LOGGER_INFO, "using randomly-generated MAC address %s", mac_address.c_str());
+        LOGI("using randomly-generated MAC address %s", mac_address.c_str());
     }
     parse_hw_addr(mac_address, server_hw_addr);
 
-    if (!coverart_filename.empty())
-    {
-        log(LOGGER_INFO, "any AirPlay audio cover-art will be written to file  %s", coverart_filename.c_str());
-        write_coverart(coverart_filename.c_str(), (const void *)empty_image, sizeof(empty_image));
-    }
-}
-
-void AirPlayServer::stop()
-{
-    if (use_audio)
-    {
-        audio_renderer_destroy();
-    }
-    if (use_video)
-    {
-        video_renderer_destroy();
-    }
-    logger_destroy(render_logger);
-    render_logger = NULL;
-    if (audio_dumpfile)
-    {
-        fclose(audio_dumpfile);
-    }
-    if (video_dumpfile)
-    {
-        fwrite(mark, 1, sizeof(mark), video_dumpfile);
-        fclose(video_dumpfile);
-    }
     if (coverart_filename.length())
     {
-        remove(coverart_filename.c_str());
+        LOGI("any AirPlay audio cover-art will be written to file  %s", coverart_filename.c_str());
+        write_coverart(coverart_filename.c_str(), (const void *)empty_image, sizeof(empty_image));
     }
-}
-
-void AirPlayServer::reset()
-{
-    if (raop)
-    {
-        raop_destroy(raop);
-        raop = NULL;
-    }
-    return;
+    restart();
 }
 
 void AirPlayServer::restart()
 {
     if (start_dnssd(server_hw_addr, server_name))
     {
-        stop();
+        cleanup();
     }
     if (start_raop_server(display, tcp, udp, debug_log))
     {
         stop_dnssd();
-        stop();
+        cleanup();
     }
     if (register_dnssd())
     {
         stop_raop_server();
         stop_dnssd();
-        stop();
+        cleanup();
     }
+    reconnect();
 }
 
 void AirPlayServer::reconnect()
 {
     compression_type = 0;
     close_window = new_window_closing_behavior;
+    main_loop();
     if (relaunch_video || reset_loop)
     {
         if (reset_loop)
@@ -2765,5 +2766,33 @@ void AirPlayServer::reconnect()
         LOGI("Stopping...");
         stop_raop_server();
         stop_dnssd();
+    }
+    cleanup();
+}
+
+void AirPlayServer::cleanup()
+{
+    if (use_audio)
+    {
+        audio_renderer_destroy();
+    }
+    if (use_video)
+    {
+        video_renderer_destroy();
+    }
+    logger_destroy(render_logger);
+    render_logger = NULL;
+    if (audio_dumpfile)
+    {
+        fclose(audio_dumpfile);
+    }
+    if (video_dumpfile)
+    {
+        fwrite(mark, 1, sizeof(mark), video_dumpfile);
+        fclose(video_dumpfile);
+    }
+    if (coverart_filename.length())
+    {
+        remove(coverart_filename.c_str());
     }
 }
