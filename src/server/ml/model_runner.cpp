@@ -14,49 +14,65 @@ class Tokenizer
 public:
     Tokenizer()
     {
-        // Initialize with some basic tokens if needed
-        token_map_["<PAD>"] = 0;
-        token_map_["<UNK>"] = 1;
-        next_id_ = 2;
+        word_index_["<OOV>"] = 1;
     }
 
-    std::vector<int> Tokenize(const std::string &input)
+    void fit_on_texts(const std::vector<std::string> &texts)
     {
-        std::vector<int> tokens;
-        std::istringstream stream(input);
+        int index = 2; // Start indexing from 2 as 1 is for OOV
+        for (const auto &text : texts)
+        {
+            std::istringstream iss(text);
+            std::string word;
+            while (iss >> word)
+            {
+                if (word_index_.find(word) == word_index_.end())
+                {
+                    word_index_[word] = index++;
+                }
+            }
+        }
+    }
+
+    std::vector<int> texts_to_sequences(const std::string &text)
+    {
+        std::vector<int> sequence;
+        std::istringstream iss(text);
         std::string word;
-        while (stream >> word)
+        while (iss >> word)
         {
-            tokens.push_back(GetTokenId(word));
+            if (word_index_.find(word) != word_index_.end())
+            {
+                sequence.push_back(word_index_[word]);
+            }
+            else
+            {
+                sequence.push_back(word_index_["<OOV>"]);
+            }
         }
-        return tokens;
-    }
-
-    void EnsureSize(std::vector<int> &tokens, size_t expected_size)
-    {
-        if (tokens.size() < expected_size)
-        {
-            tokens.resize(expected_size, token_map_["<PAD>"]); // Pad with PAD token
-        }
-        else if (tokens.size() > expected_size)
-        {
-            tokens.resize(expected_size); // Truncate if needed
-        }
+        return sequence;
     }
 
 private:
-    int GetTokenId(const std::string &word)
+    std::unordered_map<std::string, int> word_index_;
+};
+
+// Utility function to prepare input
+std::vector<float> prepare_input(const std::string &text, Tokenizer &tokenizer, size_t sequence_length)
+{
+    std::vector<int> sequence = tokenizer.texts_to_sequences(text);
+    if (sequence.size() > sequence_length)
     {
-        if (token_map_.find(word) == token_map_.end())
-        {
-            token_map_[word] = next_id_++;
-        }
-        return token_map_[word];
+        sequence.resize(sequence_length);
+    }
+    else
+    {
+        sequence.resize(sequence_length, 0); // Padding with 0s
     }
 
-    std::unordered_map<std::string, int> token_map_;
-    int next_id_;
-};
+    std::vector<float> input(sequence.begin(), sequence.end());
+    return input;
+}
 
 bool ModelRunner::LoadModel(const std::string &model_path, const std::string &model_name)
 {
@@ -117,27 +133,6 @@ bool ModelRunner::IsLoaded(const std::string &model_name) const
     return models_.find(model_name) != models_.end() && interpreters_.find(model_name) != interpreters_.end();
 }
 
-bool ModelRunner::RunWakeUpModel(const std::string &input, float &result)
-{
-    if (!IsLoaded("wake_up"))
-    {
-        std::cerr << "Wake up model is not loaded properly." << std::endl;
-        return false;
-    }
-    auto &interpreter = interpreters_.at("wake_up");
-    float *input_tensor = interpreter->typed_input_tensor<float>(0);
-    std::memcpy(input_tensor, input.data(), input.size() * sizeof(float));
-
-    if (interpreter->Invoke() != kTfLiteOk)
-    {
-        std::cerr << "Failed to invoke wake up model!" << std::endl;
-        return false;
-    }
-
-    result = *interpreter->typed_output_tensor<float>(0);
-    return true;
-}
-
 bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &result)
 {
     if (!IsLoaded("nlp"))
@@ -146,70 +141,193 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         return false;
     }
     auto &interpreter = interpreters_.at("nlp");
+    if (interpreter == nullptr)
+    {
+        std::cerr << "Interpreter is null." << std::endl;
+        return false;
+    }
 
     // Tokenize and preprocess the input
     Tokenizer tokenizer;
-    std::vector<int> tokenized_input = tokenizer.Tokenize(input);
-    TfLiteTensor *input_tensor = interpreter->tensor(interpreter->inputs()[0]);
-    size_t expected_size = input_tensor->bytes / sizeof(int);
-    tokenizer.EnsureSize(tokenized_input, expected_size);
-
-    // Ensure the input tensor has the correct size
-    if (input_tensor->bytes != tokenized_input.size() * sizeof(int))
+    std::vector<std::string> texts = {"sample text 1", "sample text 2"}; // Replace with actual text corpus
+    tokenizer.fit_on_texts(texts);
+    std::vector<int> tokenized_input = tokenizer.texts_to_sequences(input);
+    if (tokenized_input.size() < 20)
     {
-        std::cerr << "Input tensor size mismatch! Expected " << input_tensor->bytes << " bytes but got " << tokenized_input.size() * sizeof(int) << " bytes." << std::endl;
-        return false;
+        tokenized_input.resize(20, 0); // Padding with 0s
+    }
+    else if (tokenized_input.size() > 20)
+    {
+        tokenized_input.resize(20); // Truncate if needed
     }
 
-    // Use safer copying method
+    // Print input tensor indices for debugging
+    std::cerr << "Input tensor indices:" << std::endl;
+    for (size_t i = 0; i < interpreter->inputs().size(); ++i)
+    {
+        std::cerr << "Input " << i << ": " << interpreter->inputs()[i] << std::endl;
+    }
+
+    // Set the input tensor
     int *input_data = interpreter->typed_input_tensor<int>(0);
-    for (size_t i = 0; i < tokenized_input.size(); ++i)
+    if (input_data == nullptr)
     {
-        input_data[i] = tokenized_input[i];
+        std::cerr << "Input tensor data is null." << std::endl;
+        return false;
     }
+    std::memcpy(input_data, tokenized_input.data(), tokenized_input.size() * sizeof(int));
 
-    // Log details for debugging
-    std::cout << "Input Tensor Size: " << input_tensor->bytes << " bytes" << std::endl;
-    std::cout << "Tokenized Input Size: " << tokenized_input.size() * sizeof(int) << " bytes" << std::endl;
+    // Prepare additional inputs (using dummy data as an example)
+    std::vector<float> additional_features = {0.0, 1.0, 0.0, 1.0};   // Example features
+    std::vector<int> entity_input = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; // Example entity input
 
-    // Ensure correct tensor data type
-    if (input_tensor->type != kTfLiteInt32)
+    // Verify tensor index before accessing
+    if (interpreter->inputs().size() > 1)
     {
-        std::cerr << "Input tensor type mismatch! Expected kTfLiteInt32 but got " << input_tensor->type << std::endl;
+        float *feature_input_data = interpreter->typed_input_tensor<float>(1);
+        if (feature_input_data == nullptr)
+        {
+            std::cerr << "Feature input tensor data is null." << std::endl;
+            return false;
+        }
+        std::memcpy(feature_input_data, additional_features.data(), additional_features.size() * sizeof(float));
+        std::cerr << "Feature input tensor size: " << additional_features.size() << std::endl;
+    }
+    else
+    {
+        std::cerr << "Feature input tensor index 1 is out of bounds." << std::endl;
         return false;
     }
 
-    // Log input tensor details
-    std::cout << "Input Tensor Details: " << std::endl;
-    std::cout << "  Type: " << input_tensor->type << std::endl;
-    std::cout << "  Dimensions: " << input_tensor->dims->size << std::endl;
-    for (int i = 0; i < input_tensor->dims->size; ++i)
+    if (interpreter->inputs().size() > 2)
     {
-        std::cout << "    Dim " << i << ": " << input_tensor->dims->data[i] << std::endl;
+        int *entity_input_data = interpreter->typed_input_tensor<int>(2);
+        if (entity_input_data == nullptr)
+        {
+            std::cerr << "Entity input tensor data is null." << std::endl;
+            return false;
+        }
+        std::memcpy(entity_input_data, entity_input.data(), entity_input.size() * sizeof(int));
+        std::cerr << "Entity input tensor size: " << entity_input.size() << std::endl;
     }
-
-    // Check the data to be copied
-    std::cout << "Tokenized input data: ";
-    for (const auto &token : tokenized_input)
+    else
     {
-        std::cout << token << " ";
-    }
-    std::cout << std::endl;
-
-    // Check memory boundaries before copying
-    std::cout << "Input tensor data address: " << static_cast<void *>(input_tensor->data.raw) << std::endl;
-    std::cout << "Tokenized input data address: " << static_cast<void *>(tokenized_input.data()) << std::endl;
-
-    // Additional check before invoking
-    if (interpreter->inputs().size() == 0 || interpreter->outputs().size() == 0)
-    {
-        std::cerr << "Interpreter inputs/outputs are not set correctly." << std::endl;
+        std::cerr << "Entity input tensor index 2 is out of bounds." << std::endl;
         return false;
     }
 
+    // Invoke the model
     if (interpreter->Invoke() != kTfLiteOk)
     {
         std::cerr << "Failed to invoke NLP model!" << std::endl;
+        return false;
+    }
+
+    const TfLiteTensor *output_tensor = interpreter->tensor(interpreter->outputs()[0]);
+    if (output_tensor == nullptr)
+    {
+        std::cerr << "Output tensor is null." << std::endl;
+        return false;
+    }
+
+    // Handle different output tensor types
+    switch (output_tensor->type)
+    {
+    case kTfLiteFloat32:
+    {
+        const float *output = interpreter->typed_output_tensor<float>(0);
+        if (output == nullptr)
+        {
+            std::cerr << "Typed output tensor is null." << std::endl;
+            return false;
+        }
+        result.assign(output, output + output_tensor->dims->data[output_tensor->dims->size - 1]);
+        break;
+    }
+    case kTfLiteUInt8:
+    {
+        const uint8_t *output = interpreter->typed_output_tensor<uint8_t>(0);
+        if (output == nullptr)
+        {
+            std::cerr << "Typed output tensor is null." << std::endl;
+            return false;
+        }
+        result.resize(output_tensor->dims->data[output_tensor->dims->size - 1]);
+        for (size_t i = 0; i < result.size(); ++i)
+        {
+            result[i] = static_cast<float>(output[i]); // Convert to float
+        }
+        break;
+    }
+    case kTfLiteInt64:
+    {
+        const int64_t *output = interpreter->typed_output_tensor<int64_t>(0);
+        if (output == nullptr)
+        {
+            std::cerr << "Typed output tensor is null." << std::endl;
+            return false;
+        }
+        result.resize(output_tensor->dims->data[output_tensor->dims->size - 1]);
+        for (size_t i = 0; i < result.size(); ++i)
+        {
+            result[i] = static_cast<float>(output[i]); // Convert to float
+        }
+        break;
+    }
+    case kTfLiteInt32:
+    {
+        const int32_t *output = interpreter->typed_output_tensor<int32_t>(0);
+        if (output == nullptr)
+        {
+            std::cerr << "Typed output tensor is null." << std::endl;
+            return false;
+        }
+        result.resize(output_tensor->dims->data[output_tensor->dims->size - 1]);
+        for (size_t i = 0; i < result.size(); ++i)
+        {
+            result[i] = static_cast<float>(output[i]); // Convert to float
+        }
+        break;
+    }
+    default:
+        std::cerr << "Unsupported output tensor type: " << output_tensor->type << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool ModelRunner::RunLLMModel(const std::string &input_text, std::string &result)
+{
+    if (!IsLoaded("llm"))
+    {
+        std::cerr << "LLM model is not loaded properly." << std::endl;
+        return false;
+    }
+
+    // Tokenize and prepare input
+    Tokenizer tokenizer;
+    std::vector<std::string> texts = {"sample text 1", "sample text 2"}; // Replace with actual text corpus
+    tokenizer.fit_on_texts(texts);
+    std::vector<float> input = prepare_input(input_text, tokenizer, 100);
+
+    auto &interpreter = interpreters_.at("llm");
+
+    // Ensure the input tensor has the correct size
+    TfLiteTensor *input_tensor = interpreter->tensor(interpreter->inputs()[0]);
+    size_t expected_size = input_tensor->bytes / sizeof(float);
+    if (input.size() != expected_size)
+    {
+        std::cerr << "Input tensor size mismatch! Expected " << expected_size << " elements but got " << input.size() << " elements." << std::endl;
+        return false;
+    }
+
+    // Copy the input data to the input tensor
+    std::memcpy(input_tensor->data.raw, input.data(), input_tensor->bytes);
+
+    if (interpreter->Invoke() != kTfLiteOk)
+    {
+        std::cerr << "Failed to invoke LLM model!" << std::endl;
         return false;
     }
 
@@ -229,85 +347,24 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         std::cout << "    Dim " << i << ": " << output_tensor->dims->data[i] << std::endl;
     }
 
-    // Check if the output tensor type matches the expected type
-    if (output_tensor->type == kTfLiteFloat32)
+    // Handle different output tensor types
+    switch (output_tensor->type)
+    {
+    case kTfLiteFloat32:
     {
         const float *output = interpreter->typed_output_tensor<float>(0);
-        if (output == nullptr)
-        {
-            std::cerr << "Typed output tensor is null." << std::endl;
-            return false;
-        }
-        result.assign(output, output + output_tensor->dims->data[output_tensor->dims->size - 1]);
+        size_t output_size = output_tensor->bytes / sizeof(float);
+        result.assign(reinterpret_cast<const char *>(output), output_size * sizeof(float));
+        break;
     }
-    else if (output_tensor->type == kTfLiteUInt8)
-    {
-        const uint8_t *output = interpreter->typed_output_tensor<uint8_t>(0);
-        if (output == nullptr)
-        {
-            std::cerr << "Typed output tensor is null." << std::endl;
-            return false;
-        }
-        result.resize(output_tensor->dims->data[output_tensor->dims->size - 1]);
-        for (size_t i = 0; i < result.size(); ++i)
-        {
-            result[i] = static_cast<float>(output[i]); // Convert directly to float
-        }
-    }
-    else
-    {
-        std::cerr << "Unsupported output tensor type: " << output_tensor->type << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-bool ModelRunner::RunLLMModel(const std::vector<float> &input, std::string &result)
-{
-    if (!IsLoaded("llm"))
-    {
-        std::cerr << "LLM model is not loaded properly." << std::endl;
-        return false;
-    }
-    auto &interpreter = interpreters_.at("llm");
-
-    // Ensure the input tensor has the correct size
-    TfLiteTensor *input_tensor = interpreter->tensor(interpreter->inputs()[0]);
-    if (input_tensor->bytes != input.size() * sizeof(float))
-    {
-        std::cerr << "Input tensor size mismatch! Expected " << input_tensor->bytes << " bytes but got " << input.size() * sizeof(float) << " bytes." << std::endl;
-        return false;
-    }
-
-    std::memcpy(input_tensor->data.raw, input.data(), input_tensor->bytes);
-
-    if (interpreter->Invoke() != kTfLiteOk)
-    {
-        std::cerr << "Failed to invoke LLM model!" << std::endl;
-        return false;
-    }
-
-    const TfLiteTensor *output_tensor = interpreter->tensor(interpreter->outputs()[0]);
-    if (output_tensor == nullptr)
-    {
-        std::cerr << "Output tensor is null." << std::endl;
-        return false;
-    }
-
-    if (output_tensor->type == kTfLiteFloat32)
-    {
-        const float *output = interpreter->typed_output_tensor<float>(0);
-        result.assign(reinterpret_cast<const char *>(output), interpreter->tensor(interpreter->outputs()[0])->bytes);
-    }
-    else if (output_tensor->type == kTfLiteUInt8)
+    case kTfLiteUInt8:
     {
         const uint8_t *output = interpreter->typed_output_tensor<uint8_t>(0);
         std::vector<uint8_t> output_vector(output, output + output_tensor->dims->data[output_tensor->dims->size - 1]);
         result.assign(output_vector.begin(), output_vector.end());
+        break;
     }
-    else
-    {
+    default:
         std::cerr << "Unsupported output tensor type for LLM model: " << output_tensor->type << std::endl;
         return false;
     }
@@ -327,19 +384,6 @@ std::string ModelRunner::GetUserContext() const
 
 Task ModelRunner::predictTaskFromInput(const std::string &input)
 {
-    float wake_up_result;
-    if (!RunWakeUpModel(input, wake_up_result))
-    {
-        std::cerr << "Failed to run wake up model." << std::endl;
-        return Task("", 0, "error");
-    }
-
-    if (wake_up_result < 0.5)
-    {
-        std::cerr << "Wake up model did not detect activation." << std::endl;
-        return Task("", 0, "no_wake_up");
-    }
-
     std::vector<float> nlp_result;
     if (!RunNLPModel(input, nlp_result))
     {
@@ -348,7 +392,7 @@ Task ModelRunner::predictTaskFromInput(const std::string &input)
     }
 
     std::string llm_result;
-    if (!RunLLMModel(nlp_result, llm_result))
+    if (!RunLLMModel(input, llm_result))
     {
         std::cerr << "Failed to run LLM model." << std::endl;
         return Task("", 0, "error");

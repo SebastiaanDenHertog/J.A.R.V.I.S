@@ -9,6 +9,9 @@
 #include <tensorflow/lite/interpreter.h>
 #include "Task.h"
 
+// Forward declare Tokenizer class
+class Tokenizer;
+
 class ModelRunner
 {
 private:
@@ -22,9 +25,8 @@ private:
 public:
     ModelRunner(const std::unordered_map<std::string, std::string> &model_paths);
     bool IsLoaded(const std::string &model_name) const;
-    bool RunWakeUpModel(const std::string &input, float &result);
     bool RunNLPModel(const std::string &input, std::vector<float> &result);
-    bool RunLLMModel(const std::vector<float> &input, std::string &result);
+    bool RunLLMModel(const std::string &input_text, std::string &result);
     void StoreUserContext(const std::string &context);
     std::string GetUserContext() const;
     Task predictTaskFromInput(const std::string &input);
