@@ -14,6 +14,8 @@
 #include "model_runner.h"
 #include "authorization_api.h"
 #include "web_service.h"
+#include "InputHandler.h"
+#include "TaskProcessor.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -21,14 +23,15 @@
 #define DEBUG_PRINT(x)
 #endif
 
-int network_port = 8081;
-unsigned short web_server_port = 8082;
+int network_port = 15880;
+unsigned short web_server_port = 15881;
 int threads = 10;
 
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 std::thread networkThread;
+std::thread terminalInputThread;
 
 bool checkBluetoothAvailability()
 {
@@ -48,11 +51,41 @@ bool checkBluetoothAvailability()
     return true;
 }
 
+void terminalInputFunction(ModelRunner &modelRunner, InputHandler &inputHandler)
+{
+    while (true)
+    {
+        std::string user_input;
+        std::cout << "Enter text for prediction (type 'exit' to quit): ";
+        std::getline(std::cin, user_input);
+
+        if (user_input == "exit")
+        {
+            break;
+        }
+
+        Task predicted_task = modelRunner.predictTaskFromInput(user_input);
+        inputHandler.addTask(predicted_task);
+    }
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
+
+    bool use_terminal_input = false;
+    if (argc > 1)
+    {
+        for (int i = 1; i < argc; ++i)
+        {
+            if (std::string(argv[i]) == "--terminal-input")
+            {
+                use_terminal_input = true;
+            }
+        }
+    }
 
     std::unordered_set<std::string> allowed_keys;
     allowed_keys.insert("SampleKey");
@@ -90,26 +123,65 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread started.");
     }
 
-    NetworkManager *server = nullptr;
-    try
+    // Initialize the model runner
+    std::unordered_map<std::string, std::string> model_paths = {
+        {"wake_up", "models/dnn_model.tflite"},
+        {"nlp", "models/nlp_model.tflite"},
+        {"llm", "models/llm_model.tflite"},
+        // Add other models here if needed
+    };
+    ModelRunner modelRunner(model_paths);
+    for (const auto &model : model_paths)
     {
-        DEBUG_PRINT("Starting NetworkManager.");
-        server = new NetworkManager(network_port, nullptr); // This is a server
-        networkThread = std::thread(&NetworkManager::runServer, server);
-        DEBUG_PRINT("NetworkManager running.");
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        delete server;
-        return -1;
+        if (!modelRunner.IsLoaded(model.first))
+        {
+            std::cerr << "Failed to load the model: " << model.first << std::endl;
+        }
     }
 
+    NetworkManager *server = nullptr;
+    
+        try
+        {
+            DEBUG_PRINT("Starting NetworkManager as server.");
+            server = new NetworkManager(network_port, nullptr, &modelRunner); // Pass ModelRunner to NetworkManager
+            networkThread = std::thread(&NetworkManager::runServer, server);
+            DEBUG_PRINT("NetworkManager running.");
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+            delete server;
+            return -1;
+        }
+    
+    // Task handling
+    InputHandler inputHandler;
+    TaskProcessor taskProcessor(modelRunner);
+
+    if (use_terminal_input)
+    {
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(inputHandler));
+    }
+
+    // Process tasks
+    std::thread taskProcessingThread([&]()
+                                     {
+        while (true)
+        {
+            while (inputHandler.hasTasks())
+            {
+                Task task = inputHandler.getNextTask();
+                taskProcessor.processTask(task);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } });
+
     // Run the I/O service on the requested number of threads
-    std::vector<std::thread> v;
-    v.reserve(threads - 1);
+    std::vector<std::thread> ioThreads;
+    ioThreads.reserve(threads - 1);
     for (auto i = threads - 1; i > 0; --i)
-        v.emplace_back(
+        ioThreads.emplace_back(
             [&ctx]
             {
                 ctx->get_ioc()->run();
@@ -117,7 +189,7 @@ int main(int argc, char *argv[])
     ctx->get_ioc()->run();
 
     // Wait for all threads to finish
-    for (auto &t : v)
+    for (auto &t : ioThreads)
     {
         if (t.joinable())
         {
@@ -135,6 +207,17 @@ int main(int argc, char *argv[])
     {
         networkThread.join();
     }
+
+    if (use_terminal_input && terminalInputThread.joinable())
+    {
+        terminalInputThread.join();
+    }
+
+    if (taskProcessingThread.joinable())
+    {
+        taskProcessingThread.join();
+    }
+
     delete server;
     std::cout << "Application finished." << std::endl;
     return 0;

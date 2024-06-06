@@ -4,28 +4,30 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include "tensorflow/lite/model.h"
-#include "tensorflow/lite/interpreter.h"
-#include "NetworkManager.h"
-#ifdef SERVER_MODE
-struct SoundData;
-#endif
+#include <unordered_map>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/interpreter.h>
+#include "Task.h"
 
 class ModelRunner
 {
 private:
-    std::unique_ptr<tflite::FlatBufferModel> model_;
-    std::unique_ptr<tflite::Interpreter> interpreter_;
-    bool CreateInterpreter();
+    std::unordered_map<std::string, std::unique_ptr<tflite::FlatBufferModel>> models_;
+    std::unordered_map<std::string, std::unique_ptr<tflite::Interpreter>> interpreters_;
+    std::string user_context;
+
+    bool LoadModel(const std::string &model_path, const std::string &model_name);
+    bool CreateInterpreter(const std::string &model_name);
 
 public:
-#ifdef SERVER_MODE
-    ModelRunner(const std::string &modelPath);
-    void modelsLogic(SoundData *soundData);
-#endif
-    bool IsLoaded() const;
-    float RunModel(float input_data);
-    std::vector<float> RunModel(const std::vector<float> &input_data);
+    ModelRunner(const std::unordered_map<std::string, std::string> &model_paths);
+    bool IsLoaded(const std::string &model_name) const;
+    bool RunWakeUpModel(const std::string &input, float &result);
+    bool RunNLPModel(const std::string &input, std::vector<float> &result);
+    bool RunLLMModel(const std::vector<float> &input, std::string &result);
+    void StoreUserContext(const std::string &context);
+    std::string GetUserContext() const;
+    Task predictTaskFromInput(const std::string &input);
 };
 
 #endif // MODEL_RUNNER_H

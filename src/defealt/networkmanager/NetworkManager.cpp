@@ -1,16 +1,13 @@
 #include "NetworkManager.h"
-#ifdef SERVER_MODE
 #include "model_runner.h"
-#endif
 #include <cerrno>
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp, bool isServer)
-    : port(port), serverIp(serverIp), serverSd(-1), isServer(isServer), connectedToSpecialServer(false)
+NetworkManager::NetworkManager(int port, const char *serverIp, ModelRunner *modelRunner)
+    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false), modelRunner(modelRunner)
 {
-    // print the server ip and port
-    std::cout << "Server IP: " << serverIp << std::endl;
+    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
     std::cout << "Server Port: " << port << std::endl;
     if (serverIp == nullptr)
     {
@@ -48,8 +45,7 @@ void NetworkManager::connectClient()
 {
     connectToServer();
 
-    // Check if connected to the special server
-    if (std::strcmp(serverIp, "84.106.59.35") == 0) // Replace with your special server IP
+    if (std::strcmp(serverIp, "84.106.59.35") == 0)
     {
         connectedToSpecialServer = true;
     }
@@ -204,7 +200,6 @@ void NetworkManager::session(int clientSd)
         return;
     }
 
-    // Parse the HTTP request to extract the sound data
     std::string request(buffer);
     size_t contentLengthPos = request.find("Content-Length: ");
     if (contentLengthPos == std::string::npos)
@@ -228,7 +223,6 @@ void NetworkManager::session(int clientSd)
         std::memcpy(soundData.data, buffer + dataStart, request.size() - dataStart);
     }
 
-    // Receive the rest of the data if it wasn't all received in the first recv call
     size_t bytesRemaining = contentLength - (request.size() - dataStart);
     size_t offset = request.size() - dataStart;
     while (bytesRemaining > 0)
@@ -245,26 +239,12 @@ void NetworkManager::session(int clientSd)
         bytesRemaining -= bytesReceived;
     }
 
-    if (isServer)
-    {
-        // Process the sound data only if this is the server
-#ifdef SERVER_MODE
-        ModelRunner modelRunner("models/whisper_english.tflite");
-        modelRunner.modelsLogic(&soundData);
+    // Forward data to ModelRunner and get the result
+    uint8_t processedData[soundData.length];
+    processSoundData(&soundData, processedData);
 
-        uint8_t *processedData = new uint8_t[soundData.length];
-        processSoundData(&soundData, processedData);
-
-        // Send the processed data back to the client
-        sendHttpResponse(clientSd, processedData, soundData.length, "200 OK", "application/octet-stream");
-        delete[] processedData;
-#endif
-    }
-    else
-    {
-        // Handle client-specific logic here (if any)
-        std::cout << "Client received data of length: " << soundData.length << std::endl;
-    }
+    // Send the processed data back to the client
+    sendHttpResponse(clientSd, processedData, soundData.length, "200 OK", "application/octet-stream");
 
     closeSocket(clientSd);
 }
@@ -299,4 +279,16 @@ void NetworkManager::processSoundData(const SoundData *inputData, uint8_t *outpu
     {
         outputData[i] = ~inputData->data[i]; // Example processing: inverting the data
     }
+}
+
+bool NetworkManager::isKnownClient(int clientSd)
+{
+    std::lock_guard<std::mutex> guard(clientMutex);
+    return knownClients.find(clientSd) != knownClients.end();
+}
+
+void NetworkManager::addKnownClient(int clientSd)
+{
+    std::lock_guard<std::mutex> guard(clientMutex);
+    knownClients.insert(clientSd);
 }

@@ -1,18 +1,17 @@
-#ifndef NETWORK_MANAGER_H
-#define NETWORK_MANAGER_H
+#ifndef NETWORKMANAGER_H
+#define NETWORKMANAGER_H
 
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
 #include <string>
-#include <sstream>
-#include <cstring>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <thread>
 #include <vector>
+#include <thread>
 #include <mutex>
+#include <unordered_set>
+#include <sstream>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+class ModelRunner; // Forward declaration
 
 struct SoundData
 {
@@ -55,15 +54,28 @@ struct soundData
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp = nullptr, bool isServer = true);
+    NetworkManager(int port, const char *serverIp, ModelRunner *modelRunner);
     ~NetworkManager();
+
     void runServer();
     void connectClient();
+    bool isConnectedToSpecialServer() const;
+
     void sendSoundData(const uint8_t *data, size_t length);
     void receiveResponse();
-    bool isConnectedToSpecialServer() const; // Method to check special server connection
 
 private:
+    int port;
+    const char *serverIp;
+    int serverSd;
+    sockaddr_in servAddr;
+    bool connectedToSpecialServer;
+    std::vector<std::thread> clientThreads;
+    std::mutex clientMutex;
+    std::unordered_set<int> knownClients;
+
+    ModelRunner *modelRunner; // Pointer to ModelRunner
+
     void setupServerSocket();
     void bindSocket();
     void listenForClients();
@@ -73,16 +85,9 @@ private:
     void session(int clientSd);
     void sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType);
     void closeSocket(int sd);
-    static void processSoundData(const SoundData *inputData, uint8_t *outputData);
-
-    int port;
-    const char *serverIp;
-    int serverSd;
-    sockaddr_in servAddr;
-    std::vector<std::thread> clientThreads;
-    std::mutex clientMutex;
-    bool isServer;                 // Flag to determine if the instance should perform model processing
-    bool connectedToSpecialServer; // Flag to indicate connection to a special server
+    void processSoundData(const SoundData *inputData, uint8_t *outputData);
+    bool isKnownClient(int clientSd);
+    void addKnownClient(int clientSd);
 };
 
-#endif // NETWORK_MANAGER_H
+#endif // NETWORKMANAGER_H

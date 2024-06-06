@@ -30,7 +30,7 @@ uint8_t ledCount = 12;
 bool setbluetooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
-soundData audioData;
+SoundData audioData;
 const char *spiDevicePath = "/dev/spidev0.0";
 
 void setGPIOHigh()
