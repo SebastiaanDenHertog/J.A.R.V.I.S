@@ -117,7 +117,7 @@ endif()
 # Include directories for the project
 include_directories(
     "${PROJECT_SOURCE_DIR}/include/additions"
-    "${PROJECT_SOURCE_DIR}/include/audio_input"
+    "${PROJECT_SOURCE_DIR}/include/ac10x"
     "${PROJECT_SOURCE_DIR}/include/bluethoothcomm"
     "${PROJECT_SOURCE_DIR}/include/ml"
     "${PROJECT_SOURCE_DIR}/include/web_server"
@@ -125,6 +125,9 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/mediaplayer"
     "${PROJECT_SOURCE_DIR}/include/AirPlayServer"
     "${PROJECT_SOURCE_DIR}/include/hardwareinterface"
+    "${PROJECT_SOURCE_DIR}/include/task"
+    "${PROJECT_SOURCE_DIR}/include/taskprocessor"
+    "${PROJECT_SOURCE_DIR}/include/inputhandler"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
