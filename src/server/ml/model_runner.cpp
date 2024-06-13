@@ -50,6 +50,12 @@ public:
                 sequence.push_back(word_index_["<OOV>"]);
             }
         }
+        std::cerr << "Text: " << text << " -> Sequence: ";
+        for (const auto &val : sequence)
+        {
+            std::cerr << val << " ";
+        }
+        std::cerr << std::endl;
         return sequence;
     }
 
@@ -149,7 +155,7 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
 
     // Tokenize and preprocess the input
     Tokenizer tokenizer;
-    std::vector<std::string> texts = {"sample text 1", "sample text 2"}; // Replace with actual text corpus
+    std::vector<std::string> texts = {input}; // Replace with actual text corpus
     tokenizer.fit_on_texts(texts);
     std::vector<int> tokenized_input = tokenizer.texts_to_sequences(input);
     if (tokenized_input.size() < 20)
@@ -161,13 +167,6 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         tokenized_input.resize(20); // Truncate if needed
     }
 
-    // Print input tensor indices for debugging
-    std::cerr << "Input tensor indices:" << std::endl;
-    for (size_t i = 0; i < interpreter->inputs().size(); ++i)
-    {
-        std::cerr << "Input " << i << ": " << interpreter->inputs()[i] << std::endl;
-    }
-
     // Set the input tensor
     int *input_data = interpreter->typed_input_tensor<int>(0);
     if (input_data == nullptr)
@@ -177,43 +176,35 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
     }
     std::memcpy(input_data, tokenized_input.data(), tokenized_input.size() * sizeof(int));
 
-    // Prepare additional inputs (using dummy data as an example)
+    // Debug: Print input data
+    std::cerr << "Input tensor values: ";
+    for (const auto &val : tokenized_input)
+    {
+        std::cerr << val << " ";
+    }
+    std::cerr << std::endl;
+
+    // Prepare additional inputs (dummy data as an example)
     std::vector<float> additional_features = {0.0, 1.0, 0.0, 1.0};   // Example features
     std::vector<int> entity_input = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; // Example entity input
 
-    // Verify tensor index before accessing
+    // Set additional input tensors
     if (interpreter->inputs().size() > 1)
     {
         float *feature_input_data = interpreter->typed_input_tensor<float>(1);
-        if (feature_input_data == nullptr)
+        if (feature_input_data != nullptr)
         {
-            std::cerr << "Feature input tensor data is null." << std::endl;
-            return false;
+            std::memcpy(feature_input_data, additional_features.data(), additional_features.size() * sizeof(float));
         }
-        std::memcpy(feature_input_data, additional_features.data(), additional_features.size() * sizeof(float));
-        std::cerr << "Feature input tensor size: " << additional_features.size() << std::endl;
-    }
-    else
-    {
-        std::cerr << "Feature input tensor index 1 is out of bounds." << std::endl;
-        return false;
     }
 
     if (interpreter->inputs().size() > 2)
     {
         int *entity_input_data = interpreter->typed_input_tensor<int>(2);
-        if (entity_input_data == nullptr)
+        if (entity_input_data != nullptr)
         {
-            std::cerr << "Entity input tensor data is null." << std::endl;
-            return false;
+            std::memcpy(entity_input_data, entity_input.data(), entity_input.size() * sizeof(int));
         }
-        std::memcpy(entity_input_data, entity_input.data(), entity_input.size() * sizeof(int));
-        std::cerr << "Entity input tensor size: " << entity_input.size() << std::endl;
-    }
-    else
-    {
-        std::cerr << "Entity input tensor index 2 is out of bounds." << std::endl;
-        return false;
     }
 
     // Invoke the model
@@ -223,6 +214,7 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         return false;
     }
 
+    // Handle different output tensor types and extract detailed results
     const TfLiteTensor *output_tensor = interpreter->tensor(interpreter->outputs()[0]);
     if (output_tensor == nullptr)
     {
@@ -230,7 +222,15 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         return false;
     }
 
-    // Handle different output tensor types
+    // Print output tensor details
+    std::cerr << "Output Tensor Details:" << std::endl;
+    std::cerr << "  Type: " << output_tensor->type << std::endl;
+    std::cerr << "  Dimensions: " << output_tensor->dims->size << std::endl;
+    for (int i = 0; i < output_tensor->dims->size; ++i)
+    {
+        std::cerr << "    Dim " << i << ": " << output_tensor->dims->data[i] << std::endl;
+    }
+
     switch (output_tensor->type)
     {
     case kTfLiteFloat32:
@@ -294,6 +294,14 @@ bool ModelRunner::RunNLPModel(const std::string &input, std::vector<float> &resu
         return false;
     }
 
+    // Print detailed results for debugging
+    std::cerr << "Model output: ";
+    for (const auto &val : result)
+    {
+        std::cerr << val << " ";
+    }
+    std::cerr << std::endl;
+
     return true;
 }
 
@@ -325,6 +333,27 @@ bool ModelRunner::RunLLMModel(const std::string &input_text, std::string &result
     // Copy the input data to the input tensor
     std::memcpy(input_tensor->data.raw, input.data(), input_tensor->bytes);
 
+    // Additional debugging information
+    std::cerr << "Running LLM model with input size: " << input.size() << std::endl;
+
+    // Debugging: print the input values
+    std::cerr << "Input values: ";
+    for (const auto &val : input)
+    {
+        std::cerr << val << " ";
+    }
+    std::cerr << std::endl;
+
+    // Additional validation step: print the input tensor details
+    std::cerr << "Input tensor details:" << std::endl;
+    std::cerr << "  Tensor type: " << input_tensor->type << std::endl;
+    std::cerr << "  Dimensions: " << input_tensor->dims->size << std::endl;
+    for (int i = 0; i < input_tensor->dims->size; ++i)
+    {
+        std::cerr << "    Dim " << i << ": " << input_tensor->dims->data[i] << std::endl;
+    }
+
+    // Invoke the model
     if (interpreter->Invoke() != kTfLiteOk)
     {
         std::cerr << "Failed to invoke LLM model!" << std::endl;

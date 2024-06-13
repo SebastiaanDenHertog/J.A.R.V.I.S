@@ -64,6 +64,12 @@ public:
     void sendSoundData(const uint8_t *data, size_t length);
     void receiveResponse();
 
+    void send(int sd, const char *data, size_t length, int flags);
+    void send(int sd, const uint8_t *data, size_t length, int flags); 
+    int recv(int sd, char *buffer, size_t length, int flags);
+
+       int getServerSocket() const;
+
 private:
     int port;
     const char *serverIp;

@@ -16,6 +16,7 @@
 #include "web_service.h"
 #include "InputHandler.h"
 #include "TaskProcessor.h"
+#include "HomeAssistantAPI.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -32,6 +33,21 @@ std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 std::thread networkThread;
 std::thread terminalInputThread;
+std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
+std::thread homeAssistantThread;
+
+void homeAssistantFunction(HomeAssistantAPI &homeAssistantAPI, const std::string &state)
+{
+    while (true)
+    {
+        // Example interaction: get the state of a specific entity
+        std::string state = homeAssistantAPI.getState(state);
+        std::cout << "State of light.living_room: " << state << std::endl;
+
+        // Sleep for a while before next interaction
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    }
+}
 
 bool checkBluetoothAvailability()
 {
@@ -125,9 +141,9 @@ int main(int argc, char *argv[])
 
     // Initialize the model runner
     std::unordered_map<std::string, std::string> model_paths = {
-        {"wake_up", "models/dnn_model.tflite"},
-        {"nlp", "models/nlp_model.tflite"},
-        {"llm", "models/llm_model.tflite"},
+        {"wake_up", "./models/dnn_model.tflite"},
+        {"nlp", "./models/nlp_model.tflite"},
+        {"llm", "./models/llm_model.tflite"},
         // Add other models here if needed
     };
     ModelRunner modelRunner(model_paths);
@@ -140,21 +156,24 @@ int main(int argc, char *argv[])
     }
 
     NetworkManager *server = nullptr;
-    
-        try
-        {
-            DEBUG_PRINT("Starting NetworkManager as server.");
-            server = new NetworkManager(network_port, nullptr, &modelRunner); // Pass ModelRunner to NetworkManager
-            networkThread = std::thread(&NetworkManager::runServer, server);
-            DEBUG_PRINT("NetworkManager running.");
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Error: " << e.what() << std::endl;
-            delete server;
-            return -1;
-        }
-    
+    try
+    {
+        DEBUG_PRINT("Starting NetworkManager as server.");
+        server = new NetworkManager(network_port, nullptr, &modelRunner); // Pass ModelRunner to NetworkManager
+        networkThread = std::thread(&NetworkManager::runServer, server);
+        DEBUG_PRINT("NetworkManager running.");
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        delete server;
+        return -1;
+    }
+
+    // Initialize HomeAssistantAPI
+    homeAssistantAPI = std::make_unique<HomeAssistantAPI>("192.168.1.100", 8123, server); // Replace with actual Home Assistant IP and port
+    homeAssistantThread = std::thread(homeAssistantFunction, std::ref(*homeAssistantAPI));
+
     // Task handling
     InputHandler inputHandler;
     TaskProcessor taskProcessor(modelRunner);
@@ -172,6 +191,7 @@ int main(int argc, char *argv[])
             while (inputHandler.hasTasks())
             {
                 Task task = inputHandler.getNextTask();
+                std::cout << "Processing task: " << task.description << std::endl;
                 taskProcessor.processTask(task);
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -196,11 +216,9 @@ int main(int argc, char *argv[])
             t.join();
         }
     }
-    if (bluetoothComm)
+    if (bluetoothComm && bluetoothThread.joinable())
     {
         bluetoothThread.join();
-        bluetoothComm->terminate();
-        DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
     if (networkThread.joinable())
@@ -216,6 +234,11 @@ int main(int argc, char *argv[])
     if (taskProcessingThread.joinable())
     {
         taskProcessingThread.join();
+    }
+
+    if (homeAssistantThread.joinable())
+    {
+        homeAssistantThread.join();
     }
 
     delete server;

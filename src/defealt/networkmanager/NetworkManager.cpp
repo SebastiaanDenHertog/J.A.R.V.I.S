@@ -292,3 +292,23 @@ void NetworkManager::addKnownClient(int clientSd)
     std::lock_guard<std::mutex> guard(clientMutex);
     knownClients.insert(clientSd);
 }
+
+int NetworkManager::getServerSocket() const
+{
+    return serverSd;
+}
+
+void NetworkManager::send(int sd, const char *data, size_t length, int flags)
+{
+    ::send(sd, data, length, flags);
+}
+
+void NetworkManager::send(int sd, const uint8_t *data, size_t length, int flags)
+{
+    ::send(sd, reinterpret_cast<const char*>(data), length, flags);
+}
+
+int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)
+{
+    return ::recv(sd, buffer, length, flags);
+}

@@ -1,25 +1,20 @@
-#ifndef TASKPROCESSOR_H
-#define TASKPROCESSOR_H
+#ifndef TASK_PROCESSOR_H
+#define TASK_PROCESSOR_H
 
 #include "Task.h"
 #include "model_runner.h"
-#include <functional>
-#include <map>
-#include <string>
+#include <iostream>
 
 class TaskProcessor
 {
 public:
-    TaskProcessor(ModelRunner &model_runner);
-    std::function<void(const Task &)> getTaskHandler(const std::string &type);
+    TaskProcessor(ModelRunner &runner);
     void processTask(const Task &task);
 
 private:
-    void handleEmailTask(const Task &task);
-    void handleReminderTask(const Task &task);
-    void handleGeneralTask(const Task &task);
-
-    ModelRunner &model_runner_;
+    ModelRunner &modelRunner_;
+    // Example function member
+    std::function<void(const Task&)> taskHandler_;
 };
 
-#endif // TASKPROCESSOR_H
+#endif

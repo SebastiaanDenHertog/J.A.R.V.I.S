@@ -128,6 +128,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/task"
     "${PROJECT_SOURCE_DIR}/include/taskprocessor"
     "${PROJECT_SOURCE_DIR}/include/inputhandler"
+    "${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")

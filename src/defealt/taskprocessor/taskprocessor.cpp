@@ -1,39 +1,24 @@
 #include "TaskProcessor.h"
-#include <iostream>
 
-TaskProcessor::TaskProcessor(ModelRunner &model_runner) : model_runner_(model_runner) {}
-
-std::function<void(const Task &)> TaskProcessor::getTaskHandler(const std::string &type)
+TaskProcessor::TaskProcessor(ModelRunner &runner)
+    : modelRunner_(runner)
 {
-    // Map task types to handler functions
-    std::map<std::string, std::function<void(const Task &)>> handlers = {
-        {"email", [this](const Task &task)
-         { this->handleEmailTask(task); }},
-        {"reminder", [this](const Task &task)
-         { this->handleReminderTask(task); }},
-        {"general", [this](const Task &task)
-         { this->handleGeneralTask(task); }}};
-
-    return handlers[type];
+    // Initialize taskHandler_ with a valid function
+    taskHandler_ = [this](const Task &task) {
+        // Example task handling code
+        std::cout << "Handling task: " << task.description << std::endl;
+        // Additional task processing logic
+    };
 }
 
 void TaskProcessor::processTask(const Task &task)
 {
-    auto handler = getTaskHandler(task.type);
-    handler(task);
-}
-
-void TaskProcessor::handleEmailTask(const Task &task)
-{
-    std::cout << "Processing email task: " << task.description << std::endl;
-}
-
-void TaskProcessor::handleReminderTask(const Task &task)
-{
-    std::cout << "Processing reminder task: " << task.description << std::endl;
-}
-
-void TaskProcessor::handleGeneralTask(const Task &task)
-{
-    std::cout << "Processing general task: " << task.description << std::endl;
+    if (taskHandler_)
+    {
+        taskHandler_(task);
+    }
+    else
+    {
+        std::cerr << "Task handler is not set!" << std::endl;
+    }
 }
