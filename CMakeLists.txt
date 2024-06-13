@@ -74,8 +74,24 @@ else()
     message(FATAL_ERROR "OpenSSL not found: ${OPENSSL_VERSION}")
 endif()
 
-
 if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
+    # Check if OpenCV exists and handle accordingly
+    find_package(OpenCV)
+    if(NOT OpenCV_FOUND)
+        message(WARNING "OpenCV not found, will build from source.")
+        if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/opencv")
+            message(FATAL_ERROR "OpenCV source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        else()
+            set(OPENCV_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/opencv")
+            add_subdirectory(${OPENCV_SOURCE_DIR} "${CMAKE_BINARY_DIR}/opencv")
+            include_directories(${OPENCV_SOURCE_DIR}/include)
+            set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui)  # Add other required OpenCV modules here
+        endif()
+    else()
+        message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+        include_directories(${OpenCV_INCLUDE_DIRS}) 
+    endif()
+
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
     set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
     include_directories("${TFLITE_SOURCE_DIR}")
@@ -83,7 +99,6 @@ if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
     # Add TensorFlow Lite directory to the project
     add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
 endif()
-
 
 # Find GLIB using pkg-config
 find_package(PkgConfig REQUIRED)
@@ -104,7 +119,6 @@ add_subdirectory( include/AirPlayServer/renderers )
 if  ( GST_MACOS )
     add_definitions( -DGST_MACOS )
     message ( STATUS "define GST_MACOS" )
-
 
 if  ( GST_124 )
      add_definitions( -DGST_124 )
@@ -129,9 +143,13 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/taskprocessor"
     "${PROJECT_SOURCE_DIR}/include/inputhandler"
     "${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI"
+    "${PROJECT_SOURCE_DIR}/include/Tokenizer"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
+
+# Set the runtime output directory to the root of the build directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Source files
 if(BUILD_COMPONENT STREQUAL "full")
@@ -152,13 +170,13 @@ endif()
 # Link against TensorFlow Lite and other libraries
 if(TARGET_OS STREQUAL "linux")
     if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} ${AIRPLAYSERVER_PATH} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
+        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS})
     else()
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
 elseif(TARGET_OS STREQUAL "windows")
         if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
-            target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} renderers airplay -lX11)
+            target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS})
         else()
             target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11) 
         endif()
@@ -177,4 +195,3 @@ elseif(TARGET_OS STREQUAL "windows")
             target_compile_options(main PRIVATE -Wall -g -pthread)
         endif()
 endif()
-# Compiler options

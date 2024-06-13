@@ -1,20 +1,25 @@
-#ifndef TASK_PROCESSOR_H
-#define TASK_PROCESSOR_H
+#ifndef TASKPROCESSOR_H
+#define TASKPROCESSOR_H
 
 #include "Task.h"
-#include "model_runner.h"
-#include <iostream>
+#include "ModelRunner.h"
+#include "HomeAssistantAPI.h"
+#include <functional>
 
 class TaskProcessor
 {
 public:
-    TaskProcessor(ModelRunner &runner);
+    TaskProcessor(ModelRunner &runner, HomeAssistantAPI &homeAssistantAPI);
+
     void processTask(const Task &task);
 
 private:
     ModelRunner &modelRunner_;
-    // Example function member
-    std::function<void(const Task&)> taskHandler_;
+    HomeAssistantAPI &homeAssistantAPI_;
+    std::function<void(const Task &task)> taskHandler_;
+
+    void processGeneralTask(const Task &task);
+    void processHomeAssistantTask(const Task &task);
 };
 
-#endif
+#endif // TASKPROCESSOR_H

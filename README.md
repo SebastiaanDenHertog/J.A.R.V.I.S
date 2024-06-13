@@ -1,4 +1,4 @@
-# Just a Rather Very Intelligent System
+  # Just a Rather Very Intelligent System
 
 ### news
 
@@ -38,6 +38,10 @@ the cmake option `-DNO_X11_DEPS=ON`.
 
 
 # How to run
+
+git submodule init
+git submodule update
+
 Linux: chmod +x build_project.sh
 ./build_project.sh
 

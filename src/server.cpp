@@ -11,7 +11,7 @@
 #include <tensorflow/lite/optional_debug_tools.h>
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
-#include "model_runner.h"
+#include "ModelRunner.h"
 #include "authorization_api.h"
 #include "web_service.h"
 #include "InputHandler.h"
@@ -36,19 +36,6 @@ std::thread terminalInputThread;
 std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 std::thread homeAssistantThread;
 
-void homeAssistantFunction(HomeAssistantAPI &homeAssistantAPI, const std::string &state)
-{
-    while (true)
-    {
-        // Example interaction: get the state of a specific entity
-        std::string state = homeAssistantAPI.getState(state);
-        std::cout << "State of light.living_room: " << state << std::endl;
-
-        // Sleep for a while before next interaction
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-    }
-}
-
 bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(NULL);
@@ -67,12 +54,12 @@ bool checkBluetoothAvailability()
     return true;
 }
 
-void terminalInputFunction(ModelRunner &modelRunner, InputHandler &inputHandler)
+void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssistantAPI, InputHandler &inputHandler)
 {
     while (true)
     {
         std::string user_input;
-        std::cout << "Enter text for prediction (type 'exit' to quit): ";
+        std::cout << "Enter command (type 'exit' to quit): ";
         std::getline(std::cin, user_input);
 
         if (user_input == "exit")
@@ -80,8 +67,19 @@ void terminalInputFunction(ModelRunner &modelRunner, InputHandler &inputHandler)
             break;
         }
 
-        Task predicted_task = modelRunner.predictTaskFromInput(user_input);
-        inputHandler.addTask(predicted_task);
+        if (user_input.rfind("homeassistant", 0) == 0)
+        {
+            std::istringstream iss(user_input);
+            std::string command, entityId, service, newState;
+            iss >> command >> entityId >> service >> newState;
+            Task homeAssistantTask("Home Assistant Command", entityId, service, newState);
+            inputHandler.addTask(homeAssistantTask);
+        }
+        else
+        {
+            Task predicted_task = modelRunner.predictTaskFromInput(user_input);
+            inputHandler.addTask(predicted_task);
+        }
     }
 }
 
@@ -140,26 +138,20 @@ int main(int argc, char *argv[])
     }
 
     // Initialize the model runner
-    std::unordered_map<std::string, std::string> model_paths = {
-        {"wake_up", "./models/dnn_model.tflite"},
-        {"nlp", "./models/nlp_model.tflite"},
-        {"llm", "./models/llm_model.tflite"},
-        // Add other models here if needed
-    };
-    ModelRunner modelRunner(model_paths);
-    for (const auto &model : model_paths)
+    std::string model_path = "./models/nlp_model.tflite";
+    ModelRunner modelRunner(model_path);
+    modelRunner.LoadClassNames("./classes/class_nlp.xml");
+
+    if (!modelRunner.IsLoaded())
     {
-        if (!modelRunner.IsLoaded(model.first))
-        {
-            std::cerr << "Failed to load the model: " << model.first << std::endl;
-        }
+        std::cerr << "Failed to load the model." << std::endl;
     }
 
     NetworkManager *server = nullptr;
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        server = new NetworkManager(network_port, nullptr, &modelRunner); // Pass ModelRunner to NetworkManager
+        server = new NetworkManager(network_port, nullptr, &modelRunner);
         networkThread = std::thread(&NetworkManager::runServer, server);
         DEBUG_PRINT("NetworkManager running.");
     }
@@ -169,18 +161,24 @@ int main(int argc, char *argv[])
         delete server;
         return -1;
     }
+    try
+    {
+        homeAssistantAPI = std::make_unique<HomeAssistantAPI>("192.168.20.10", 8123, server);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
 
-    // Initialize HomeAssistantAPI
-    homeAssistantAPI = std::make_unique<HomeAssistantAPI>("192.168.1.100", 8123, server); // Replace with actual Home Assistant IP and port
-    homeAssistantThread = std::thread(homeAssistantFunction, std::ref(*homeAssistantAPI));
+        return -1;
+    }
 
     // Task handling
     InputHandler inputHandler;
-    TaskProcessor taskProcessor(modelRunner);
+    TaskProcessor taskProcessor(modelRunner, *homeAssistantAPI);
 
     if (use_terminal_input)
     {
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(inputHandler));
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler));
     }
 
     // Process tasks

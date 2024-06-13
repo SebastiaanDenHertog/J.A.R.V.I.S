@@ -11,7 +11,7 @@
 #include "NetworkManager.h"
 #include "PixelRing.h"
 #include "ReSpeaker.h"
-#include "model_runner.h"
+#include "ModelRunner.h"
 #include "authorization_api.h"
 #include "web_service.h"
 #include <boost/make_shared.hpp>
