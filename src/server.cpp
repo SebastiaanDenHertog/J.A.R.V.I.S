@@ -77,8 +77,10 @@ void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssis
         }
         else
         {
-            Task predicted_task = modelRunner.predictTaskFromInput(user_input);
-            inputHandler.addTask(predicted_task);
+            std::string model_name = "nlp"; // Assuming you want to use the "nlp" model
+            std::string predicted_task = modelRunner.predictTaskFromInput(model_name, user_input);
+            Task task(predicted_task, 1, Task::GENERAL);
+            inputHandler.addTask(task);
         }
     }
 }
@@ -138,11 +140,21 @@ int main(int argc, char *argv[])
     }
 
     // Initialize the model runner
-    std::string model_path = "./models/nlp_model.tflite";
-    ModelRunner modelRunner(model_path);
-    modelRunner.LoadClassNames("./classes/class_nlp.xml");
+    std::unordered_map<std::string, std::string> model_paths = {
+        {"nlp", "./models/nlp_model.tflite"},
+    };
+    ModelRunner modelRunner(model_paths);
 
-    if (!modelRunner.IsLoaded())
+    std::unordered_map<std::string, std::string> class_files = {
+        {"intent", "./classes/class_nlp.xml"},
+        {"device", "./classes/class_nlp.xml"},
+        {"urgency", "./classes/class_nlp.xml"},
+        {"auth", "./classes/class_nlp.xml"},
+        {"entity", "./classes/class_nlp.xml"},
+    };
+    modelRunner.LoadClassNames(class_files);
+
+    if (!modelRunner.IsLoaded("nlp"))
     {
         std::cerr << "Failed to load the model." << std::endl;
     }
@@ -168,7 +180,6 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-
         return -1;
     }
 

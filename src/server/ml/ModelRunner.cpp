@@ -1,240 +1,180 @@
 #include "ModelRunner.h"
-#include <tensorflow/lite/kernels/register.h>
-#include <tensorflow/lite/interpreter_builder.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <opencv2/core.hpp>
-#include <opencv2/opencv.hpp>
-#include "Tokenizer.h"
+#include <opencv2/core/persistence.hpp>
+#include <opencv2/core/types.hpp>
+#include <tensorflow/lite/kernels/register.h> // Include for BuiltinOpResolver
 
-// Utility function to prepare input
-std::vector<int> prepare_input(const std::string &text, Tokenizer &tokenizer, size_t sequence_length)
+ModelRunner::ModelRunner(const std::unordered_map<std::string, std::string> &model_paths)
 {
-    std::vector<int> sequence = tokenizer.texts_to_sequences(text);
-    if (sequence.size() > sequence_length)
+    for (const auto &model : model_paths)
     {
-        sequence.resize(sequence_length);
+        if (!LoadModel(model.first, model.second))
+        {
+            std::cerr << "Failed to load model: " << model.first << " from path: " << model.second << std::endl;
+        }
     }
-    else
-    {
-        sequence.resize(sequence_length, 0); // Padding with 0s
-    }
-    return sequence;
 }
 
-ModelRunner::ModelRunner(const std::string &model_path)
+bool ModelRunner::LoadModel(const std::string &model_name, const std::string &model_path)
 {
-    std::cerr << "Loading model from: " << model_path << std::endl;
-    model_ = tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
-    if (!model_)
+    auto model = tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
+    if (!model)
     {
-        std::cerr << "Failed to load model: " << model_path << std::endl;
-        return;
+        std::cerr << "Failed to load model from path: " << model_path << std::endl;
+        return false;
     }
 
     tflite::ops::builtin::BuiltinOpResolver resolver;
-    tflite::InterpreterBuilder builder(*model_, resolver);
+    tflite::InterpreterBuilder builder(*model, resolver);
+    std::unique_ptr<tflite::Interpreter> interpreter;
 
-    if (builder(&interpreter_) != kTfLiteOk)
+    if (builder(&interpreter) != kTfLiteOk)
     {
-        std::cerr << "Failed to build interpreter." << std::endl;
-        return;
+        std::cerr << "Failed to build interpreter for model: " << model_name << std::endl;
+        return false;
     }
 
-    if (interpreter_->AllocateTensors() != kTfLiteOk)
+    if (interpreter->AllocateTensors() != kTfLiteOk)
     {
-        std::cerr << "Failed to allocate tensors." << std::endl;
-        return;
+        std::cerr << "Failed to allocate tensors for model: " << model_name << std::endl;
+        return false;
     }
 
-    // Print input tensor details
-    const TfLiteTensor *input_tensor = interpreter_->input_tensor(0);
-    std::cerr << "Input Tensor Details:" << std::endl;
-    std::cerr << "  Type: " << input_tensor->type << std::endl;
-    std::cerr << "  Dimensions: " << input_tensor->dims->size << std::endl;
-    for (int i = 0; i < input_tensor->dims->size; ++i)
-    {
-        std::cerr << "    Dim " << i << ": " << input_tensor->dims->data[i] << std::endl;
-    }
+    models_[model_name] = std::move(model);
+    interpreters_[model_name] = std::move(interpreter);
 
-    // Print output tensor details
-    const TfLiteTensor *output_tensor = interpreter_->output_tensor(0);
-    std::cerr << "Output Tensor Details:" << std::endl;
-    std::cerr << "  Type: " << output_tensor->type << std::endl;
-    std::cerr << "  Dimensions: " << output_tensor->dims->size << std::endl;
-    for (int i = 0; i < output_tensor->dims->size; ++i)
-    {
-        std::cerr << "    Dim " << i << ": " << output_tensor->dims->data[i] << std::endl;
-    }
-
-    std::cerr << "Model loaded successfully." << std::endl;
+    return true;
 }
 
-bool ModelRunner::IsLoaded() const
+bool ModelRunner::IsLoaded(const std::string &model_name) const
 {
-    return model_ != nullptr && interpreter_ != nullptr;
+    return models_.find(model_name) != models_.end();
 }
 
-void ModelRunner::LoadClassNames(const std::string &file_path)
+bool ModelRunner::RunInference(const std::string &model_name, const std::string &input_text, std::vector<float> &result)
 {
-    std::cerr << "Loading class names from: " << file_path << std::endl;
-
-    cv::FileStorage fs(file_path, cv::FileStorage::READ);
-    if (!fs.isOpened())
-    {
-        std::cerr << "Failed to open class names file: " << file_path << std::endl;
-        return;
-    }
-
-    cv::FileNode class_names_node = fs["class_names"];
-    if (class_names_node.type() != cv::FileNode::SEQ)
-    {
-        std::cerr << "Class names file is not in expected format." << std::endl;
-        return;
-    }
-
-    class_names_.clear();
-    for (cv::FileNodeIterator it = class_names_node.begin(); it != class_names_node.end(); ++it)
-    {
-        std::string class_name;
-        *it >> class_name;
-        class_names_.push_back(class_name);
-    }
-
-    fs.release();
-
-    std::cerr << "Class names loaded successfully." << std::endl;
-
-    // Print the loaded class names for verification
-    std::cerr << "Class names: ";
-    for (const auto &name : class_names_)
-    {
-        std::cerr << name << " ";
-    }
-    std::cerr << std::endl;
-}
-
-bool ModelRunner::RunInference(const std::string &input_text, std::vector<float> &result)
-{
-    if (!IsLoaded())
+    auto interpreter_it = interpreters_.find(model_name);
+    if (interpreter_it == interpreters_.end())
     {
         std::cerr << "Model is not loaded properly." << std::endl;
         return false;
     }
 
-    // Initialize the tokenizer and fit on some sample texts
-    Tokenizer tokenizer;
-    std::vector<std::string> sample_texts = {"can you turn on the lights", "please turn off the lights"};
-    tokenizer.fit_on_texts(sample_texts);
+    auto &interpreter = interpreter_it->second;
+    auto &tokenizer = tokenizers_[model_name];
 
-    // Prepare the input
-    std::vector<int> input_data = prepare_input(input_text, tokenizer, 20); // Assuming max length is 20
+    auto *input_tensor = interpreter->typed_tensor<int>(interpreter->inputs()[0]);
+    auto tokenized_input = prepare_input(input_text, tokenizer, 20);
 
-    // Debug: Print tokenized input
-    std::cerr << "Tokenized input: ";
-    for (const auto &val : input_data)
+    if (tokenized_input.empty())
     {
-        std::cerr << val << " ";
-    }
-    std::cerr << std::endl;
-
-    // Ensure the input tensor is of the correct size
-    interpreter_->ResizeInputTensor(interpreter_->inputs()[0], {1, static_cast<int>(input_data.size())});
-    if (interpreter_->AllocateTensors() != kTfLiteOk)
-    {
-        std::cerr << "Failed to allocate tensors." << std::endl;
+        std::cerr << "Tokenized input is empty." << std::endl;
         return false;
     }
 
-    // Copy input data to the input tensor
-    int *input_tensor_data = interpreter_->typed_input_tensor<int>(0);
-    std::memcpy(input_tensor_data, input_data.data(), input_data.size() * sizeof(int));
+    std::copy(tokenized_input.begin(), tokenized_input.end(), input_tensor);
 
-    // Debug: Print input tensor data
-    std::cerr << "Input tensor values: ";
-    for (const auto &val : input_data)
+    if (interpreter->Invoke() != kTfLiteOk)
     {
-        std::cerr << val << " ";
-    }
-    std::cerr << std::endl;
-
-    // Invoke the model
-    if (interpreter_->Invoke() != kTfLiteOk)
-    {
-        std::cerr << "Failed to invoke model." << std::endl;
+        std::cerr << "Failed to run the model." << std::endl;
         return false;
     }
 
-    // Get output tensor data
-    const TfLiteTensor *output_tensor = interpreter_->tensor(interpreter_->outputs()[0]);
-    if (!output_tensor)
+    auto *output_tensor = interpreter->tensor(interpreter->outputs()[0]);
+    if (output_tensor == nullptr)
     {
         std::cerr << "Output tensor is null." << std::endl;
         return false;
     }
 
-    // Print output tensor details
-    std::cerr << "Output Tensor Details:" << std::endl;
-    std::cerr << "  Type: " << output_tensor->type << std::endl;
-    std::cerr << "  Dimensions: " << output_tensor->dims->size << std::endl;
-    for (int i = 0; i < output_tensor->dims->size; ++i)
+    if (output_tensor->type != kTfLiteFloat32)
     {
-        std::cerr << "    Dim " << i << ": " << output_tensor->dims->data[i] << std::endl;
-    }
-
-    // Extract output data based on the type
-    switch (output_tensor->type)
-    {
-    case kTfLiteFloat32:
-    {
-        int output_size = output_tensor->dims->data[output_tensor->dims->size - 1];
-        result.resize(output_size);
-        const float *output_data = interpreter_->typed_output_tensor<float>(0);
-        std::copy(output_data, output_data + output_size, result.begin());
-        break;
-    }
-    default:
         std::cerr << "Unsupported output tensor type." << std::endl;
         return false;
     }
 
-    // Debug: Print raw output values
-    std::cerr << "Model raw output values: ";
-    for (const auto &val : result)
+    const float *output = interpreter->typed_output_tensor<float>(0);
+    result.assign(output, output + output_tensor->dims->data[1]);
+
+    std::cerr << "Model output values: ";
+    for (size_t i = 0; i < result.size(); ++i)
     {
-        std::cerr << val << " ";
+        std::cerr << result[i] << " ";
     }
     std::cerr << std::endl;
 
     return true;
 }
 
-Task ModelRunner::predictTaskFromInput(const std::string &input)
+std::string ModelRunner::predictTaskFromInput(const std::string &model_name, const std::string &input)
 {
-    std::vector<float> nlp_result;
-    if (!RunInference(input, nlp_result) || nlp_result.empty())
+    std::vector<float> results;
+    if (!RunInference(model_name, input, results) || results.empty())
     {
-        std::cerr << "Failed to run NLP model." << std::endl;
-        return Task("Failed to run NLP model.", 0, Task::ERROR);
+        return "Failed to run NLP model.";
     }
 
-    // Find the class with the highest probability
-    auto max_it = std::max_element(nlp_result.begin(), nlp_result.end());
-    int predicted_class = std::distance(nlp_result.begin(), max_it);
-    float confidence = *max_it;
+    auto max_iter = std::max_element(results.begin(), results.end());
+    int predicted_class = std::distance(results.begin(), max_iter);
+    float confidence = *max_iter;
 
-    std::string task_description = "Predicted task for class " + std::to_string(predicted_class) + " with confidence " + std::to_string(confidence);
-
-    if (!class_names_.empty())
+    std::string task_description = "Predicted task: ";
+    if (class_names_.count(model_name) > 0 && predicted_class < class_names_[model_name].size())
     {
-        task_description = "Predicted task: " + class_names_[predicted_class] + " with confidence " + std::to_string(confidence);
+        task_description += class_names_[model_name][predicted_class];
+    }
+    else
+    {
+        task_description += "Unknown";
     }
 
-    // Debug: Print predicted task
-    std::cerr << "Predicted task: " << task_description << std::endl;
+    std::ostringstream oss;
+    oss << task_description << " with confidence " << confidence;
+    return oss.str();
+}
 
-    // Create a Task object based on the predicted class
-    Task predicted_task(task_description, predicted_class, Task::GENERAL);
+void ModelRunner::LoadClassNames(const std::unordered_map<std::string, std::string> &class_files)
+{
+    std::cerr << "Loading class names..." << std::endl;
+    std::cerr << "Class files: " << class_files.size() << std::endl;
+    for (const auto &pair : class_files)
+    {
+        cv::FileStorage fs(pair.second, cv::FileStorage::READ);
+        if (!fs.isOpened())
+        {
+        std::cerr << "Failed to open " << pair.second << std::endl;
+        return;
+        }
+        cv::FileNode n = fs[pair.first]; // Read string sequence - Get node
+        if (n.type() != cv::FileNode::SEQ)
+        {
+        std::cerr << pair.first << " is not a sequence! FAIL" << std::endl;
+        return ;
+        }
+        cv::FileNodeIterator it = n.begin(), it_end = n.end(); // Go through the node
+        for (; it != it_end; ++it)
+        std::cout << (std::string)*it << std::endl;
+        }
 
-    return predicted_task;
+    std::cerr << "Class names loaded successfully." << std::endl;
+}
+
+std::vector<int> ModelRunner::prepare_input(const std::string &input_text, const std::unordered_map<std::string, int> &tokenizer, int max_length)
+{
+    std::vector<int> tokenized_input(max_length, 0);
+    std::istringstream iss(input_text);
+    std::string token;
+    int idx = 0;
+    while (iss >> token && idx < max_length)
+    {
+        auto it = tokenizer.find(token);
+        if (it != tokenizer.end())
+        {
+            tokenized_input[idx++] = it->second;
+        }
+    }
+    return tokenized_input;
 }
