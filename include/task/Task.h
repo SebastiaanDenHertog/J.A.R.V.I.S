@@ -10,6 +10,7 @@ public:
     {
         GENERAL,
         HOME_ASSISTANT,
+        NLP,
         ERROR
     };
 

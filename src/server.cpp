@@ -54,7 +54,7 @@ bool checkBluetoothAvailability()
     return true;
 }
 
-void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssistantAPI, InputHandler &inputHandler)
+void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (true)
     {
@@ -77,10 +77,12 @@ void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssis
         }
         else
         {
-            std::string model_name = "nlp"; // Assuming you want to use the "nlp" model
-            std::string predicted_task = modelRunner.predictTaskFromInput(model_name, user_input);
-            Task task(predicted_task, 1, Task::GENERAL);
+            std::string model_name = "nlp";
+            auto [predicted_intent, predicted_entity] = modelRunner.predictTaskFromInput(model_name, user_input);
+            std::cout << "Intent: " << predicted_intent << "\nEntity: " << predicted_entity << std::endl;
+            Task task(predicted_intent, 1, Task::TaskType::NLP);
             inputHandler.addTask(task);
+            taskProcessor.processTask(task);
         }
     }
 }
@@ -139,24 +141,26 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread started.");
     }
 
-    // Initialize the model runner
+    // Initialize the model runner with a default max_length
     std::unordered_map<std::string, std::string> model_paths = {
-        {"nlp", "./models/nlp_model.tflite"},
-    };
+        {"nlp", "./models/nlp_model.tflite"}};
     ModelRunner modelRunner(model_paths);
 
-    std::unordered_map<std::string, std::string> class_files = {
-        {"intent", "./classes/class_nlp.xml"},
-        {"device", "./classes/class_nlp.xml"},
-        {"urgency", "./classes/class_nlp.xml"},
-        {"auth", "./classes/class_nlp.xml"},
-        {"entity", "./classes/class_nlp.xml"},
-    };
-    modelRunner.LoadClassNames(class_files);
-
-    if (!modelRunner.IsLoaded("nlp"))
+    try
     {
-        std::cerr << "Failed to load the model." << std::endl;
+        modelRunner.LoadTokenizer("./models/tokenizer.json");
+        modelRunner.LoadLabels("./models/ner_labels.json", "./models/command_type_labels.json");
+
+        if (!modelRunner.IsLoaded("nlp"))
+        {
+            std::cerr << "Failed to load the model." << std::endl;
+            return -1;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return -1;
     }
 
     NetworkManager *server = nullptr;
@@ -189,7 +193,7 @@ int main(int argc, char *argv[])
 
     if (use_terminal_input)
     {
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler));
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler), std::ref(taskProcessor));
     }
 
     // Process tasks

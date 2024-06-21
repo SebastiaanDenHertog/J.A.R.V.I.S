@@ -3,6 +3,8 @@
 
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/model.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/op_resolver.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -12,20 +14,23 @@ class ModelRunner
 {
 public:
     ModelRunner(const std::unordered_map<std::string, std::string> &model_paths);
-    bool IsLoaded(const std::string &model_name) const;
-    bool RunInference(const std::string &model_name, const std::string &input_text, std::vector<float> &result);
-    std::string predictTaskFromInput(const std::string &model_name, const std::string &input);
-
-    void LoadClassNames(const std::unordered_map<std::string, std::string> &class_files);
+    bool IsLoaded(const std::string &model_name);
+    void LoadTokenizer(const std::string &tokenizer_path);
+    void LoadLabels(const std::string &ner_labels_path, const std::string &command_type_labels_path);
+    bool RunInference(const std::string &model_name, const std::string &input_text, std::vector<float> &ner_result, std::vector<float> &command_type_result);
+    std::pair<std::string, std::string> predictTaskFromInput(const std::string &model_name, const std::string &input);
 
 private:
-    bool LoadModel(const std::string &model_name, const std::string &model_path);
-    std::vector<int> prepare_input(const std::string &input_text, const std::unordered_map<std::string, int> &tokenizer, int max_length);
+    std::vector<int> TokenizeInput(const std::string &input_text);
 
     std::unordered_map<std::string, std::unique_ptr<tflite::FlatBufferModel>> models_;
     std::unordered_map<std::string, std::unique_ptr<tflite::Interpreter>> interpreters_;
-    std::unordered_map<std::string, std::vector<std::string>> class_names_;
-    std::unordered_map<std::string, std::unordered_map<std::string, int>> tokenizers_;
+    std::unordered_map<std::string, int> tokenizer_;
+    std::unordered_map<int, std::string> ner_labels_;
+    std::unordered_map<int, std::string> command_type_labels_;
+    std::unordered_map<int, std::string> tokenizer_index_word_;
+    std::unordered_map<std::string, int> tokenizer_word_index_;
+    int max_length_;
 };
 
-#endif // MODEL_RUNNER_H
+#endif // MODELRUNNER_H
