@@ -108,3 +108,24 @@ bool MediaPlayer::playAUX(const std::string &mediaPath)
     // Placeholder: Add actual AUX play code
     return true;
 }
+
+void MediaPlayer::setoutput(ClientInfo device, std::string output)
+{
+    for (auto musicOutput : device.getMusicOutputs())
+    {
+        if (musicOutput == output)
+        {
+            std::cout << "Setting output to: " << output << std::endl;
+            setProtocol(output);
+            return;
+        }
+    }
+
+    std::cerr << "Output not found: " << output << std::endl;
+}
+
+std::string MediaPlayer::FindSong(std::vector<std::vector<std::string>> entities)
+{
+    // Placeholder: Add logic to find the song based on entities
+    return "Song.mp3";
+}

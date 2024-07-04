@@ -17,6 +17,7 @@
 #include "InputHandler.h"
 #include "TaskProcessor.h"
 #include "HomeAssistantAPI.h"
+#include "ClientInfo.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -29,12 +30,49 @@ unsigned short web_server_port = 15881;
 int threads = 10;
 
 bool setbluetooth = false;
+bool use_homeassistant = false;
+std::string homeassistant_ip;
+int homeassistant_port = 0;
+std::string homeassistant_token;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 std::thread networkThread;
 std::thread terminalInputThread;
 std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 std::thread homeAssistantThread;
+std::string getLocalIP()
+{
+    std::string local_ip;
+    std::string cmd = "hostname -I";
+    FILE *pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+    {
+        std::cerr << "popen() failed!" << std::endl;
+        return "";
+    }
+    char buffer[128];
+    while (!feof(pipe))
+    {
+        if (fgets(buffer, 128, pipe) != NULL)
+        {
+            local_ip += buffer;
+        }
+    }
+    pclose(pipe);
+    local_ip.erase(std::remove(local_ip.begin(), local_ip.end(), '\n'), local_ip.end());
+
+    // Split the string by spaces and return the first IP address
+    std::istringstream iss(local_ip);
+    std::string first_ip;
+    iss >> first_ip;
+
+    return first_ip;
+}
+
+ClientInfo device{"server",
+                  getLocalIP(),
+                  network_port,
+                  {}};
 
 bool checkBluetoothAvailability()
 {
@@ -54,6 +92,67 @@ bool checkBluetoothAvailability()
     return true;
 }
 
+#include <unordered_map>
+#include <string>
+
+// Function to map string to TaskType enum
+Task::TaskType stringToTaskType(const std::string &str)
+{
+    static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
+        {"ControlLight", Task::ControlLight},
+        {"SetTimer", Task::SetTimer},
+        {"PlayMusic", Task::PlayMusic},
+        {"SetReminder", Task::SetReminder},
+        {"WeatherQuery", Task::WeatherQuery},
+        {"SetAlarm", Task::SetAlarm},
+        {"SetTemperature", Task::SetTemperature},
+        {"NewsQuery", Task::GetNews},
+        {"Lock", Task::Lock},
+        {"Open", Task::Open},
+        {"Close", Task::Close},
+        {"StartMachine", Task::Start},
+        {"StopMachine", Task::Stop},
+        {"PauseVideo", Task::Pause},
+        {"ResumeVideo", Task::Resume},
+        {"TurnOn", Task::TurnOn},
+        {"TurnOff", Task::TurnOff},
+        {"Check", Task::Check},
+        {"Read", Task::Read},
+        {"Find", Task::Find},
+        {"Locate", Task::Locate},
+        {"Book", Task::Book},
+        {"Call", Task::Call},
+        {"Message", Task::Message},
+        {"Command", Task::Command},
+        {"Question", Task::Question},
+        {"Information", Task::Information},
+        {"StartMusic", Task::PlayMusic},
+        {"ShoppingList", Task::ShoppingList},
+        {"GetRecipe", Task::GetRecipe},
+        {"SetVolume", Task::SetVolume},
+        {"Connect", Task::Connect},
+        {"PlayVideo", Task::PlayVideo},
+        {"GetTraffic", Task::GetTraffic},
+        {"OrderItem", Task::OrderItem},
+        {"Calendar", Task::Calendar},
+        {"SetMachine", Task::SetMachine},
+        {"SentMessage", Task::SentMessage},
+        {"StopMusic", Task::Stop},
+        {"GetShippingInfo", Task::GetShippingInfo},
+        {"ReadMessages", Task::ReadMessages},
+        {"info", Task::Info}};
+
+    auto it = strToTaskType.find(str);
+    if (it != strToTaskType.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        return Task::ERROR;
+    }
+}
+
 void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (true)
@@ -67,23 +166,20 @@ void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssis
             break;
         }
 
-        if (user_input.rfind("homeassistant", 0) == 0)
+        auto [predicted_intent, predicted_entities] = modelRunner.predictTaskFromInput(user_input);
+        std::cout << "Intent: " << predicted_intent << "\nEntities: ";
+        for (const auto &entity : predicted_entities)
         {
-            std::istringstream iss(user_input);
-            std::string command, entityId, service, newState;
-            iss >> command >> entityId >> service >> newState;
-            Task homeAssistantTask("Home Assistant Command", entityId, service, newState);
-            inputHandler.addTask(homeAssistantTask);
+            std::cout << entity << " ";
         }
-        else
-        {
-            std::string model_name = "nlp";
-            auto [predicted_intent, predicted_entity] = modelRunner.predictTaskFromInput(model_name, user_input);
-            std::cout << "Intent: " << predicted_intent << "\nEntity: " << predicted_entity << std::endl;
-            Task task(predicted_intent, 1, Task::TaskType::NLP);
-            inputHandler.addTask(task);
-            taskProcessor.processTask(task);
-        }
+        std::cout << std::endl;
+
+        // Convert predicted_intent to Task::TaskType
+        Task::TaskType taskType = stringToTaskType(predicted_intent);
+
+        Task task(predicted_intent, 1, device, taskType, {predicted_entities});
+        inputHandler.addTask(task);
+        taskProcessor.processTask(task);
     }
 }
 
@@ -102,6 +198,64 @@ int main(int argc, char *argv[])
             {
                 use_terminal_input = true;
             }
+
+            if (std::string(argv[i]) == "--network-port")
+            {
+                if (i + 1 < argc)
+                {
+                    network_port = std::atoi(argv[i + 1]);
+                    device.setPort(network_port);
+                }
+            }
+
+            if (std::string(argv[i]) == "--web-server-port")
+            {
+                if (i + 1 < argc)
+                {
+                    web_server_port = std::atoi(argv[i + 1]);
+                }
+            }
+
+            if (std::string(argv[i]) == "--threads")
+            {
+                if (i + 1 < argc)
+                {
+                    threads = std::atoi(argv[i + 1]);
+                }
+            }
+            if (std::string(argv[i]) == "--homeassistant")
+            {
+                use_homeassistant = true;
+                if (i + 3 < argc)
+                {
+                    homeassistant_ip = argv[i + 1];
+                    homeassistant_port = std::stoi(argv[i + 2]);
+                    homeassistant_token = argv[i + 3];
+                    i += 3;
+                }
+                else
+                {
+                    std::cerr << "Error: --homeassistant option requires an IP, port, and token." << std::endl;
+                }
+            }
+
+            if (use_homeassistant)
+            {
+                std::cerr << "got home assistant input" << std::endl;
+            }
+
+            if (std::string(argv[i]) == "--help")
+            {
+                std::cout << "Usage: " << argv[0] << " [options]\n"
+                          << "Options:\n"
+                          << "  --terminal-input: Enable terminal input\n"
+                          << "  --network-port <port>: Set the network port\n"
+                          << "  --web-server-port <port>: Set the web server port\n"
+                          << "  --threads <number>: Set the number of threads\n"
+                          << "  --homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
+                          << "  --help: Display this help message\n";
+                return 0;
+            }
         }
     }
 
@@ -109,10 +263,10 @@ int main(int argc, char *argv[])
     allowed_keys.insert("SampleKey");
     boost::shared_ptr<authorization_api> auth = boost::make_shared<authorization_api>(allowed_keys);
     boost::shared_ptr<web_service_context> ctx = boost::make_shared<web_service_context>(threads, auth);
-
+    std::cerr << getLocalIP() << std::endl;
     std::make_shared<web_service>(
         ctx,
-        "192.168.30.11",
+        getLocalIP(),
         web_server_port,
         "web_service")
         ->run();
@@ -143,7 +297,8 @@ int main(int argc, char *argv[])
 
     // Initialize the model runner with a default max_length
     std::unordered_map<std::string, std::string> model_paths = {
-        {"nlp", "./models/nlp_model.tflite"}};
+        {"ner", "./models/test_ner_model.tflite"},
+        {"command", "./models/test_command_model.tflite"}};
     ModelRunner modelRunner(model_paths);
 
     try
@@ -151,15 +306,15 @@ int main(int argc, char *argv[])
         modelRunner.LoadTokenizer("./models/tokenizer.json");
         modelRunner.LoadLabels("./models/ner_labels.json", "./models/command_type_labels.json");
 
-        if (!modelRunner.IsLoaded("nlp"))
+        if (!modelRunner.IsLoaded("ner") || !modelRunner.IsLoaded("command"))
         {
-            std::cerr << "Failed to load the model." << std::endl;
+            std::cerr << "Failed to load one or more models." << std::endl;
             return -1;
         }
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        std::cerr << "Exception in the modelrunner : " << e.what() << std::endl;
         return -1;
     }
 
@@ -173,29 +328,33 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error in the NetworkManager: " << e.what() << std::endl;
         delete server;
         return -1;
     }
     try
     {
-        homeAssistantAPI = std::make_unique<HomeAssistantAPI>("192.168.20.10", 8123, server);
+        homeAssistantAPI = std::make_unique<HomeAssistantAPI>(homeassistant_ip, homeassistant_port, homeassistant_token, server);
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return -1;
+        std::cerr << "Error in the HomeAssistantAPI: " << e.what() << std::endl;
+        use_homeassistant = false;
     }
 
-    // Task handling
+    // Run the I/O service on the requested number of threads
+    std::vector<std::thread> ioThreads;
+    ioThreads.reserve(threads - 1);
+    for (auto i = threads - 1; i > 0; --i)
+        ioThreads.emplace_back(
+            [&ctx]
+            {
+                ctx->get_ioc()->run();
+            });
+    ctx->get_ioc()->run();
+
+    TaskProcessor taskProcessor(modelRunner, homeAssistantAPI.get());
     InputHandler inputHandler;
-    TaskProcessor taskProcessor(modelRunner, *homeAssistantAPI);
-
-    if (use_terminal_input)
-    {
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler), std::ref(taskProcessor));
-    }
-
     // Process tasks
     std::thread taskProcessingThread([&]()
                                      {
@@ -210,16 +369,12 @@ int main(int argc, char *argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });
 
-    // Run the I/O service on the requested number of threads
-    std::vector<std::thread> ioThreads;
-    ioThreads.reserve(threads - 1);
-    for (auto i = threads - 1; i > 0; --i)
-        ioThreads.emplace_back(
-            [&ctx]
-            {
-                ctx->get_ioc()->run();
-            });
-    ctx->get_ioc()->run();
+
+    if (use_terminal_input)
+    {
+        std::cout << "Starting terminal input thread. Type 'exit' to quit." << std::endl;
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler), std::ref(taskProcessor));
+    }
 
     // Wait for all threads to finish
     for (auto &t : ioThreads)

@@ -4,9 +4,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstring>
-#include <tensorflow/lite/interpreter.h>
-#include <tensorflow/lite/kernels/register.h>
-#include <tensorflow/lite/model.h>
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
@@ -111,68 +108,59 @@ void ModelRunner::LoadLabels(const std::string &ner_labels_path, const std::stri
     std::cout << "Loaded Command Type labels: " << command_type_labels_.size() << std::endl;
 }
 
-bool ModelRunner::RunInference(const std::string &model_name, const std::string &input_text, std::vector<float> &ner_result, std::vector<float> &command_type_result)
+bool ModelRunner::RunInference(const std::string &input_text, std::vector<std::vector<float>> &ner_result, std::vector<float> &command_type_result)
 {
-    if (!IsLoaded(model_name))
+    std::string ner_model_name = "ner";
+    std::string command_model_name = "command";
+
+    if (!IsLoaded(ner_model_name) || !IsLoaded(command_model_name))
     {
-        throw std::runtime_error("Model not loaded: " + model_name);
+        throw std::runtime_error("Model not loaded.");
     }
 
     // Tokenize the input text
     std::vector<int> tokenized_input = TokenizeInput(input_text);
 
-    // Get the interpreter
-    auto &interpreter = interpreters_[model_name];
-
-    // Get input tensor and copy the tokenized input to the input tensor
-    TfLiteTensor *input_tensor = interpreter->tensor(interpreter->inputs()[0]);
-    if (input_tensor == nullptr)
+    // Run NER model
+    auto &ner_interpreter = interpreters_[ner_model_name];
+    TfLiteTensor *ner_input_tensor = ner_interpreter->tensor(ner_interpreter->inputs()[0]);
+    if (ner_input_tensor == nullptr)
     {
-        throw std::runtime_error("Failed to get input tensor");
+        throw std::runtime_error("Failed to get NER input tensor");
+    }
+    std::memcpy(ner_input_tensor->data.raw, tokenized_input.data(), tokenized_input.size() * sizeof(int));
+
+    if (ner_interpreter->Invoke() != kTfLiteOk)
+    {
+        throw std::runtime_error("Failed to invoke NER TFLite interpreter");
     }
 
-    std::memcpy(input_tensor->data.raw, tokenized_input.data(), tokenized_input.size() * sizeof(int));
-
-    // Run the interpreter
-    if (interpreter->Invoke() != kTfLiteOk)
+    TfLiteTensor *ner_output_tensor = ner_interpreter->tensor(ner_interpreter->outputs()[0]);
+    int ner_output_size = ner_output_tensor->dims->data[1];
+    int ner_num_classes = ner_output_tensor->dims->data[2];
+    ner_result.resize(ner_output_size, std::vector<float>(ner_num_classes));
+    for (int i = 0; i < ner_output_size; ++i)
     {
-        throw std::runtime_error("Failed to invoke TFLite interpreter");
+        std::memcpy(ner_result[i].data(), ner_output_tensor->data.f + i * ner_num_classes, ner_num_classes * sizeof(float));
     }
 
-    // Get NER output tensor and read the results
-    TfLiteTensor *ner_output_tensor = interpreter->tensor(interpreter->outputs()[0]);
-    ner_result.resize(ner_output_tensor->bytes / sizeof(float));
-    std::memcpy(ner_result.data(), ner_output_tensor->data.raw, ner_output_tensor->bytes);
-
-    // Get Command Type output tensor and read the results
-    TfLiteTensor *command_type_output_tensor = interpreter->tensor(interpreter->outputs()[1]);
-    command_type_result.resize(command_type_output_tensor->bytes / sizeof(float));
-    std::memcpy(command_type_result.data(), command_type_output_tensor->data.raw, command_type_output_tensor->bytes);
-
-    // Print the shape and data type of the output tensors for debugging
-    std::cout << "NER Output Tensor: ";
-    std::cout << "Shape: [";
-    for (int i = 0; i < ner_output_tensor->dims->size; ++i)
+    // Run Command Type model
+    auto &command_interpreter = interpreters_[command_model_name];
+    TfLiteTensor *command_input_tensor = command_interpreter->tensor(command_interpreter->inputs()[0]);
+    if (command_input_tensor == nullptr)
     {
-        std::cout << ner_output_tensor->dims->data[i];
-        if (i < ner_output_tensor->dims->size - 1)
-        {
-            std::cout << ", ";
-        }
+        throw std::runtime_error("Failed to get Command Type input tensor");
     }
-    std::cout << "], Type: " << ner_output_tensor->type << std::endl;
+    std::memcpy(command_input_tensor->data.raw, tokenized_input.data(), tokenized_input.size() * sizeof(int));
 
-    std::cout << "Command Type Output Tensor: ";
-    std::cout << "Shape: [";
-    for (int i = 0; i < command_type_output_tensor->dims->size; ++i)
+    if (command_interpreter->Invoke() != kTfLiteOk)
     {
-        std::cout << command_type_output_tensor->dims->data[i];
-        if (i < command_type_output_tensor->dims->size - 1)
-        {
-            std::cout << ", ";
-        }
+        throw std::runtime_error("Failed to invoke Command Type TFLite interpreter");
     }
-    std::cout << "], Type: " << command_type_output_tensor->type << std::endl;
+
+    TfLiteTensor *command_output_tensor = command_interpreter->tensor(command_interpreter->outputs()[0]);
+    command_type_result.resize(command_output_tensor->bytes / sizeof(float));
+    std::memcpy(command_type_result.data(), command_output_tensor->data.raw, command_output_tensor->bytes);
 
     return true;
 }
@@ -186,40 +174,34 @@ std::vector<int> ModelRunner::TokenizeInput(const std::string &input_text)
 
     while (iss >> word && index < max_length_)
     {
-        if (tokenizer_.find(word) != tokenizer_.end())
+        if (tokenizer_word_index_.find(word) != tokenizer_word_index_.end())
         {
-            tokenized_input[index++] = tokenizer_[word];
+            tokenized_input[index++] = tokenizer_word_index_[word];
         }
         else
         {
-            tokenized_input[index++] = tokenizer_["<UNK>"];
+            tokenized_input[index++] = tokenizer_word_index_["<UNK>"];
         }
+    }
+
+    // Debugging statement to print tokenized input size
+    std::cout << "Tokenized input size: " << tokenized_input.size() << std::endl;
+
+    // Validation check
+    if (tokenized_input.size() > max_length_)
+    { // Adjust this value as needed
+        throw std::length_error("Tokenized input size is too large");
     }
 
     return tokenized_input;
 }
 
-std::pair<std::string, std::string> ModelRunner::predictTaskFromInput(const std::string &model_name, const std::string &input)
+std::pair<std::string, std::vector<std::string>> ModelRunner::predictTaskFromInput(const std::string &input)
 {
-    std::vector<float> ner_results;
+    std::vector<std::vector<float>> ner_results;
     std::vector<float> command_type_results;
 
-    RunInference(model_name, input, ner_results, command_type_results);
-
-    // Debug output
-    std::cout << "Raw NER results: ";
-    for (const auto &res : ner_results)
-    {
-        std::cout << res << " ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "Raw Command Type results: ";
-    for (const auto &res : command_type_results)
-    {
-        std::cout << res << " ";
-    }
-    std::cout << std::endl;
+    RunInference(input, ner_results, command_type_results);
 
     // Find the index of the maximum value in the command type results
     int predicted_class_index = std::distance(command_type_results.begin(), std::max_element(command_type_results.begin(), command_type_results.end()));
@@ -241,29 +223,26 @@ std::pair<std::string, std::string> ModelRunner::predictTaskFromInput(const std:
         std::cerr << "Error: Command type labels are empty." << std::endl;
     }
 
-    std::string entity_description = "None";
+    std::vector<std::string> entity_descriptions;
     if (!ner_results.empty())
     {
-        // Find the index of the maximum value in the NER results
-        auto max_ner_iter = std::max_element(ner_results.begin(), ner_results.end());
-        int predicted_entity_index = 0;
-        if (!ner_labels_.empty())
+        std::istringstream iss(input);
+        std::vector<std::string> words;
+        std::string word;
+        while (iss >> word)
         {
-            predicted_entity_index = std::distance(ner_results.begin(), max_ner_iter) % ner_labels_.size();
-            try
-            {
-                entity_description = ner_labels_.at(predicted_entity_index);
-            }
-            catch (const std::out_of_range &)
-            {
-                std::cerr << "Error: NER label not found for key: " << predicted_entity_index << std::endl;
-            }
+            words.push_back(word);
         }
-        else
+
+        for (int i = 0; i < words.size(); ++i)
         {
-            std::cerr << "Error: NER labels are empty." << std::endl;
+            int predicted_entity_index = std::distance(ner_results[i].begin(), std::max_element(ner_results[i].begin(), ner_results[i].end()));
+            if (ner_labels_[predicted_entity_index] != "O")
+            {
+                entity_descriptions.push_back(words[i] + " (" + ner_labels_[predicted_entity_index] + ")");
+            }
         }
     }
 
-    return {task_description, entity_description};
+    return {task_description, entity_descriptions};
 }

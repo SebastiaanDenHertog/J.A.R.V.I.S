@@ -17,15 +17,14 @@ public:
     bool IsLoaded(const std::string &model_name);
     void LoadTokenizer(const std::string &tokenizer_path);
     void LoadLabels(const std::string &ner_labels_path, const std::string &command_type_labels_path);
-    bool RunInference(const std::string &model_name, const std::string &input_text, std::vector<float> &ner_result, std::vector<float> &command_type_result);
-    std::pair<std::string, std::string> predictTaskFromInput(const std::string &model_name, const std::string &input);
+    bool RunInference(const std::string &input_text, std::vector<std::vector<float>> &ner_result, std::vector<float> &command_type_result);
+    std::pair<std::string, std::vector<std::string>> predictTaskFromInput(const std::string &input);
 
 private:
     std::vector<int> TokenizeInput(const std::string &input_text);
 
     std::unordered_map<std::string, std::unique_ptr<tflite::FlatBufferModel>> models_;
     std::unordered_map<std::string, std::unique_ptr<tflite::Interpreter>> interpreters_;
-    std::unordered_map<std::string, int> tokenizer_;
     std::unordered_map<int, std::string> ner_labels_;
     std::unordered_map<int, std::string> command_type_labels_;
     std::unordered_map<int, std::string> tokenizer_index_word_;
@@ -33,4 +32,4 @@ private:
     int max_length_;
 };
 
-#endif // MODELRUNNER_H
+#endif // MODEL_RUNNER_H

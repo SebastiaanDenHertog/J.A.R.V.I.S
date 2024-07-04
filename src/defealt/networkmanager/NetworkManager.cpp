@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 
+
+
 NetworkManager::NetworkManager(int port, const char *serverIp, ModelRunner *modelRunner)
     : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false), modelRunner(modelRunner)
 {

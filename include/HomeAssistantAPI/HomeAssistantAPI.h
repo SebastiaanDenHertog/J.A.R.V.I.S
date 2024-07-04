@@ -5,11 +5,18 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
+#include <boost/asio.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/version.hpp>
+#include <nlohmann/json.hpp>
 
 class HomeAssistantAPI
 {
 public:
-    HomeAssistantAPI(const std::string &host, int port, NetworkManager *networkManager);
+    HomeAssistantAPI(const std::string &host, int port, const std::string &token, NetworkManager *networkManager);
     ~HomeAssistantAPI();
 
     bool sendStateChange(const std::string &entityId, const std::string &newState);
@@ -21,10 +28,14 @@ public:
 private:
     std::string host;
     int port;
+    std::string token;
     NetworkManager *networkManager;
-    int serverSd;
+    boost::asio::io_context ioc;
+    boost::asio::ip::tcp::resolver resolver;
+    boost::asio::ip::tcp::socket socket;
 
-    std::string sendRequest(const std::string &request);
+    std::string sendRequest(const std::string &method, const std::string &target, const std::string &body = "");
+    std::string receiveResponse();
 };
 
 #endif // HOMEASSISTANTAPI_H

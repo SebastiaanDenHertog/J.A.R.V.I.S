@@ -3,8 +3,11 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
+#include "ClientInfo.h"
 
-class MediaPlayer {
+class MediaPlayer
+{
 public:
     MediaPlayer();
     virtual ~MediaPlayer();
@@ -13,6 +16,10 @@ public:
     bool initializeBluetooth();
     bool initializeWiFi();
     bool initializeAUX();
+
+    void setoutput(ClientInfo device, std::string output);
+
+    std::string FindSong(std::vector<std::vector<std::string>> entities);
 
     // Media control methods
     bool play(const std::string &mediaPath);

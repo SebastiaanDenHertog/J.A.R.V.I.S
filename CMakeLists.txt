@@ -170,6 +170,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/inputhandler"
     "${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI"
     "${PROJECT_SOURCE_DIR}/include/Tokenizer"
+    "${PROJECT_SOURCE_DIR}/include/ClientInfo"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
