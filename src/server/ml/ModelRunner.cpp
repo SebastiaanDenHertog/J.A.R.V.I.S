@@ -66,6 +66,17 @@ void ModelRunner::LoadTokenizer(const std::string &tokenizer_json_path)
         tokenizer_word_index_[word] = index;
     }
 
+    // Load max_length_ if it exists in the tokenizer JSON
+    if (tokenizer_json.contains("max_len"))
+    {
+        max_length_ = tokenizer_json["max_len"];
+        std::cout << "Loaded max_length_ from tokenizer: " << max_length_ << std::endl;
+    }
+    else
+    {
+        throw std::runtime_error("max_len not found in tokenizer JSON");
+    }
+
     std::cout << "Loaded tokenizer with " << tokenizer_index_word_.size() << " words." << std::endl;
 }
 

@@ -40,6 +40,7 @@ std::thread networkThread;
 std::thread terminalInputThread;
 std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 std::thread homeAssistantThread;
+
 std::string getLocalIP()
 {
     std::string local_ip;
@@ -153,7 +154,7 @@ Task::TaskType stringToTaskType(const std::string &str)
     }
 }
 
-void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI &homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
+void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (true)
     {
@@ -332,14 +333,19 @@ int main(int argc, char *argv[])
         delete server;
         return -1;
     }
-    try
+
+    // Try to initialize Home Assistant API
+    if (use_homeassistant)
     {
-        homeAssistantAPI = std::make_unique<HomeAssistantAPI>(homeassistant_ip, homeassistant_port, homeassistant_token, server);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error in the HomeAssistantAPI: " << e.what() << std::endl;
-        use_homeassistant = false;
+        try
+        {
+            homeAssistantAPI = std::make_unique<HomeAssistantAPI>(homeassistant_ip, homeassistant_port, homeassistant_token, server);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error in the HomeAssistantAPI: " << e.what() << std::endl;
+            use_homeassistant = false;
+        }
     }
 
     // Run the I/O service on the requested number of threads
@@ -351,6 +357,7 @@ int main(int argc, char *argv[])
             {
                 ctx->get_ioc()->run();
             });
+
     ctx->get_ioc()->run();
 
     TaskProcessor taskProcessor(modelRunner, homeAssistantAPI.get());
@@ -369,11 +376,9 @@ int main(int argc, char *argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });
 
-
     if (use_terminal_input)
     {
-        std::cout << "Starting terminal input thread. Type 'exit' to quit." << std::endl;
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), std::ref(*homeAssistantAPI), std::ref(inputHandler), std::ref(taskProcessor));
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
     }
 
     // Wait for all threads to finish
