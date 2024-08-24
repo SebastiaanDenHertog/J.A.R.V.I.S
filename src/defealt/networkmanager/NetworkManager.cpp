@@ -4,10 +4,8 @@
 #include <cstring>
 #include <iostream>
 
-
-
-NetworkManager::NetworkManager(int port, const char *serverIp, ModelRunner *modelRunner)
-    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false), modelRunner(modelRunner)
+NetworkManager::NetworkManager(int port, const char *serverIp, ModelRunner *nerModel, ModelRunner *classificationModel)
+    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false), nerModel(nerModel), classificationModel(classificationModel)
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
     std::cout << "Server Port: " << port << std::endl;
@@ -307,7 +305,7 @@ void NetworkManager::send(int sd, const char *data, size_t length, int flags)
 
 void NetworkManager::send(int sd, const uint8_t *data, size_t length, int flags)
 {
-    ::send(sd, reinterpret_cast<const char*>(data), length, flags);
+    ::send(sd, reinterpret_cast<const char *>(data), length, flags);
 }
 
 int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)

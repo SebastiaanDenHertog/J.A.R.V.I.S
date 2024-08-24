@@ -9,12 +9,13 @@
 class TaskProcessor
 {
 public:
-    TaskProcessor(ModelRunner &runner, HomeAssistantAPI *homeAssistantAPI);
+    TaskProcessor(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI);
 
     void processTask(const Task &task);
 
 private:
-    ModelRunner &modelRunner_;
+    ModelRunner &nerModel_; 
+    ModelRunner &classificationModel_; 
     HomeAssistantAPI *homeAssistantAPI_;
     std::function<void(const Task &task)> taskHandler_;
 

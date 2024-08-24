@@ -54,7 +54,7 @@ struct soundData
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp, ModelRunner *modelRunner);
+    NetworkManager(int port, const char *serverIp, ModelRunner *nerModel, ModelRunner *classificationModel);
     ~NetworkManager();
 
     void runServer();
@@ -65,10 +65,9 @@ public:
     void receiveResponse();
 
     void send(int sd, const char *data, size_t length, int flags);
-    void send(int sd, const uint8_t *data, size_t length, int flags); 
+    void send(int sd, const uint8_t *data, size_t length, int flags);
     int recv(int sd, char *buffer, size_t length, int flags);
-
-       int getServerSocket() const;
+    int getServerSocket() const;
 
 private:
     int port;
@@ -80,7 +79,8 @@ private:
     std::mutex clientMutex;
     std::unordered_set<int> knownClients;
 
-    ModelRunner *modelRunner; // Pointer to ModelRunner
+    ModelRunner *nerModel; // Pointer to ModelRunner
+    ModelRunner *classificationModel;
 
     void setupServerSocket();
     void bindSocket();

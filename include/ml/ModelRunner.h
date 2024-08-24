@@ -8,25 +8,24 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "Task.h"
 
 class ModelRunner
 {
 public:
-    ModelRunner(const std::unordered_map<std::string, std::string> &model_paths);
-    bool IsLoaded(const std::string &model_name);
+    ModelRunner(const std::string &model_path);
+    bool IsLoaded() const;
     void LoadTokenizer(const std::string &tokenizer_path);
-    void LoadLabels(const std::string &ner_labels_path, const std::string &command_type_labels_path);
-    bool RunInference(const std::string &input_text, std::vector<std::vector<float>> &ner_result, std::vector<float> &command_type_result);
-    std::pair<std::string, std::vector<std::string>> predictTaskFromInput(const std::string &input);
+    void LoadLabels(const std::string &labels_path);
+    bool RunInference(const std::string &input_text, std::vector<std::vector<float>> &result);
+    std::pair<std::string, std::vector<std::string>> PredictlabelFromInput(const std::string &input);
+    std::string ClassifySentence(const std::string &input);
 
 private:
     std::vector<int> TokenizeInput(const std::string &input_text);
 
-    std::unordered_map<std::string, std::unique_ptr<tflite::FlatBufferModel>> models_;
-    std::unordered_map<std::string, std::unique_ptr<tflite::Interpreter>> interpreters_;
-    std::unordered_map<int, std::string> ner_labels_;
-    std::unordered_map<int, std::string> command_type_labels_;
+    std::unique_ptr<tflite::FlatBufferModel> model_;
+    std::unique_ptr<tflite::Interpreter> interpreter_;
+    std::unordered_map<int, std::string> labels_;
     std::unordered_map<int, std::string> tokenizer_index_word_;
     std::unordered_map<std::string, int> tokenizer_word_index_;
     int max_length_;

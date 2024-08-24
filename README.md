@@ -88,8 +88,6 @@ will be taken.
 Given the large number of third-party AirPlay receivers (mostly closed-source) available for purchase, it is our understanding that an open source 
 implementation of the same functionality wouldn't violate any of Apple's rights either.
 
-
-
 # UxPlay authors
 
 _[adapted from fdraschbacher's notes on  RPiPlay antecedents]_
@@ -110,5 +108,9 @@ The previous authors of code included in UxPlay by inheritance from RPiPlay incl
   preserved [here](https://github.com/jiangban/AirplayServer), and [see here](https://github.com/FDH2/UxPlay/wiki/AirPlay2) for  the description 
   of the analysis of the AirPlay 2 mirror protocol that made RPiPlay possible, by the AirplayServer author. All 
   code in `lib/` concerning mirroring is dsafa22's work. License: GNU LGPLv2.1+
-* **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The
-   project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
+* **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
+
+# cppweb authors
+
+the base where the cppweb is build on is created by:
+https://github.com/mitant & https://github.com/antmit 

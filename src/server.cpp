@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include <boost/make_shared.hpp>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
@@ -100,48 +101,37 @@ bool checkBluetoothAvailability()
 Task::TaskType stringToTaskType(const std::string &str)
 {
     static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
-        {"ControlLight", Task::ControlLight},
-        {"SetTimer", Task::SetTimer},
-        {"PlayMusic", Task::PlayMusic},
-        {"SetReminder", Task::SetReminder},
-        {"WeatherQuery", Task::WeatherQuery},
-        {"SetAlarm", Task::SetAlarm},
-        {"SetTemperature", Task::SetTemperature},
-        {"NewsQuery", Task::GetNews},
-        {"Lock", Task::Lock},
-        {"Open", Task::Open},
-        {"Close", Task::Close},
-        {"StartMachine", Task::Start},
-        {"StopMachine", Task::Stop},
-        {"PauseVideo", Task::Pause},
-        {"ResumeVideo", Task::Resume},
-        {"TurnOn", Task::TurnOn},
-        {"TurnOff", Task::TurnOff},
-        {"Check", Task::Check},
-        {"Read", Task::Read},
-        {"Find", Task::Find},
-        {"Locate", Task::Locate},
         {"Book", Task::Book},
-        {"Call", Task::Call},
-        {"Message", Task::Message},
-        {"Command", Task::Command},
-        {"Question", Task::Question},
-        {"Information", Task::Information},
-        {"StartMusic", Task::PlayMusic},
-        {"ShoppingList", Task::ShoppingList},
-        {"GetRecipe", Task::GetRecipe},
-        {"SetVolume", Task::SetVolume},
-        {"Connect", Task::Connect},
-        {"PlayVideo", Task::PlayVideo},
-        {"GetTraffic", Task::GetTraffic},
-        {"OrderItem", Task::OrderItem},
+        {"Calculate", Task::Calculate},
         {"Calendar", Task::Calendar},
-        {"SetMachine", Task::SetMachine},
-        {"SentMessage", Task::SentMessage},
-        {"StopMusic", Task::Stop},
+        {"Call", Task::Call},
+        {"Connect", Task::Connect},
+        {"ControlHeating", Task::ControlHeating},
+        {"ControlLight", Task::ControlLight},
+        {"Define", Task::Define},
+        {"Email", Task::Email},
+        {"Find", Task::Find},
+        {"GetRecipe", Task::GetRecipe},
         {"GetShippingInfo", Task::GetShippingInfo},
-        {"ReadMessages", Task::ReadMessages},
-        {"info", Task::Info}};
+        {"Locate", Task::Locate},
+        {"Message", Task::Message},
+        {"Navigate", Task::Navigate},
+        {"NewsQuery", Task::NewsQuery},
+        {"OrderItem", Task::OrderItem},
+        {"PauseMusic", Task::PauseMusic},
+        {"PauseVideo", Task::PauseVideo},
+        {"PlayMusic", Task::PlayMusic},
+        {"PlayVideo", Task::PlayVideo},
+        {"Read", Task::Read},
+        {"Recommend", Task::Recommend},
+        {"ResumeVideo", Task::ResumeVideo},
+        {"SetAlarm", Task::SetAlarm},
+        {"SetTimer", Task::SetTimer},
+        {"SetVolume", Task::SetVolume},
+        {"ShoppingList", Task::ShoppingList},
+        {"Summarize", Task::Summarize},
+        {"Translate", Task::Translate},
+        {"WeatherQuery", Task::WeatherQuery}};
 
     auto it = strToTaskType.find(str);
     if (it != strToTaskType.end())
@@ -154,7 +144,7 @@ Task::TaskType stringToTaskType(const std::string &str)
     }
 }
 
-void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
+void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (true)
     {
@@ -167,16 +157,34 @@ void terminalInputFunction(ModelRunner &modelRunner, HomeAssistantAPI *homeAssis
             break;
         }
 
-        auto [predicted_intent, predicted_entities] = modelRunner.predictTaskFromInput(user_input);
-        std::cout << "Intent: " << predicted_intent << "\nEntities: ";
-        for (const auto &entity : predicted_entities)
-        {
-            std::cout << entity << " ";
-        }
-        std::cout << std::endl;
+        // Get predicted intent and entities
+        auto [predicted_intent, predicted_entities] = nerModel.PredictlabelFromInput(user_input);
 
-        // Convert predicted_intent to Task::TaskType
-        Task::TaskType taskType = stringToTaskType(predicted_intent);
+        // Store the sentence and the entities
+        std::vector<std::pair<std::string, std::string>> sentence_entities;
+
+        std::istringstream iss(user_input);
+        std::string word;
+        int entity_index = 0;
+
+        while (iss >> word && entity_index < predicted_entities.size())
+        {
+            sentence_entities.push_back({word, predicted_entities[entity_index]});
+            entity_index++;
+        }
+
+        // Output the sentence and its entities
+        std::cout << "Sentence and Entities: " << std::endl;
+        for (const auto &pair : sentence_entities)
+        {
+            std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
+        }
+
+        std::string sentence_label = classificationModel.ClassifySentence(user_input);
+        std::cout << "Intent: " << sentence_label << std::endl;
+
+        // Convert predicted intent to Task::TaskType
+        Task::TaskType taskType = stringToTaskType(sentence_label);
 
         Task task(predicted_intent, 1, device, taskType, {predicted_entities});
         inputHandler.addTask(task);
@@ -242,7 +250,7 @@ int main(int argc, char *argv[])
 
             if (use_homeassistant)
             {
-                std::cerr << "got home assistant input" << std::endl;
+                std::cerr << "Using homeAssistant" << std::endl;
             }
 
             if (std::string(argv[i]) == "--help")
@@ -264,13 +272,37 @@ int main(int argc, char *argv[])
     allowed_keys.insert("SampleKey");
     boost::shared_ptr<authorization_api> auth = boost::make_shared<authorization_api>(allowed_keys);
     boost::shared_ptr<web_service_context> ctx = boost::make_shared<web_service_context>(threads, auth);
-    std::cerr << getLocalIP() << std::endl;
     std::make_shared<web_service>(
         ctx,
         getLocalIP(),
         web_server_port,
         "web_service")
         ->run();
+
+    // Run the I/O service on the requested number of threads in a separate thread
+    std::thread ioServiceThread([&ctx, thread = threads]()
+                                {
+                                    std::vector<std::thread> ioThreads;
+                                    ioThreads.reserve(thread - 1);
+                                    for (auto i = thread - 1; i > 0; --i)
+                                        ioThreads.emplace_back(
+                                            [&ctx]
+                                            {
+                                                ctx->get_ioc()->run();
+                                            });
+
+                                    ctx->get_ioc()->run();
+
+                                    // Join all I/O threads before exiting
+                                    for (auto &t : ioThreads)
+                                    {
+                                        if (t.joinable())
+                                        {
+                                            t.join();
+                                        }
+                                    } });
+
+    std::cout << "Web server started." << std::endl;
 
     if (!checkBluetoothAvailability())
     {
@@ -297,25 +329,29 @@ int main(int argc, char *argv[])
     }
 
     // Initialize the model runner with a default max_length
-    std::unordered_map<std::string, std::string> model_paths = {
-        {"ner", "./models/test_ner_model.tflite"},
-        {"command", "./models/test_command_model.tflite"}};
-    ModelRunner modelRunner(model_paths);
+
+    ModelRunner NER_Model("./models/ner_model.tflite");
+    ModelRunner Classification_Model("./models/classification_model.tflite");
 
     try
     {
-        modelRunner.LoadTokenizer("./models/tokenizer.json");
-        modelRunner.LoadLabels("./models/ner_labels.json", "./models/command_type_labels.json");
-
-        if (!modelRunner.IsLoaded("ner") || !modelRunner.IsLoaded("command"))
-        {
-            std::cerr << "Failed to load one or more models." << std::endl;
-            return -1;
-        }
+        NER_Model.LoadTokenizer("./models/ner_tokenizer.json");
+        NER_Model.LoadLabels("./models/ner_labels.json");
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception in the modelrunner : " << e.what() << std::endl;
+        std::cerr << "Exception in the NER_Model : " << e.what() << std::endl;
+        return -1;
+    }
+
+    try
+    {
+        Classification_Model.LoadTokenizer("./models/classification_tokenizer.json");
+        Classification_Model.LoadLabels("./models/classification_type_labels.json");
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Exception in the Classification_Model : " << e.what() << std::endl;
         return -1;
     }
 
@@ -323,7 +359,7 @@ int main(int argc, char *argv[])
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        server = new NetworkManager(network_port, nullptr, &modelRunner);
+        server = new NetworkManager(network_port, nullptr, &NER_Model, &Classification_Model);
         networkThread = std::thread(&NetworkManager::runServer, server);
         DEBUG_PRINT("NetworkManager running.");
     }
@@ -348,19 +384,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Run the I/O service on the requested number of threads
-    std::vector<std::thread> ioThreads;
-    ioThreads.reserve(threads - 1);
-    for (auto i = threads - 1; i > 0; --i)
-        ioThreads.emplace_back(
-            [&ctx]
-            {
-                ctx->get_ioc()->run();
-            });
-
-    ctx->get_ioc()->run();
-
-    TaskProcessor taskProcessor(modelRunner, homeAssistantAPI.get());
+    TaskProcessor taskProcessor(NER_Model, Classification_Model, homeAssistantAPI.get());
     InputHandler inputHandler;
     // Process tasks
     std::thread taskProcessingThread([&]()
@@ -378,17 +402,10 @@ int main(int argc, char *argv[])
 
     if (use_terminal_input)
     {
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(modelRunner), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
     }
 
-    // Wait for all threads to finish
-    for (auto &t : ioThreads)
-    {
-        if (t.joinable())
-        {
-            t.join();
-        }
-    }
+    // Wait for other threads to finish
     if (bluetoothComm && bluetoothThread.joinable())
     {
         bluetoothThread.join();
@@ -412,6 +429,11 @@ int main(int argc, char *argv[])
     if (homeAssistantThread.joinable())
     {
         homeAssistantThread.join();
+    }
+
+    if (ioServiceThread.joinable())
+    {
+        ioServiceThread.join();
     }
 
     delete server;

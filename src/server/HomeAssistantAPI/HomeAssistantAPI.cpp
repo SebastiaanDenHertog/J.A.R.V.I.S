@@ -17,8 +17,7 @@ HomeAssistantAPI::HomeAssistantAPI(const std::string &host, int port, const std:
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception during connection: " << e.what() << std::endl;
-        throw;
+        throw std::runtime_error("Failed to connect to Home Assistant" + std::string(e.what()));
     }
 }
 
@@ -49,8 +48,7 @@ std::string HomeAssistantAPI::sendRequest(const std::string &method, const std::
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception during sendRequest: " << e.what() << std::endl;
-        throw;
+        throw std::runtime_error("Failed to send request to Home Assistant" + std::string(e.what()));
     }
 }
 
@@ -65,8 +63,7 @@ std::string HomeAssistantAPI::receiveResponse()
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Exception during receiveResponse: " << e.what() << std::endl;
-        throw;
+        throw std::runtime_error("Failed to receive response from Home Assistant" + std::string(e.what()));
     }
 }
 
