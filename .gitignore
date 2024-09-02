@@ -31,6 +31,12 @@
 *.out
 *.app
 
-/build
-/lib/libtorch
 .idea
+.vscode/
+
+# folders
+/models
+/build
+/lib
+
+/classes

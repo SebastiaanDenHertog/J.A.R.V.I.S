@@ -171,9 +171,11 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI"
     "${PROJECT_SOURCE_DIR}/include/Tokenizer"
     "${PROJECT_SOURCE_DIR}/include/ClientInfo"
+    "${PROJECT_SOURCE_DIR}/include/prometheus"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
+file(GLOB DEFEALT_SOURCESS "${PROJECT_SOURCE_DIR}/src/defealt/*/*/*.cpp")
 
 # Set the runtime output directory to the root of the build directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -181,20 +183,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 # Source files
 if(BUILD_COMPONENT STREQUAL "full")
     file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*/*.cpp")
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES} ${DEFEALT_SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
 elseif(BUILD_COMPONENT STREQUAL "server")
     file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*/*.cpp")
     set(SOURCES ${SERVER_SOURCES})
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES} ${DEFEALT_SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
     add_compile_definitions(SERVER_BUILD)
 elseif(BUILD_COMPONENT STREQUAL "client")
     file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*/*.cpp")
     set(SOURCES ${CLIENT_SOURCES})
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES} ${DEFEALT_SOURCES})
+    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
     add_compile_definitions(CLIENT_BUILD)
 endif()
 
-# Link against TensorFlow Lite and other libraries
 if(TARGET_OS STREQUAL "linux")
     if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
@@ -203,7 +204,7 @@ if(TARGET_OS STREQUAL "linux")
     endif()
 elseif(TARGET_OS STREQUAL "windows")
     if(BUILD_COMPONENT STREQUAL "full" OR BUILD_COMPONENT STREQUAL "server")
-            target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
+        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
     else()
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()

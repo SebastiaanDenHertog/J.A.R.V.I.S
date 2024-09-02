@@ -157,10 +157,24 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
 {
     std::vector<std::vector<float>> results;
 
-    RunInference(input, results);
+    std::cout << "Running inference for input: " << input << std::endl;
+
+    // Run inference and check if it succeeded
+    if (!RunInference(input, results))
+    {
+        throw std::runtime_error("Failed to run inference on input: " + input);
+    }
+
+    // Debug: Print the results size
+    std::cout << "Inference results size: " << results.size() << " x "
+              << (results.empty() ? 0 : results[0].size()) << std::endl;
 
     int predicted_class_index = std::distance(results[0].begin(), std::max_element(results[0].begin(), results[0].end()));
     std::string task_description = "Unknown";
+
+    // Debug: Print the predicted class index and corresponding probability
+    std::cout << "Predicted class index for task: " << predicted_class_index
+              << " with probability: " << results[0][predicted_class_index] << std::endl;
 
     if (!labels_.empty())
     {
@@ -187,9 +201,15 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
         words.push_back(word);
     }
 
+    // Debug: Print the words and their corresponding inference result
+    std::cout << "Words and their corresponding entity indices:" << std::endl;
     for (int i = 0; i < words.size(); ++i)
     {
         int predicted_entity_index = std::distance(results[i].begin(), std::max_element(results[i].begin(), results[i].end()));
+        std::cout << "Word: " << words[i]
+                  << " -> Predicted entity index: " << predicted_entity_index
+                  << " with probability: " << results[i][predicted_entity_index] << std::endl;
+
         if (labels_[predicted_entity_index] != "O")
         {
             entity_descriptions.push_back(words[i] + " (" + labels_[predicted_entity_index] + ")");

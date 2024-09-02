@@ -63,5 +63,18 @@ namespace routes
     res.prepare_payload();
     return res;
   }
+  // add funtion for phometheus metrics_handler
+  http::response<http::string_body> metrics_handler(const boost::shared_ptr<web_service_context> &ctx, QueryParameters QueryParameters, const std::string &body)
+  {
+    // return prometheus metrics for server.cpp
+    http::response<http::string_body> res;
+    res.version(HTTP_11);
+    res.result(http::status::ok);
+    res.set(http::field::server, HTTP_SERVER_VERSION);
+    res.set(http::field::content_type, "text/html");
+    res.body() = "registry";
+    res.prepare_payload();
+    return res;
+  }
 
 }

@@ -81,6 +81,7 @@ void web_service::run()
   route_handlers.insert(std::pair<std::string, RouteHandler>("/", routes::home));
   route_handlers.insert(std::pair<std::string, RouteHandler>("/livecheck", routes::livecheck_handler));
   route_handlers.insert(std::pair<std::string, RouteHandler>("/api_client", routes::api_client_handler));
+  route_handlers.insert(std::pair<std::string, RouteHandler>("/metrics", routes::metrics_handler));
   route_handlers.insert(std::pair<std::string, RouteHandler>("/*", routes::no_page_found));
 
   // Create and launch a listening port

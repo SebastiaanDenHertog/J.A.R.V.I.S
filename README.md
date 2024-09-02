@@ -105,12 +105,17 @@ The previous authors of code included in UxPlay by inheritance from RPiPlay incl
 * **EstebanKubata**: Created a FairPlay library called [PlayFair](https://github.com/EstebanKubata/playfair). Located in the `lib/playfair` folder. License: GNU GPL
 * **Juho Vähä-Herttua** and contributors: Created an AirPlay audio server called [ShairPlay](https://github.com/juhovh/shairplay), including support for Fairplay based on PlayFair. Most of the code   in `lib/` originally stems from this project. License: GNU LGPLv2.1+
 * **dsafa22**: Created an AirPlay 2 mirroring server [AirplayServer](https://github.com/dsafa22/AirplayServer) (seems gone now), for Android based on ShairPlay.   Code is 
-  preserved [here](https://github.com/jiangban/AirplayServer), and [see here](https://github.com/FDH2/UxPlay/wiki/AirPlay2) for  the description 
+  preserved [here](https://github.com/jiangban/AirplayServer), and [see here](https://github.com/FDH2/UxPlay/wiki/AirPlay2) for the description 
   of the analysis of the AirPlay 2 mirror protocol that made RPiPlay possible, by the AirplayServer author. All 
   code in `lib/` concerning mirroring is dsafa22's work. License: GNU LGPLv2.1+
 * **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
 
-# cppweb authors
+# Cppweb authors
 
-the base where the cppweb is build on is created by:
-https://github.com/mitant & https://github.com/antmit 
+The base where the cppweb is build on is created by:
+[mitant](https://github.com/mitant) & [antmit](https://github.com/antmit) 
+
+
+# Prometheus implementation
+
+The prometheus imlementation is based on the [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp) project. This is a unofficial project that is supported by prometheus themself.

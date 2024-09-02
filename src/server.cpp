@@ -19,6 +19,8 @@
 #include "TaskProcessor.h"
 #include "HomeAssistantAPI.h"
 #include "ClientInfo.h"
+#include "counter.h"
+#include "registry.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
@@ -154,7 +156,7 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 
         if (user_input == "exit")
         {
-            break;
+            exit(0);
         }
 
         // Get predicted intent and entities
@@ -197,6 +199,15 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
+
+    auto registry = std::make_shared<prometheus::Registry>();
+    auto &PHstatusset = prometheus::BuildCounter()
+                            .Name("api_status")
+                            .Help("Returns the status of the API (1 if up, 0 if down)")
+                            .Register(*registry);
+
+    auto &PHstatus = PHstatusset.Add({{"api", "status"}, {"status", "up"}});
+    PHstatus.Increment();
 
     bool use_terminal_input = false;
     if (argc > 1)
