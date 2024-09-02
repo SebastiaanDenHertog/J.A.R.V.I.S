@@ -54,8 +54,10 @@ struct soundData
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp, ModelRunner *nerModel, ModelRunner *classificationModel);
+    NetworkManager(int port, const char *serverIp);
     ~NetworkManager();
+
+    void addModels(ModelRunner *nerModel, ModelRunner *classificationModel);
 
     void runServer();
     void connectClient();

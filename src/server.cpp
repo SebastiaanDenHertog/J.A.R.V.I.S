@@ -370,7 +370,8 @@ int main(int argc, char *argv[])
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        server = new NetworkManager(network_port, nullptr, &NER_Model, &Classification_Model);
+        server = new NetworkManager(network_port, nullptr);
+        server->addModels(&NER_Model, &Classification_Model);
         networkThread = std::thread(&NetworkManager::runServer, server);
         DEBUG_PRINT("NetworkManager running.");
     }

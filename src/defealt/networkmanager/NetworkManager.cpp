@@ -4,8 +4,8 @@
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp, ModelRunner *nerModel, ModelRunner *classificationModel)
-    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false), nerModel(nerModel), classificationModel(classificationModel)
+NetworkManager::NetworkManager(int port, const char *serverIp)
+    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false)
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
     std::cout << "Server Port: " << port << std::endl;
@@ -31,6 +31,12 @@ NetworkManager::~NetworkManager()
             th.join();
         }
     }
+}
+
+void NetworkManager::addModels(ModelRunner *nerModel, ModelRunner *classificationModel)
+{
+    this->nerModel = nerModel;
+    this->classificationModel = classificationModel;
 }
 
 void NetworkManager::runServer()
