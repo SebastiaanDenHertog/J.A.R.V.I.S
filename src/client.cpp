@@ -20,11 +20,15 @@ uint8_t i2cDeviceAddress = 0x3b;
 uint8_t micCount = 4;
 uint8_t ledCount = 16;
 bool setbluetooth = false;
+bool use_airplay = false;
+bool use_blutooth = false;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
 std::thread NetworkSpeechThread;
+int *port;
+const char *serverIP;
 
 bool checkBluetoothAvailability()
 {
@@ -78,11 +82,53 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
-    const char *serverIP = argv[1];
-    int port = std::stoi(argv[2]);
-    
+
+    if (argc > 1)
+    {
+        for (int i = 1; i < argc; ++i)
+        {
+            if (std::string(argv[i]) == "--server-port")
+            {
+                if (i + 1 < argc)
+                {
+                    *port = std::stoi(argv[i+1]);
+                }
+            }
+
+            if (std::string(argv[i]) == "--server-ip")
+            {
+                if (i + 1 < argc)
+                {
+                   *serverIP = argv[i + 1];
+                }
+            }
+
+            if (std::string(argv[i]) == "--airplay")
+            {
+                use_airplay = true;
+            }
+
+            if (std::string(argv[i]) == "--bluetooth")
+            {
+                use_blutooth = true;
+            }   
+            
+            if (std::string(argv[i]) == "--help")
+            {
+                std::cout << "Usage: " << argv[0] << " [options]\n"
+                          << "Options:\n"
+                          << "  --server-port <port>: set port to connect to main server\n"
+                          << "  --server-ip <server-ip>:set ip to connect to main server \n"
+                          << "  --help: Display this help message\n";
+                return 0;
+            }
+        }
+    }
+  
+  if (use_blutooth){
     try
     {
+        
         if (checkBluetoothAvailability())
         {
             setbluetooth = true;
@@ -110,13 +156,14 @@ int main(int argc, char *argv[])
     {
         std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
     }
+    }
 
     std::thread networkThread([&]()
     {
         try
         {
             std::cout << "Client started." << std::endl;
-            NetworkManager client(port, serverIP, false);
+            NetworkManager client(*port, serverIP);
             client.connectClient();
 
             if (client.isConnectedToSpecialServer())
@@ -132,27 +179,27 @@ int main(int argc, char *argv[])
         }
     });
     networkThread.detach();
+    if(use_airplay){
+        try
+        {
+            DEBUG_PRINT("Starting AirPlayServer.");
 
-    try
-    {
-        DEBUG_PRINT("Starting AirPlayServer.");
-
-        // Clear argv and argc variables
-        argc -= 3;
-        argv += 3;
-        std::cout << argv[0] << std::endl;
-        AirPlayServer airplayserver;
-        AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
-                                          {   airplayserver.run(argc, argv);
-                                              airplayserver.main_loop(); });
-        DEBUG_PRINT("AirPlayServer started.");
+            // Clear argv and argc variables
+            argc -= 3;
+            argv += 3;
+            std::cout << argv[0] << std::endl;
+            AirPlayServer airplayserver;
+            AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
+                                            {   airplayserver.run(argc, argv);
+                                                airplayserver.main_loop(); });
+            DEBUG_PRINT("AirPlayServer started.");
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
+            return -1;
+        }
     }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
-        return -1;
-    }
-
     std::thread hardwareThread([&]()
                                {
         try
