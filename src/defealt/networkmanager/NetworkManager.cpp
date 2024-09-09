@@ -1,5 +1,4 @@
 #include "NetworkManager.h"
-#include "ModelRunner.h"
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -31,12 +30,6 @@ NetworkManager::~NetworkManager()
             th.join();
         }
     }
-}
-
-void NetworkManager::addModels(ModelRunner *nerModel, ModelRunner *classificationModel)
-{
-    this->nerModel = nerModel;
-    this->classificationModel = classificationModel;
 }
 
 void NetworkManager::runServer()
@@ -318,3 +311,13 @@ int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)
 {
     return ::recv(sd, buffer, length, flags);
 }
+
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+
+void NetworkManager::addModels(ModelRunner *nerModel, ModelRunner *classificationModel)
+{
+    this->nerModel = nerModel;
+    this->classificationModel = classificationModel;
+}
+
+#endif

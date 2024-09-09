@@ -11,8 +11,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-class ModelRunner; // Forward declaration
-
 struct SoundData
 {
     uint8_t *data;
@@ -57,8 +55,6 @@ public:
     NetworkManager(int port, const char *serverIp);
     ~NetworkManager();
 
-    void addModels(ModelRunner *nerModel, ModelRunner *classificationModel);
-
     void runServer();
     void connectClient();
     bool isConnectedToSpecialServer() const;
@@ -81,9 +77,6 @@ private:
     std::mutex clientMutex;
     std::unordered_set<int> knownClients;
 
-    ModelRunner *nerModel; // Pointer to ModelRunner
-    ModelRunner *classificationModel;
-
     void setupServerSocket();
     void bindSocket();
     void listenForClients();
@@ -99,3 +92,20 @@ private:
 };
 
 #endif // NETWORKMANAGER_H
+
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+
+#include "ModelRunner.h"
+
+class ModelRunner; // Forward declaration
+
+class NetworkManager
+{
+public:
+    void addModels(ModelRunner *nerModel, ModelRunner *classificationModel);
+
+private:
+    ModelRunner *nerModel; // Pointer to ModelRunner
+    ModelRunner *classificationModel;
+};
+#endif
