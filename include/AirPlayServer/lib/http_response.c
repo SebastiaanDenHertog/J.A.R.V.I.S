@@ -51,34 +51,29 @@ http_response_add_data(http_response_t *response, const char *data, int datalen)
     response->data_length += datalen;
 }
 
-http_response_t *
-http_response_revise(http_response_t *response, int new_code, const char *new_message) {
-    assert(response);
-    char *data = response->data;
-    int datalen = response->data_length;
-    const char *protocol = (const char *) response->data;
-    for (int i = 0; i < response->data_length; i++) {
-        if (*data == ' ') {
-            *data = '\0';
-        } else if (*data == '\n') {
-            data ++;
-            datalen--;
-            break;
-        }
-        data++;
-        datalen--;
-    }
-    http_response_t *revised_response = http_response_init(protocol, new_code, new_message);
-    http_response_add_data(revised_response, data, datalen);
-    free(response->data);
-    free(response);
-    return revised_response;
-}
 
 http_response_t *
-http_response_init(const char *protocol, int code, const char *message)
+http_response_create()
 {
-    http_response_t *response;
+    http_response_t *response =  (http_response_t *) calloc(1, sizeof(http_response_t));
+    if (!response) {
+        return NULL;
+    }
+    /* Allocate response data */
+    response->data_size = 1024;
+    response->data = (char *) malloc(response->data_size);
+    if (!response->data) {
+        free(response);
+        return NULL;
+    }
+    return response;
+}
+
+void
+http_response_init(http_response_t *response, const char *protocol, int code, const char *message)
+{
+    assert(response);
+    response->data_length = 0;    /* can be used to reinitialize a previously-initialized response */
     char codestr[4];
 
     assert(code >= 100 && code < 1000);
@@ -87,19 +82,6 @@ http_response_init(const char *protocol, int code, const char *message)
     memset(codestr, 0, sizeof(codestr));
     snprintf(codestr, sizeof(codestr), "%u", code);
 
-    response = calloc(1, sizeof(http_response_t));
-    if (!response) {
-        return NULL;
-    }
-
-    /* Allocate response data */
-    response->data_size = 1024;
-    response->data = malloc(response->data_size);
-    if (!response->data) {
-        free(response);
-        return NULL;
-    }
-
     /* Add first line of response to the data array */
     http_response_add_data(response, protocol, strlen(protocol));
     http_response_add_data(response, " ", 1);
@@ -107,8 +89,6 @@ http_response_init(const char *protocol, int code, const char *message)
     http_response_add_data(response, " ", 1);
     http_response_add_data(response, message, strlen(message));
     http_response_add_data(response, "\r\n", 2);
-
-    return response;
 }
 
 void

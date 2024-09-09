@@ -174,9 +174,20 @@ conn_request(void *ptr, http_request_t *request, http_response_t **response) {
         if (httpd_count_connection_type(conn->raop->httpd, CONNECTION_TYPE_RAOP)) {
             char ipaddr[40];
             utils_ipaddress_to_string(conn->remotelen, conn->remote, conn->zone_id, ipaddr, (int) (sizeof(ipaddr)));
-            logger_log(conn->raop->logger, LOGGER_WARNING, "rejecting new connection request from %s", ipaddr);	  
-            *response = http_response_init(protocol, 409, "Conflict: Server is connected to another client");
-            goto finish;
+            if (httpd_nohold(conn->raop->httpd)) {
+                logger_log(conn->raop->logger, LOGGER_INFO, "\"nohold\" feature: switch to new connection request from %s", ipaddr);		  
+                if (conn->raop->callbacks.video_reset) {
+		  printf("**************************video_reset*************************\n");
+                    conn->raop->callbacks.video_reset(conn->raop->callbacks.cls);
+		}
+		httpd_remove_known_connections(conn->raop->httpd);
+
+            } else {
+                logger_log(conn->raop->logger, LOGGER_WARNING, "rejecting new connection request from %s", ipaddr);
+                *response = http_response_create();
+                http_response_init(*response, protocol, 409, "Conflict: Server is connected to another client");
+                goto finish;
+	    }
         }      
         httpd_set_connection_type(conn->raop->httpd, ptr, CONNECTION_TYPE_RAOP);
         conn->connection_type = CONNECTION_TYPE_RAOP;
@@ -208,7 +219,7 @@ conn_request(void *ptr, http_request_t *request, http_response_t **response) {
     if (header_str) {
         logger_log(conn->raop->logger, LOGGER_DEBUG, "%s", header_str);
         bool data_is_plist = (strstr(header_str,"apple-binary-plist") != NULL);
-        bool data_is_text = (strstr(header_str,"text/parameters") != NULL);
+        bool data_is_text = (strstr(header_str,"text/") != NULL);
         free(header_str);
         int request_datalen;
         const char *request_data = http_request_get_data(request, &request_datalen);
@@ -236,8 +247,8 @@ conn_request(void *ptr, http_request_t *request, http_response_t **response) {
         }
     }
 
-    *response = http_response_init(protocol, 200, "OK");
-
+    *response = http_response_create();
+    http_response_init(*response, protocol, 200, "OK");
 
     //http_response_add_header(*response, "Apple-Jack-Status", "connected; type=analog");
 

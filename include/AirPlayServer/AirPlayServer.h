@@ -50,16 +50,16 @@ class AirPlayServer
 {
 public:
     AirPlayServer();
-    void run(int argc, char *argv[]);
+    void run();
     void restart();
     void reconnect();
     void main_loop();
     void cleanup();
+    void parse_arguments(int argc, char *argv[]);
 
 private:
     bool file_has_write_access(const char *filename);
     char *create_pin_display(char *pin_str, int margin, int gap);
-    void parse_arguments(int argc, char *argv[]);
     void dump_audio_to_file(unsigned char *data, int datalen, unsigned char type);
     void dump_video_to_file(unsigned char *data, int datalen);
     std::string find_uxplay_config_file();
@@ -87,7 +87,8 @@ private:
     bool check_blocked_client(char *deviceid);
     int start_raop_server(unsigned short display[5], unsigned short tcp[3], unsigned short udp[3], bool debug_log);
     void stop_raop_server();
-    void read_config_file(const char *filename, const char *uxplay_name);
+    void read_config_file(const char *filename);
+    static void video_reset(void *cls);
     static void display_pin(void *cls, char *pin);
     static void export_dacp(void *cls, const char *active_remote, const char *dacp_id);
     static void conn_init(void *cls);
