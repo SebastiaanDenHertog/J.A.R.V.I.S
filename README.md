@@ -8,7 +8,7 @@
 # Detailed description of J.A.R.V.I.S
 
 This project include multiple projects:
-* UxPlay [UxPlay site](https://github.com/FDH2/UxPlay))
+* UxPlay [UxPlay site](https://github.com/FDH2/UxPlay)
   * It was initially developed by
 [antimof](http://github.com/antimof/Uxplay) using code 
 from OpenMAX-based [RPiPlay](https://github.com/FD-/RPiPlay), which in turn derives from
