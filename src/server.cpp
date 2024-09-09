@@ -214,12 +214,12 @@ int main(int argc, char *argv[])
     {
         for (int i = 1; i < argc; ++i)
         {
-            if (std::string(argv[i]) == "--terminal-input")
+            if (std::string(argv[i]) == "-terminal-input")
             {
                 use_terminal_input = true;
             }
 
-            if (std::string(argv[i]) == "--network-port")
+            if (std::string(argv[i]) == "-network-port")
             {
                 if (i + 1 < argc)
                 {
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (std::string(argv[i]) == "--web-server-port")
+            if (std::string(argv[i]) == "-web-server-port")
             {
                 if (i + 1 < argc)
                 {
@@ -236,14 +236,14 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (std::string(argv[i]) == "--threads")
+            if (std::string(argv[i]) == "-threads")
             {
                 if (i + 1 < argc)
                 {
                     threads = std::atoi(argv[i + 1]);
                 }
             }
-            if (std::string(argv[i]) == "--homeassistant")
+            if (std::string(argv[i]) == "-homeassistant")
             {
                 use_homeassistant = true;
                 if (i + 3 < argc)
@@ -264,16 +264,16 @@ int main(int argc, char *argv[])
                 std::cerr << "Using homeAssistant" << std::endl;
             }
 
-            if (std::string(argv[i]) == "--help")
+            if (std::string(argv[i]) == "-help")
             {
                 std::cout << "Usage: " << argv[0] << " [options]\n"
                           << "Options:\n"
-                          << "  --terminal-input: Enable terminal input\n"
-                          << "  --network-port <port>: Set the network port\n"
-                          << "  --web-server-port <port>: Set the web server port\n"
-                          << "  --threads <number>: Set the number of threads\n"
-                          << "  --homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
-                          << "  --help: Display this help message\n";
+                          << "  -terminal-input: Enable terminal input\n"
+                          << "  -network-port <port>: Set the network port\n"
+                          << "  -web-server-port <port>: Set the web server port\n"
+                          << "  -threads <number>: Set the number of threads\n"
+                          << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
+                          << "  -help: Display this help message\n";
                 return 0;
             }
         }
@@ -396,7 +396,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    TaskProcessor taskProcessor(NER_Model, Classification_Model, homeAssistantAPI.get());
+    TaskProcessor taskProcessor(homeAssistantAPI.get());
+    taskProcessor.addModels(NER_Model, Classification_Model);
     InputHandler inputHandler;
     // Process tasks
     std::thread taskProcessingThread([&]()

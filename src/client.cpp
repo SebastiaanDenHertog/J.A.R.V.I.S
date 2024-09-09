@@ -27,7 +27,7 @@ std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
 std::thread NetworkSpeechThread;
-int *port;
+int port;
 const char *serverIP;
 
 bool checkBluetoothAvailability()
@@ -87,83 +87,116 @@ int main(int argc, char *argv[])
     {
         for (int i = 1; i < argc; ++i)
         {
-            if (std::string(argv[i]) == "--server-port")
+            if (std::string(argv[i]) == "-server-port")
             {
                 if (i + 1 < argc)
                 {
-                    *port = std::stoi(argv[i+1]);
+                    port = std::atoi(argv[i + 1]);
                 }
             }
 
-            if (std::string(argv[i]) == "--server-ip")
+            if (std::string(argv[i]) == "-server-ip")
             {
                 if (i + 1 < argc)
                 {
-                   *serverIP = argv[i + 1];
+                    serverIP = argv[i + 1];
                 }
             }
 
-            if (std::string(argv[i]) == "--airplay")
+            if (std::string(argv[i]) == "-airplay")
             {
                 use_airplay = true;
             }
 
-            if (std::string(argv[i]) == "--bluetooth")
+            if (std::string(argv[i]) == "-bluetooth")
             {
                 use_blutooth = true;
-            }   
-            
-            if (std::string(argv[i]) == "--help")
+            }
+
+            if (std::string(argv[i]) == "-help")
             {
                 std::cout << "Usage: " << argv[0] << " [options]\n"
                           << "Options:\n"
-                          << "  --server-port <port>: set port to connect to main server\n"
-                          << "  --server-ip <server-ip>:set ip to connect to main server \n"
-                          << "  --help: Display this help message\n";
+                          << "  -server-port <port>      : Set port to connect to the main server.\n"
+                          << "  -server-ip <server-ip>   : Set IP address to connect to the main server.\n"
+                          << "  -airplay                 : Enable AirPlay server functionality.\n"
+                          << "  -bluetooth               : Enable Bluetooth communication functionality.\n"
+                          << "  -help                    : Display this help message.\n"
+                          << "AirPlay Options:\n"
+                          << "  -allow <client>          : Allow specified client for AirPlay.\n"
+                          << "  -block <client>          : Block specified client from AirPlay.\n"
+                          << "  -restrict                : Restrict clients for AirPlay (use 'no' to disable).\n"
+                          << "  -n <name>                : Set the server name for AirPlay.\n"
+                          << "  -nh                      : Disable appending hostname for AirPlay.\n"
+                          << "  -async [no] <delay>      : Enable audio synchronization (or disable with 'no') with optional delay.\n"
+                          << "  -vsync [no] <delay>      : Enable video synchronization (or disable with 'no') with optional delay.\n"
+                          << "  -s <widthxheight>@<rate> : Set display resolution and refresh rate for video output.\n"
+                          << "  -fps <n>                 : Set the frame rate (default is 30fps).\n"
+                          << "  -o                       : Enable overlay mode for video.\n"
+                          << "  -f <flip-type>           : Set video flip type (options: H, V, I).\n"
+                          << "  -r <rotation-type>       : Set video rotation type (options: R, L).\n"
+                          << "  -p [tcp|udp]             : Set the protocol for communication (default is tcp and udp).\n"
+                          << "  -m <mac-address>         : Set MAC address (or use random if omitted).\n"
+                          << "  -a                       : Disable audio functionality.\n"
+                          << "  -d                       : Toggle debug logging.\n"
+                          << "  -fs                      : Enable fullscreen mode for video.\n"
+                          << "  -reset <n>               : Set the reset timeout (n >= 0, default is 0).\n"
+                          << "  -nofreeze                : Do NOT leave frozen screen in place after reset.\n"
+                          << "  -key <filename>          : Specify the file for persistent key storage.\n"
+                          << "  -pin <nnnn>              : Enable legacy pairing with the specified 4-digit PIN.\n"
+                          << "  -reg <filename>          : Specify the file for AirPlay registration data.\n"
+                          << "  -as <audiosink>          : Set the audio sink for AirPlay.\n"
+                          << "  -vs <videosink>          : Set the video sink for AirPlay.\n"
+                          << "  -nc                      : Set new window closing behavior.\n"
+                          << "  -avdec                   : Use avdec decoder for video.\n"
+                          << "  -v4l2                    : Use v4l2 decoder for video on Linux devices.\n"
+                          << "  -db <low:high>           : Set decibel gain range for audio.\n"
+                          << std::endl;
                 return 0;
             }
         }
     }
-  
-  if (use_blutooth){
-    try
-    {
-        
-        if (checkBluetoothAvailability())
-        {
-            setbluetooth = true;
-            DEBUG_PRINT("Bluetooth is available.");
-        }
-        else
-        {
-            std::cerr << "Bluetooth is not available on this device." << std::endl;
-        }
-
-        if (setbluetooth)
-        {
-            bluetoothComm = std::make_unique<BluetoothComm>();
-            if (!bluetoothComm->initialize())
-            {
-                std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
-            }
-            DEBUG_PRINT("Bluetooth communication initialized.");
-
-            bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
-            DEBUG_PRINT("Bluetooth thread started.");
-        }
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
-    }
-    }
-
-    std::thread networkThread([&]()
+    if (use_blutooth)
     {
         try
         {
+
+            if (checkBluetoothAvailability())
+            {
+                setbluetooth = true;
+                DEBUG_PRINT("Bluetooth is available.");
+            }
+            else
+            {
+                std::cerr << "Bluetooth is not available on this device." << std::endl;
+            }
+
+            if (setbluetooth)
+            {
+                bluetoothComm = std::make_unique<BluetoothComm>();
+                if (!bluetoothComm->initialize())
+                {
+                    std::cerr << "Failed to initialize Bluetooth communication." << std::endl;
+                }
+                DEBUG_PRINT("Bluetooth communication initialized.");
+
+                bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
+                DEBUG_PRINT("Bluetooth thread started.");
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error initializing communication or AirPlayServer: " << e.what() << std::endl;
+        }
+    }
+
+    std::thread networkThread([&]()
+                              {
+        try
+        {
             std::cout << "Client started." << std::endl;
-            NetworkManager client(*port, serverIP);
+            NetworkManager client(
+                port, serverIP);
             client.connectClient();
 
             if (client.isConnectedToSpecialServer())
@@ -176,22 +209,23 @@ int main(int argc, char *argv[])
         catch (const std::exception &e)
         {
             std::cerr << "Error: " << e.what() << std::endl;
-        }
-    });
+        } });
     networkThread.detach();
-    if(use_airplay){
+    if (use_airplay)
+    {
         try
         {
             DEBUG_PRINT("Starting AirPlayServer.");
-
-            // Clear argv and argc variables
-            argc -= 3;
-            argv += 3;
-            std::cout << argv[0] << std::endl;
             AirPlayServer airplayserver;
-            AirPlayServerThread = std::thread([&airplayserver, argc, argv]()
-                                            {   airplayserver.run(argc, argv);
-                                                airplayserver.main_loop(); });
+
+            // Pass all arguments as-is to parse_arguments
+            airplayserver.parse_arguments(argc, argv);
+
+            AirPlayServerThread = std::thread([&airplayserver]()
+                                              {
+                airplayserver.run();
+                airplayserver.main_loop(); });
+
             DEBUG_PRINT("AirPlayServer started.");
         }
         catch (const std::exception &e)
