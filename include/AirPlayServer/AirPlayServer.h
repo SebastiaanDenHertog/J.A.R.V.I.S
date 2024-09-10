@@ -162,7 +162,7 @@ private:
     int max_connections;
     unsigned short raop_port;
     unsigned short airplay_port;
-    uint64_t remote_clock_offset;
+    stuint64_t remote_clock_offset;
     std::vector<std::string> allowed_clients;
     std::vector<std::string> blocked_clients;
     bool restrict_clients;
