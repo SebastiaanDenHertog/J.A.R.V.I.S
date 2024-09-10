@@ -1814,9 +1814,9 @@ void AirPlayServer::conn_reset(void *cls, int timeouts, bool reset_video)
              "   the default timeout limit n = %d can be changed with the \"-reset n\" option",
              NTP_TIMEOUT_LIMIT);
     }
-    if (!nofreeze)
+    if (!server->nofreeze)
     {
-        close_window = reset_video; /* leave "frozen" window open if reset_video is false */
+        server->close_window = reset_video; /* leave "frozen" window open if reset_video is false */
     }
     raop_stop(server->raop);
     server->reset_loop = true;
@@ -2057,9 +2057,10 @@ extern "C" void AirPlayServer::audio_set_progress(void *cls, unsigned int start,
 
 extern "C" void AirPlayServer::video_reset(void *cls)
 {
-    reset_loop = true;
-    remote_clock_offset = 0;
-    relaunch_video = true;
+    AirPlayServer *server = static_cast<AirPlayServer *>(cls);
+    server->reset_loop = true;
+    server->remote_clock_offset = 0;
+    server->relaunch_video = true;
 }
 
 extern "C" void AirPlayServer::display_pin(void *cls, char *pin)
