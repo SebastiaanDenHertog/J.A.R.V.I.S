@@ -48,6 +48,10 @@ endif()
 # Option to select the architecture, default is x86_64
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64)")
 
+add_definitions(-DBUILD_SERVER)
+add_definitions(-DBUILD_CLIENT)
+add_definitions(-DBUILD_FULL)
+
 # Define options for building different components
 option(BUILD_FULL "Build everything (server + client)" OFF)
 option(BUILD_SERVER "Build only server components" OFF)
