@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Client started." << std::endl;
             NetworkManager client(
-                port, serverIP);
+                port, serverIP, NetworkManager::Protocol::TCP);
             client.connectClient();
 
             if (client.isConnectedToSpecialServer())

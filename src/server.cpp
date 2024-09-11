@@ -366,19 +366,18 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    NetworkManager *server = nullptr;
+    NetworkManager *networkserver = nullptr;
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        server = new NetworkManager(network_port, nullptr);
-        server->addModels(&NER_Model, &Classification_Model);
-        networkThread = std::thread(&NetworkManager::runServer, server);
+        networkserver = new NetworkManager(network_port, nullptr,NetworkManager::Protocol::TCP, &NER_Model, &Classification_Model);
+        networkThread = std::thread(&NetworkManager::runServer, networkserver);
         DEBUG_PRINT("NetworkManager running.");
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error in the NetworkManager: " << e.what() << std::endl;
-        delete server;
+        delete networkserver;
         return -1;
     }
 
@@ -387,7 +386,7 @@ int main(int argc, char *argv[])
     {
         try
         {
-            homeAssistantAPI = std::make_unique<HomeAssistantAPI>(homeassistant_ip, homeassistant_port, homeassistant_token, server);
+            homeAssistantAPI = std::make_unique<HomeAssistantAPI>(homeassistant_ip, homeassistant_port, homeassistant_token, networkserver);
         }
         catch (const std::exception &e)
         {
@@ -396,8 +395,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    TaskProcessor taskProcessor(homeAssistantAPI.get());
-    taskProcessor.addModels(NER_Model, Classification_Model);
+    TaskProcessor taskProcessor(homeAssistantAPI.get(), NER_Model, Classification_Model);
     InputHandler inputHandler;
     // Process tasks
     std::thread taskProcessingThread([&]()
@@ -449,7 +447,7 @@ int main(int argc, char *argv[])
         ioServiceThread.join();
     }
 
-    delete server;
+    delete networkserver;
     std::cout << "Application finished." << std::endl;
     return 0;
 }

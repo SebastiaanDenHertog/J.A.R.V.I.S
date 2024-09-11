@@ -10,6 +10,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+#include "ModelRunner.h"
+#endif
+
 
 struct SoundData
 {
@@ -28,31 +32,21 @@ struct SoundData
     }
 };
 
-struct soundData
-{
-    uint8_t *audioData;
-    uint32_t dataLength;
-
-    soundData() : audioData(nullptr), dataLength(0) {}
-
-    ~soundData()
-    {
-        delete[] audioData;
-    }
-
-    void update(uint8_t *newData, uint32_t newLength)
-    {
-        delete[] audioData;
-        audioData = new uint8_t[newLength];
-        std::copy(newData, newData + newLength, audioData);
-        dataLength = newLength;
-    }
-};
-
 class NetworkManager
 {
 public:
-    NetworkManager(int port, const char *serverIp);
+    enum Protocol
+    {
+        TCP,
+        UDP
+    };
+
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+    NetworkManager(int port, const char *serverIp, Protocol protocol,ModelRunner *nerModel, ModelRunner *classificationModel);
+#else
+    NetworkManager(int port, const char *serverIp, Protocol protocol);
+#endif
+  
     ~NetworkManager();
 
     void runServer();
@@ -64,20 +58,27 @@ public:
 
     void send(int sd, const char *data, size_t length, int flags);
     void send(int sd, const uint8_t *data, size_t length, int flags);
+    void sendToUDP(const uint8_t *data, size_t length);
     int recv(int sd, char *buffer, size_t length, int flags);
+    int recvFromUDP(uint8_t *buffer, size_t length);
     int getServerSocket() const;
 
 private:
     int port;
     const char *serverIp;
     int serverSd;
+    int udpSd;
     sockaddr_in servAddr;
+    sockaddr_in clientAddrUDP;
+    socklen_t clientAddrUDPSize;
     bool connectedToSpecialServer;
+    Protocol protocol;
     std::vector<std::thread> clientThreads;
     std::mutex clientMutex;
     std::unordered_set<int> knownClients;
 
     void setupServerSocket();
+    void setupUDPSocket();
     void bindSocket();
     void listenForClients();
     void acceptClient();
@@ -89,23 +90,11 @@ private:
     void processSoundData(const SoundData *inputData, uint8_t *outputData);
     bool isKnownClient(int clientSd);
     void addKnownClient(int clientSd);
+
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+    ModelRunner *nerModel;  // Model for NER
+    ModelRunner *classificationModel; // Model for Classification
+#endif
 };
 
 #endif // NETWORKMANAGER_H
-
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
-
-#include "ModelRunner.h"
-
-class ModelRunner; // Forward declaration
-
-class NetworkManager
-{
-public:
-    void addModels(ModelRunner *nerModel, ModelRunner *classificationModel);
-
-private:
-    ModelRunner *nerModel; // Pointer to ModelRunner
-    ModelRunner *classificationModel;
-};
-#endif

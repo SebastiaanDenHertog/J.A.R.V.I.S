@@ -3,26 +3,64 @@
 #include <cstring>
 #include <iostream>
 
-NetworkManager::NetworkManager(int port, const char *serverIp)
-    : port(port), serverIp(serverIp), serverSd(-1), connectedToSpecialServer(false)
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+
+NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
+    : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
     std::cout << "Server Port: " << port << std::endl;
-    if (serverIp == nullptr)
+
+    if (protocol == TCP)
     {
-        setupServerSocket();
-        bindSocket();
-        listenForClients();
+        if (serverIp == nullptr)
+        {
+            setupServerSocket();
+            bindSocket();
+            listenForClients();
+        }
+        else
+        {
+            setupClientSocket();
+        }
     }
-    else
+    else if (protocol == UDP)
     {
-        setupClientSocket();
+        setupUDPSocket();
     }
 }
+
+#else
+NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol)
+    : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
+{
+    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
+    std::cout << "Server Port: " << port << std::endl;
+
+    if (protocol == TCP)
+    {
+        if (serverIp == nullptr)
+        {
+            setupServerSocket();
+            bindSocket();
+            listenForClients();
+        }
+        else
+        {
+            setupClientSocket();
+        }
+    }
+    else if (protocol == UDP)
+    {
+        setupUDPSocket();
+    }
+}
+#endif
 
 NetworkManager::~NetworkManager()
 {
     closeSocket(serverSd);
+    closeSocket(udpSd);
     for (auto &th : clientThreads)
     {
         if (th.joinable())
@@ -30,29 +68,6 @@ NetworkManager::~NetworkManager()
             th.join();
         }
     }
-}
-
-void NetworkManager::runServer()
-{
-    while (true)
-    {
-        acceptClient();
-    }
-}
-
-void NetworkManager::connectClient()
-{
-    connectToServer();
-
-    if (std::strcmp(serverIp, "84.106.59.35") == 0)
-    {
-        connectedToSpecialServer = true;
-    }
-}
-
-bool NetworkManager::isConnectedToSpecialServer() const
-{
-    return connectedToSpecialServer;
 }
 
 void NetworkManager::setupServerSocket()
@@ -74,7 +89,156 @@ void NetworkManager::setupServerSocket()
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(port);
-    std::cout << "Server socket created with descriptor: " << serverSd << std::endl;
+    std::cout << "TCP Server socket created with descriptor: " << serverSd << std::endl;
+}
+
+void NetworkManager::setupUDPSocket()
+{
+    udpSd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udpSd < 0)
+    {
+        perror("Error establishing the UDP socket");
+        exit(1);
+    }
+
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servAddr.sin_port = htons(port);
+    std::cout << "UDP Socket created" << std::endl;
+
+    if (bind(udpSd, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
+    {
+        perror("Error binding UDP socket");
+        exit(1);
+    }
+}
+
+void NetworkManager::runServer()
+{
+    if (protocol == TCP)
+    {
+        while (true)
+        {
+            acceptClient();
+        }
+    }
+    else if (protocol == UDP)
+    {
+        while (true)
+        {
+            uint8_t buffer[1024];
+            int bytesReceived = recvFromUDP(buffer, sizeof(buffer));
+            if (bytesReceived > 0)
+            {
+                std::cout << "Received UDP data: " << std::string((char *)buffer, bytesReceived) << std::endl;
+            }
+        }
+    }
+}
+
+void NetworkManager::sendToUDP(const uint8_t *data, size_t length)
+{
+    sendto(udpSd, data, length, 0, (struct sockaddr *)&clientAddrUDP, clientAddrUDPSize);
+}
+
+int NetworkManager::recvFromUDP(uint8_t *buffer, size_t length)
+{
+    return recvfrom(udpSd, buffer, length, 0, (struct sockaddr *)&clientAddrUDP, &clientAddrUDPSize);
+}
+
+void NetworkManager::connectClient()
+{
+    if (protocol == TCP)
+    {
+        connectToServer();
+
+        if (std::strcmp(serverIp, "192.168.30.11") == 0)
+        {
+            connectedToSpecialServer = true;
+        }
+    }
+    else if (protocol == UDP)
+    {
+        std::cout << "UDP connection setup." << std::endl;
+    }
+}
+
+bool NetworkManager::isConnectedToSpecialServer() const
+{
+    return connectedToSpecialServer;
+}
+
+void NetworkManager::setupClientSocket()
+{
+    serverSd = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSd < 0)
+    {
+        perror("Error establishing the client socket");
+        exit(0);
+    }
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_port = htons(port);
+}
+
+void NetworkManager::connectToServer()
+{
+    servAddr.sin_addr.s_addr = inet_addr(serverIp);
+
+    int connectionStatus = -1;
+    while (connectionStatus < 0)
+    {
+        connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+        if (connectionStatus < 0)
+        {
+            perror("Error connecting to server. Retrying in 5 seconds...");
+            sleep(5);
+        }
+    }
+    std::cout << "Successfully connected to the server." << std::endl;
+}
+
+void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
+{
+    if (protocol == TCP)
+    {
+        std::ostringstream request;
+        request << "POST /sound HTTP/1.1\r\n";
+        request << "Content-Length: " << length << "\r\n";
+        request << "Content-Type: application/octet-stream\r\n\r\n";
+
+        send(serverSd, request.str().c_str(), request.str().length(), 0);
+        send(serverSd, data, length, 0);
+    }
+    else if (protocol == UDP)
+    {
+        sendToUDP(data, length);
+    }
+}
+
+void NetworkManager::receiveResponse()
+{
+    if (protocol == TCP)
+    {
+        char buffer[1024];
+        memset(buffer, 0, 1024);
+        int bytesReceived = recv(serverSd, buffer, 1024, 0);
+        if (bytesReceived < 0)
+        {
+            perror("Failed to read data from server");
+            return;
+        }
+
+        std::cout << "Received response from server: " << std::string(buffer, bytesReceived) << std::endl;
+    }
+    else if (protocol == UDP)
+    {
+        uint8_t buffer[1024];
+        int bytesReceived = recvFromUDP(buffer, sizeof(buffer));
+        if (bytesReceived > 0)
+        {
+            std::cout << "Received UDP response: " << std::string((char *)buffer, bytesReceived) << std::endl;
+        }
+    }
 }
 
 void NetworkManager::bindSocket()
@@ -130,60 +294,6 @@ void NetworkManager::acceptClient()
 
     std::lock_guard<std::mutex> guard(clientMutex);
     clientThreads.push_back(std::thread(&NetworkManager::session, this, newSd));
-}
-
-void NetworkManager::setupClientSocket()
-{
-    serverSd = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSd < 0)
-    {
-        perror("Error establishing the client socket");
-        exit(0);
-    }
-    servAddr.sin_family = AF_INET;
-    servAddr.sin_port = htons(port);
-}
-
-void NetworkManager::connectToServer()
-{
-    servAddr.sin_addr.s_addr = inet_addr(serverIp);
-
-    int connectionStatus = -1;
-    while (connectionStatus < 0)
-    {
-        connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
-        if (connectionStatus < 0)
-        {
-            perror("Error connecting to server. Retrying in 5 seconds...");
-            sleep(5);
-        }
-    }
-    std::cout << "Successfully connected to the server." << std::endl;
-}
-
-void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
-{
-    std::ostringstream request;
-    request << "POST /sound HTTP/1.1\r\n";
-    request << "Content-Length: " << length << "\r\n";
-    request << "Content-Type: application/octet-stream\r\n\r\n";
-
-    send(serverSd, request.str().c_str(), request.str().length(), 0);
-    send(serverSd, data, length, 0);
-}
-
-void NetworkManager::receiveResponse()
-{
-    char buffer[1024];
-    memset(buffer, 0, 1024);
-    int bytesReceived = recv(serverSd, buffer, 1024, 0);
-    if (bytesReceived < 0)
-    {
-        perror("Failed to read data from server");
-        return;
-    }
-
-    std::cout << "Received response from server: " << std::string(buffer, bytesReceived) << std::endl;
 }
 
 void NetworkManager::session(int clientSd)
@@ -312,12 +422,3 @@ int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)
     return ::recv(sd, buffer, length, flags);
 }
 
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
-
-void NetworkManager::addModels(ModelRunner *nerModel, ModelRunner *classificationModel)
-{
-    this->nerModel = nerModel;
-    this->classificationModel = classificationModel;
-}
-
-#endif

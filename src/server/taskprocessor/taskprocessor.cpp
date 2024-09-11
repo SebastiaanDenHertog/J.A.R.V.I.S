@@ -2,17 +2,33 @@
 #include "MediaPlayer.h"
 #include <iostream>
 
-TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI)
-    : homeAssistantAPI_(homeAssistantAPI)
-{
-    // Initialize taskHandler_ with a valid function
-    taskHandler_ = [this](const Task &task)
+
+#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+    TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
+    homeAssistantAPI_(homeAssistantAPI), nerModel_(nerModel), classificationModel_(classificationModel)
     {
-        // Example task handling code
-        std::cout << "Handling task: " << task.description << std::endl;
-        // Additional task processing logic
-    };
-}
+        // Initialize taskHandler_ with a valid function
+        taskHandler_ = [this](const Task &task)
+        {
+            // Example task handling code
+            std::cout << "Handling task: " << task.description << std::endl;
+            // Additional task processing logic
+        };
+    }
+#else
+    TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI)
+        : homeAssistantAPI_(homeAssistantAPI)
+    {
+        // Initialize taskHandler_ with a valid function
+        taskHandler_ = [this](const Task &task)
+        {
+            // Example task handling code
+            std::cout << "Handling task: " << task.description << std::endl;
+            // Additional task processing logic
+        };
+    }
+#endif
+
 
 void TaskProcessor::processTask(const Task &task)
 {
@@ -131,7 +147,6 @@ void TaskProcessor::processTask(const Task &task)
         std::cerr << "Unknown task type received: " << task.description << std::endl;
         break;
     }
-
 }
 
 void TaskProcessor::processGeneralTask(const Task &task)
@@ -139,15 +154,6 @@ void TaskProcessor::processGeneralTask(const Task &task)
     // General task processing logic here
     std::cout << "Processing general task: " << task.description << std::endl;
 }
-
-
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
-
-void TaskProcessor::addModels(ModelRunner &nerModel, ModelRunner &classificationModel){
-    this->nerModel_ = nerModel;
-    this->classificationModel_ = classificationModel;
-}
-
 
 void TaskProcessor::processHomeAssistantTask(const Task &task)
 {
@@ -167,6 +173,5 @@ void TaskProcessor::processHomeAssistantTask(const Task &task)
     {
         std::cerr << "Home Assistant API is not initialized." << std::endl;
     }
-}
 
-#endif
+}
