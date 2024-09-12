@@ -2,7 +2,6 @@
 #include "MediaPlayer.h"
 #include <iostream>
 
-#if BUILD_SERVER == ON || BUILD_FULL == ON
     TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
     homeAssistantAPI_(homeAssistantAPI), nerModel_(nerModel), classificationModel_(classificationModel)
     {
@@ -14,19 +13,6 @@
             // Additional task processing logic
         };
     }
-#else
-    TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI)
-        : homeAssistantAPI_(homeAssistantAPI)
-    {
-        // Initialize taskHandler_ with a valid function
-        taskHandler_ = [this](const Task &task)
-        {
-            // Example task handling code
-            std::cout << "Handling task: " << task.description << std::endl;
-            // Additional task processing logic
-        };
-    }
-#endif
 
 void TaskProcessor::processTask(const Task &task)
 {
