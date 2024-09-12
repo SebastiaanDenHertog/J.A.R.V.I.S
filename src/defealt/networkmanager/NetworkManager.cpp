@@ -3,7 +3,7 @@
 #include <cstring>
 #include <iostream>
 
-#if BUILD_SERVER == ON || BUILD_FULL == ON
+#if defined(BUILD_FULL) || defined(BUILD_SERVER)
 
 NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)

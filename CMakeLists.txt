@@ -17,7 +17,7 @@ cmake_policy(SET CMP0042 NEW)
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "Setting build type to Release, for debug builds use"
     "'-DCMAKE_BUILD_TYPE=Debug'.")
-  set(CMAKE_BUILD_TYPE "RELEASE")
+  set(CMAKE_BUILD_TYPE "Release")
 else()
   message(STATUS "Build type is ${CMAKE_BUILD_TYPE}.")
   add_definitions(-DDEBUG_MODE)
@@ -45,15 +45,16 @@ else()
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
-# Option to select the architecture, default is x86_64
+# Define target architecture and OS
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64)")
+set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
 
-# Define options for building different components
+# Options for different components
 option(BUILD_FULL "Build everything (server + client)" OFF)
 option(BUILD_SERVER "Build only server components" OFF)
 option(BUILD_CLIENT "Build only client components" OFF)
 
-# Ensure mutually exclusive options
+# Ensure mutually exclusive build options
 if((BUILD_FULL AND BUILD_SERVER) OR (BUILD_FULL AND BUILD_CLIENT) OR (BUILD_SERVER AND BUILD_CLIENT))
   message(FATAL_ERROR "You must enable only one of BUILD_FULL, BUILD_SERVER, or BUILD_CLIENT.")
 endif()
@@ -64,38 +65,17 @@ if(NOT BUILD_FULL AND NOT BUILD_SERVER AND NOT BUILD_CLIENT)
   set(BUILD_FULL ON)
 endif()
 
-# Ensure mutually exclusive options (only one of these can be ON at a time)
+# Set preprocessor definitions based on the build type
 if(BUILD_FULL)
-  set(BUILD_SERVER OFF)
-  set(BUILD_CLIENT OFF)
+  add_definitions(-DBUILD_FULL)
+  message("Building full code")
 elseif(BUILD_SERVER)
-  set(BUILD_CLIENT OFF)
+  add_definitions(-DBUILD_SERVER)
+  message("Building server code")
 elseif(BUILD_CLIENT)
-  set(BUILD_SERVER OFF)
+  add_definitions(-DBUILD_CLIENT)
+  message("Building client code")
 endif()
-
-# Define the macros as ON or OFF
-if(BUILD_SERVER)
-  add_definitions(-DBUILD_SERVER=ON)
-else()
-  add_definitions(-DBUILD_SERVER=OFF)
-endif()
-
-if(BUILD_FULL)
-  add_definitions(-DBUILD_FULL=ON)
-else()
-  add_definitions(-DBUILD_FULL=OFF)
-endif()
-
-if(BUILD_CLIENT)
-  add_definitions(-DBUILD_CLIENT=ON)
-else()
-  add_definitions(-DBUILD_CLIENT=OFF)
-endif()
-
-
-# Option to select the operating system, default is linux
-set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
 
 # Include the toolchain file based on the architecture and OS
 if("${TARGET_ARCH}" STREQUAL "aarch64" AND "${TARGET_OS}" STREQUAL "linux")

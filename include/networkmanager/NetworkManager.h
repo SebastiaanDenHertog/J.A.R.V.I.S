@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#if BUILD_SERVER == ON || BUILD_FULL == ON
+#if defined(BUILD_FULL) || defined(BUILD_SERVER)
     #include "ModelRunner.h"
 #endif
 
@@ -31,6 +31,27 @@ struct SoundData
     }
 };
 
+struct soundData
+{
+    uint8_t *audioData;
+    uint32_t dataLength;
+
+    soundData() : audioData(nullptr), dataLength(0) {}
+
+    ~soundData()
+    {
+        delete[] audioData;
+    }
+
+    void update(uint8_t *newData, uint32_t newLength)
+    {
+        delete[] audioData;
+        audioData = new uint8_t[newLength];
+        std::copy(newData, newData + newLength, audioData);
+        dataLength = newLength;
+    }
+};
+
 class NetworkManager
 {
 public:
@@ -40,12 +61,11 @@ public:
         UDP
     };
 
-#if BUILD_SERVER == ON || BUILD_FULL == ON
-    NetworkManager(int port, const char *serverIp, Protocol protocol,ModelRunner *nerModel, ModelRunner *classificationModel);
+#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+    NetworkManager(int port, const char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
     NetworkManager(int port, const char *serverIp, Protocol protocol);
 #endif
-  
     ~NetworkManager();
 
     void runServer();
@@ -90,7 +110,7 @@ private:
     bool isKnownClient(int clientSd);
     void addKnownClient(int clientSd);
 
-#if BUILD_SERVER == ON || BUILD_FULL == ON
+#if defined(BUILD_FULL) || defined(BUILD_SERVER)
     ModelRunner *nerModel;  // Model for NER
     ModelRunner *classificationModel; // Model for Classification
 #endif
