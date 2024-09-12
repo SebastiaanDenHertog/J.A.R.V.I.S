@@ -18,6 +18,7 @@ private:
     void processHomeAssistantTask(const Task &task);
     ModelRunner &nerModel_;
     ModelRunner &classificationModel_;
+    HomeAssistantAPI *homeAssistantAPI_;
 };
 
 #endif
