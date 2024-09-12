@@ -10,10 +10,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
-#include "ModelRunner.h"
+#if BUILD_SERVER == ON || BUILD_FULL == ON
+    #include "ModelRunner.h"
 #endif
-
 
 struct SoundData
 {
@@ -41,7 +40,7 @@ public:
         UDP
     };
 
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+#if BUILD_SERVER == ON || BUILD_FULL == ON
     NetworkManager(int port, const char *serverIp, Protocol protocol,ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
     NetworkManager(int port, const char *serverIp, Protocol protocol);
@@ -91,7 +90,7 @@ private:
     bool isKnownClient(int clientSd);
     void addKnownClient(int clientSd);
 
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+#if BUILD_SERVER == ON || BUILD_FULL == ON
     ModelRunner *nerModel;  // Model for NER
     ModelRunner *classificationModel; // Model for Classification
 #endif

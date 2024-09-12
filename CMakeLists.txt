@@ -48,15 +48,12 @@ endif()
 # Option to select the architecture, default is x86_64
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64)")
 
-add_definitions(-DBUILD_SERVER)
-add_definitions(-DBUILD_CLIENT)
-add_definitions(-DBUILD_FULL)
-
 # Define options for building different components
 option(BUILD_FULL "Build everything (server + client)" OFF)
 option(BUILD_SERVER "Build only server components" OFF)
 option(BUILD_CLIENT "Build only client components" OFF)
 
+# Ensure mutually exclusive options
 if((BUILD_FULL AND BUILD_SERVER) OR (BUILD_FULL AND BUILD_CLIENT) OR (BUILD_SERVER AND BUILD_CLIENT))
   message(FATAL_ERROR "You must enable only one of BUILD_FULL, BUILD_SERVER, or BUILD_CLIENT.")
 endif()
@@ -77,14 +74,25 @@ elseif(BUILD_CLIENT)
   set(BUILD_SERVER OFF)
 endif()
 
-message(STATUS "Build configuration:")
-if(BUILD_FULL)
-  message(STATUS "  Building full (server + client)")
-elseif(BUILD_SERVER)
-  message(STATUS "  Building server only")
-elseif(BUILD_CLIENT)
-  message(STATUS "  Building client only")
+# Define the macros as ON or OFF
+if(BUILD_SERVER)
+  add_definitions(-DBUILD_SERVER=ON)
+else()
+  add_definitions(-DBUILD_SERVER=OFF)
 endif()
+
+if(BUILD_FULL)
+  add_definitions(-DBUILD_FULL=ON)
+else()
+  add_definitions(-DBUILD_FULL=OFF)
+endif()
+
+if(BUILD_CLIENT)
+  add_definitions(-DBUILD_CLIENT=ON)
+else()
+  add_definitions(-DBUILD_CLIENT=OFF)
+endif()
+
 
 # Option to select the operating system, default is linux
 set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
@@ -155,15 +163,6 @@ if(BUILD_FULL OR BUILD_SERVER)
         include_directories(${OpenCV_INCLUDE_DIRS}) 
     endif()
 
-    # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
-    set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
-    include_directories("${TFLITE_SOURCE_DIR}")
-    include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
-    # Add TensorFlow Lite directory to the project
-    add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
-elseif(BUILD_CLIENT)
-
-    message(STATUS "building client code")
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
     set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
     include_directories("${TFLITE_SOURCE_DIR}")

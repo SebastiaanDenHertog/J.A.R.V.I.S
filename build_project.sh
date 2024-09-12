@@ -22,7 +22,7 @@ echo "Running CMake..."
 # Check if CMakeFile is updated in the last hour
 if [[ $(find ../CMakeLists.txt -mmin -5) || ! -f "main" ]]; then
     echo "CMakeLists.txt has been updated in the last hour. Running CMake..."
-    cmake -UBUILD_FULL -UBUILD_SERVER -UBUILD_CLIENT -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_CLIENT=ON -DDEBUG_MODE=ON -DCMAKE_BUILD_TYPE=Debug ..
+    cmake -UBUILD_FULL -UBUILD_SERVER -UBUILD_CLIENT -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_CLIENT=ON -DDEBUG_MODE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON ..
 else
     echo "CMakeLists.txt has not been updated in the last hour. Skipping CMake..."
 fi

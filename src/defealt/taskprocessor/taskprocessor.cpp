@@ -2,8 +2,7 @@
 #include "MediaPlayer.h"
 #include <iostream>
 
-
-#if defined(BUILD_SERVER) || defined(BUILD_FULL)
+#if BUILD_SERVER == ON || BUILD_FULL == ON
     TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
     homeAssistantAPI_(homeAssistantAPI), nerModel_(nerModel), classificationModel_(classificationModel)
     {
@@ -28,7 +27,6 @@
         };
     }
 #endif
-
 
 void TaskProcessor::processTask(const Task &task)
 {
