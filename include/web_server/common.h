@@ -7,7 +7,6 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <functional>
-#include <fstream>
 
 #include "version.h"
 #include "web_service_context.h"

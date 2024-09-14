@@ -1,20 +1,14 @@
 #pragma once
 
 #include <boost/beast/core.hpp>
-#include <boost/asio.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
+
 #include <memory>
 #include <vector>
-#include <map>
-#include "http_path.h"
-#include "common.h"
 
-namespace asio = boost::asio;
+#include "common.h"
 
 class http_session : public std::enable_shared_from_this<http_session>
 {
@@ -23,8 +17,9 @@ class http_session : public std::enable_shared_from_this<http_session>
   {
     enum
     {
+      // Maximum number of responses we will queue
       limit = 8
-    }; // Maximum number of responses we will queue
+    };
 
     // The type-erased, saved work item
     struct work
@@ -37,18 +32,24 @@ class http_session : public std::enable_shared_from_this<http_session>
     std::vector<std::unique_ptr<work>> items_;
 
   public:
-    explicit queue(http_session &self) : self_(self)
+    explicit queue(http_session &self)
+        : self_(self)
     {
       static_assert(limit > 0, "queue limit must be positive");
       items_.reserve(limit);
     }
 
     // Returns `true` if we have reached the queue limit
-    bool is_full() const { return items_.size() >= limit; }
+    bool
+    is_full() const
+    {
+      return items_.size() >= limit;
+    }
 
     // Called when a message finishes sending
     // Returns `true` if the caller should initiate a read
-    bool on_write()
+    bool
+    on_write()
     {
       BOOST_ASSERT(!items_.empty());
       auto const was_full = is_full();
@@ -60,17 +61,24 @@ class http_session : public std::enable_shared_from_this<http_session>
 
     // Called by the HTTP handler to send a response.
     template <bool isRequest, class Body, class Fields>
-    void operator()(http::message<isRequest, Body, Fields> &&msg)
+    void
+    operator()(http::message<isRequest, Body, Fields> &&msg)
     {
+      // This holds a work item
       struct work_impl : work
       {
         http_session &self_;
         http::message<isRequest, Body, Fields> msg_;
 
-        work_impl(http_session &self, http::message<isRequest, Body, Fields> &&msg)
-            : self_(self), msg_(std::move(msg)) {}
+        work_impl(
+            http_session &self,
+            http::message<isRequest, Body, Fields> &&msg)
+            : self_(self), msg_(std::move(msg))
+        {
+        }
 
-        void operator()()
+        void
+        operator()()
         {
           http::async_write(
               self_.socket_,
@@ -85,8 +93,10 @@ class http_session : public std::enable_shared_from_this<http_session>
         }
       };
 
+      // Allocate and store the work
       items_.emplace_back(new work_impl(self_, std::move(msg)));
 
+      // If there was no previous work, start this one
       if (items_.size() == 1)
         (*items_.front())();
     }
@@ -95,23 +105,31 @@ class http_session : public std::enable_shared_from_this<http_session>
   tcp::socket socket_;
   boost::beast::flat_buffer buffer_;
   http::request<http::string_body> req_;
-  std::function<void(boost::system::error_code, const char *)> error_handler_;
+
+  std::function<void(boost::system::error_code, char const *)> error_handler_;
   std::map<std::string, RouteHandler> route_handlers_;
-  boost::asio::strand<boost::asio::any_io_executor> strand_;
+  boost::asio::strand<boost::asio::io_context::executor_type> strand_;
   boost::asio::steady_timer timer_;
   queue queue_;
   boost::shared_ptr<web_service_context> ctx_;
 
-  template <class Body, class Allocator, class Send>
-  void handle_request(http::request<Body, http::basic_fields<Allocator>> &&req, Send &&send);
+  template <
+      class Body, class Allocator,
+      class Send>
+  void
+  handle_request(
+      http::request<Body, http::basic_fields<Allocator>> &&req,
+      Send &&send);
 
 public:
+  // Take ownership of the socket
   explicit http_session(
-      const boost::shared_ptr<web_service_context> &ctx,
+      const boost::shared_ptr<web_service_context>& ctx,
       tcp::socket socket,
-      std::function<void(boost::system::error_code, const char *)> error_handler,
+      std::function<void(boost::system::error_code, char const *)> error_handler,
       const std::map<std::string, RouteHandler> &route_handlers);
 
+  // Start the asynchronous operation
   void run();
   void do_read();
   void on_timer(boost::system::error_code ec);
