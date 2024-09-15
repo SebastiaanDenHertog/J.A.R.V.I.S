@@ -91,8 +91,9 @@ else()
     message(FATAL_ERROR "Unsupported combination of ${TARGET_ARCH} and ${TARGET_OS}")
 endif()
 
-# Find Boost
-find_package(Boost REQUIRED COMPONENTS system thread filesystem log log_setup regex date_time chrono atomic)
+# Find Boost 1.74+
+find_package(Boost 1.74 REQUIRED COMPONENTS system thread filesystem log log_setup regex date_time chrono atomic)
+
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     add_compile_definitions(BOOST_LOG_DYN_LINK) # Necessary if using dynamic linking for Boost.Log
@@ -100,6 +101,7 @@ else()
     message(FATAL_ERROR "Boost not found!")
 endif()
 
+# Find OpenSSL
 find_package(OpenSSL REQUIRED)
 if(OpenSSL_FOUND)
     message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")

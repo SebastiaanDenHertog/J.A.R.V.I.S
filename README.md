@@ -110,11 +110,8 @@ The previous authors of code included in UxPlay by inheritance from RPiPlay incl
   code in `lib/` concerning mirroring is dsafa22's work. License: GNU LGPLv2.1+
 * **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
 
-# Cppweb authors
-
-The base where the cppweb is build on is created by:
-[mitant](https://github.com/mitant) & [antmit](https://github.com/antmit) 
-
+# webserver implentation
+For the website we use a forked version of [libhttpserver](https://github.com/etr/libhttpserver)
 
 # Prometheus implementation
 
