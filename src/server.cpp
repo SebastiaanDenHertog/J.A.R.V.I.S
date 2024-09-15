@@ -5,16 +5,17 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <chrono>
 #include <boost/make_shared.hpp>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/optional_debug_tools.h>
+
+
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
 #include "ModelRunner.h"
-#include "authorization_api.h"
-#include "web_service.h"
 #include "InputHandler.h"
 #include "TaskProcessor.h"
 #include "HomeAssistantAPI.h"
@@ -34,6 +35,7 @@ int threads = 10;
 
 bool setbluetooth = false;
 bool use_homeassistant = false;
+    bool use_terminal_input = false;
 std::string homeassistant_ip;
 int homeassistant_port = 0;
 std::string homeassistant_token;
@@ -43,6 +45,9 @@ std::thread networkThread;
 std::thread terminalInputThread;
 std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 std::thread homeAssistantThread;
+std::thread taskProcessingThread;
+NetworkManager *networkserver = nullptr;
+std::vector<std::thread> io_threads;
 
 std::string getLocalIP()
 {
@@ -156,7 +161,35 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 
         if (user_input == "exit")
         {
-            exit(0);
+            // Wait for other threads to finish
+            if (bluetoothComm && bluetoothThread.joinable())
+            {
+                bluetoothThread.join();
+            }
+
+            if (networkThread.joinable())
+            {
+                networkThread.join();
+            }
+
+            if (use_terminal_input && terminalInputThread.joinable())
+            {
+                terminalInputThread.join();
+            }
+
+            if (taskProcessingThread.joinable())
+            {
+                taskProcessingThread.join();
+            }
+
+            if (homeAssistantThread.joinable())
+            {
+                homeAssistantThread.join();
+            }
+
+            delete networkserver;
+            std::cout << "Application finished." << std::endl;
+            return ;
         }
 
         // Get predicted intent and entities
@@ -209,7 +242,7 @@ int main(int argc, char *argv[])
     auto &PHstatus = PHstatusset.Add({{"api", "status"}, {"status", "up"}});
     PHstatus.Increment();
 
-    bool use_terminal_input = false;
+    // Handle input arguments
     if (argc > 1)
     {
         for (int i = 1; i < argc; ++i)
@@ -232,7 +265,7 @@ int main(int argc, char *argv[])
             {
                 if (i + 1 < argc)
                 {
-                    web_server_port = std::atoi(argv[i + 1]);
+                    web_server_port = static_cast<unsigned short>(std::atoi(argv[i + 1]));
                 }
             }
 
@@ -240,7 +273,7 @@ int main(int argc, char *argv[])
             {
                 if (i + 1 < argc)
                 {
-                    threads = std::atoi(argv[i + 1]);
+                    threads = std::max<int>(1, std::atoi(argv[i + 1]));
                 }
             }
             if (std::string(argv[i]) == "-homeassistant")
@@ -279,41 +312,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::unordered_set<std::string> allowed_keys;
-    allowed_keys.insert("SampleKey");
-    boost::shared_ptr<authorization_api> auth = boost::make_shared<authorization_api>(allowed_keys);
-    boost::shared_ptr<web_service_context> ctx = boost::make_shared<web_service_context>(threads, auth);
-    std::make_shared<web_service>(
-        ctx,
-        getLocalIP(),
-        web_server_port,
-        "web_service")
-        ->run();
-
-    // Run the I/O service on the requested number of threads in a separate thread
-    std::thread ioServiceThread([&ctx, thread = threads]()
-                                {
-                                    std::vector<std::thread> ioThreads;
-                                    ioThreads.reserve(thread - 1);
-                                    for (auto i = thread - 1; i > 0; --i)
-                                        ioThreads.emplace_back(
-                                            [&ctx]
-                                            {
-                                                ctx->get_ioc()->run();
-                                            });
-
-                                    ctx->get_ioc()->run();
-
-                                    // Join all I/O threads before exiting
-                                    for (auto &t : ioThreads)
-                                    {
-                                        if (t.joinable())
-                                        {
-                                            t.join();
-                                        }
-                                    } });
-
-    std::cout << "Web server started." << std::endl;
+    
+    DEBUG_PRINT("Web service is running in the background");
 
     if (!checkBluetoothAvailability())
     {
@@ -334,13 +334,11 @@ int main(int argc, char *argv[])
             return -1;
         }
         DEBUG_PRINT("Bluetooth communication initialized.");
-
         bluetoothThread = std::thread(&BluetoothComm::handleIncomingConnectionsThread, bluetoothComm.get());
         DEBUG_PRINT("Bluetooth thread started.");
     }
 
-    // Initialize the model runner with a default max_length
-
+    // Initialize the model runners
     ModelRunner NER_Model("./models/ner_model.tflite");
     ModelRunner Classification_Model("./models/classification_model.tflite");
 
@@ -366,11 +364,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    NetworkManager *networkserver = nullptr;
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        networkserver = new NetworkManager(network_port, nullptr,NetworkManager::Protocol::TCP, &NER_Model, &Classification_Model);
+        networkserver = new NetworkManager(network_port, nullptr, NetworkManager::Protocol::TCP, &NER_Model, &Classification_Model);
         networkThread = std::thread(&NetworkManager::runServer, networkserver);
         DEBUG_PRINT("NetworkManager running.");
     }
@@ -397,27 +394,43 @@ int main(int argc, char *argv[])
 
     TaskProcessor taskProcessor(homeAssistantAPI.get(), NER_Model, Classification_Model);
     InputHandler inputHandler;
-    // Process tasks
-    std::thread taskProcessingThread([&]()
-                                     {
-        while (true)
-        {
-            while (inputHandler.hasTasks())
-            {
-                Task task = inputHandler.getNextTask();
-                std::cout << "Processing task: " << task.description << std::endl;
-                taskProcessor.processTask(task);
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        } });
 
-    if (use_terminal_input)
+    // Process tasks in the background
+    try
     {
-        terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
+        taskProcessingThread = std::thread([&]()
+                                           {
+            while (true)
+            {
+                while (inputHandler.hasTasks())
+                {
+                    Task task = inputHandler.getNextTask();
+                    std::cout << "Processing task: " << task.description << std::endl;
+                    taskProcessor.processTask(task);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            } });
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error in taskProcessingThread: " << e.what() << std::endl;
     }
 
-    // Wait for other threads to finish
-    if (bluetoothComm && bluetoothThread.joinable())
+    try
+    {
+       if (use_terminal_input)
+        {
+            terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    // Wait for threads to join on exit
+    std::cout << "Press Ctrl+C to exit...\n";
+
+    if (bluetoothThread.joinable())
     {
         bluetoothThread.join();
     }
@@ -427,24 +440,9 @@ int main(int argc, char *argv[])
         networkThread.join();
     }
 
-    if (use_terminal_input && terminalInputThread.joinable())
-    {
-        terminalInputThread.join();
-    }
-
     if (taskProcessingThread.joinable())
     {
         taskProcessingThread.join();
-    }
-
-    if (homeAssistantThread.joinable())
-    {
-        homeAssistantThread.join();
-    }
-
-    if (ioServiceThread.joinable())
-    {
-        ioServiceThread.join();
     }
 
     delete networkserver;
