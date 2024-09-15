@@ -7,3 +7,6 @@
 [submodule "lib/json"]
 	path = lib/json
 	url = git@github.com:nlohmann/json.git
+[submodule "lib/libhttpserver"]
+	path = lib/libhttpserver
+	url = git@github.com:SebastiaanDenHertog/libhttpserver.git
