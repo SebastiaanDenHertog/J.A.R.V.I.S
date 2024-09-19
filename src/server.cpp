@@ -12,7 +12,7 @@
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/optional_debug_tools.h>
 
-
+// Your custom includes
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
 #include "ModelRunner.h"
@@ -22,32 +22,45 @@
 #include "ClientInfo.h"
 #include "counter.h"
 #include "registry.h"
+#include "webServer.h"
 
+// Debug print macro
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
 #else
 #define DEBUG_PRINT(x)
 #endif
 
-int network_port = 15880;
-unsigned short web_server_port = 15881;
-int threads = 10;
+// Function to setup and run the web server
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads);
 
-bool setbluetooth = false;
-bool use_homeassistant = false;
-    bool use_terminal_input = false;
-std::string homeassistant_ip;
-int homeassistant_port = 0;
-std::string homeassistant_token;
-std::unique_ptr<BluetoothComm> bluetoothComm;
+// Global thread variables
+std::thread webServerThread;
 std::thread bluetoothThread;
 std::thread networkThread;
 std::thread terminalInputThread;
-std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 std::thread homeAssistantThread;
 std::thread taskProcessingThread;
+
+// Global variables for services and communication
+std::unique_ptr<BluetoothComm> bluetoothComm;
+std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 NetworkManager *networkserver = nullptr;
 std::vector<std::thread> io_threads;
+
+int network_port = 15880;
+unsigned short web_server_port = 15881;
+int threads = 10;
+int homeassistant_port = 0;
+bool setbluetooth = false;
+bool use_homeassistant = false;
+bool use_terminal_input = false;
+bool use_web_server = true;
+bool web_server_secure = false;
+std::string web_server_cert_path;
+std::string web_server_key_path;
+std::string homeassistant_ip;
+std::string homeassistant_token;
 
 std::string getLocalIP()
 {
@@ -161,35 +174,7 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 
         if (user_input == "exit")
         {
-            // Wait for other threads to finish
-            if (bluetoothComm && bluetoothThread.joinable())
-            {
-                bluetoothThread.join();
-            }
-
-            if (networkThread.joinable())
-            {
-                networkThread.join();
-            }
-
-            if (use_terminal_input && terminalInputThread.joinable())
-            {
-                terminalInputThread.join();
-            }
-
-            if (taskProcessingThread.joinable())
-            {
-                taskProcessingThread.join();
-            }
-
-            if (homeAssistantThread.joinable())
-            {
-                homeAssistantThread.join();
-            }
-
-            delete networkserver;
-            std::cout << "Application finished." << std::endl;
-            return ;
+            break;
         }
 
         // Get predicted intent and entities
@@ -217,11 +202,10 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 
         std::string sentence_label = classificationModel.ClassifySentence(user_input);
         std::cout << "Intent: " << sentence_label << std::endl;
-
         // Convert predicted intent to Task::TaskType
         Task::TaskType taskType = stringToTaskType(sentence_label);
-
         Task task(predicted_intent, 1, device, taskType, {predicted_entities});
+
         inputHandler.addTask(task);
         taskProcessor.processTask(task);
     }
@@ -260,12 +244,32 @@ int main(int argc, char *argv[])
                     device.setPort(network_port);
                 }
             }
+            if (std::string(argv[i]) == "-start-web-server")
+            {
+                use_web_server = true;
+            }
 
             if (std::string(argv[i]) == "-web-server-port")
             {
                 if (i + 1 < argc)
                 {
                     web_server_port = static_cast<unsigned short>(std::atoi(argv[i + 1]));
+                }
+            }
+
+            if (std::string(argv[i]) == "-web-server-secure")
+            {
+                web_server_secure = true;
+                if (i + 2 < argc)
+                {
+                    web_server_cert_path = argv[i + 1];
+                    web_server_key_path = argv[i + 2];
+                    i += 2;
+                }
+                else
+                {
+                    std::cerr << "Error: --web-server-secure option requires a certificate path and key path." << std::endl;
+                    return -1;
                 }
             }
 
@@ -276,6 +280,7 @@ int main(int argc, char *argv[])
                     threads = std::max<int>(1, std::atoi(argv[i + 1]));
                 }
             }
+
             if (std::string(argv[i]) == "-homeassistant")
             {
                 use_homeassistant = true;
@@ -306,14 +311,19 @@ int main(int argc, char *argv[])
                           << "  -web-server-port <port>: Set the web server port\n"
                           << "  -threads <number>: Set the number of threads\n"
                           << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
+                          << "  -start-web-server: Start the web server\n"
+                          << "  -web-server-secure <cert> <key>: Start the web server with SSL using the provided certificate and key\n"
                           << "  -help: Display this help message\n";
                 return 0;
             }
         }
     }
 
-    
-    DEBUG_PRINT("Web service is running in the background");
+    if (use_web_server)
+    {
+        webServerThread = std::thread(setup_server, web_server_secure, web_server_cert_path, web_server_key_path, web_server_port, threads);
+        DEBUG_PRINT("Web service is running in the background");
+    }
 
     if (!checkBluetoothAvailability())
     {
@@ -416,17 +426,11 @@ int main(int argc, char *argv[])
         std::cerr << "Error in taskProcessingThread: " << e.what() << std::endl;
     }
 
-    try
+    if (use_terminal_input)
     {
-       if (use_terminal_input)
-        {
-            terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
-        }
+        terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
     }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
+
     // Wait for threads to join on exit
     std::cout << "Press Ctrl+C to exit...\n";
 
@@ -443,6 +447,11 @@ int main(int argc, char *argv[])
     if (taskProcessingThread.joinable())
     {
         taskProcessingThread.join();
+    }
+
+    if (webServerThread.joinable())
+    {
+        webServerThread.join();
     }
 
     delete networkserver;

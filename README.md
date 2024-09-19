@@ -34,6 +34,8 @@ the cmake option `-DNO_X11_DEPS=ON`.
     (_unless you need to build OpenSSL and libplist from source_).
 2.  `sudo apt install libavahi-compat-libdnssd-dev`
 3.  `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`. (\*_Skip if you built Gstreamer from source_)
+4. `sudo apt-get install libmicrohttpd-dev`
+
 
 
 
@@ -41,6 +43,8 @@ the cmake option `-DNO_X11_DEPS=ON`.
 
 git submodule init
 git submodule update
+git submodule foreach git pull
+
 
 Linux: chmod +x build_project.sh
 ./build_project.sh

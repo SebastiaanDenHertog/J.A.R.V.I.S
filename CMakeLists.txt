@@ -11,38 +11,40 @@ option(DEBUG_MODE "Enable debug prints" OFF)
 
 # Double colon in target name means ALIAS or IMPORTED target.
 cmake_policy(SET CMP0028 NEW)
+
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
 
 if(NOT CMAKE_BUILD_TYPE)
-  message(STATUS "Setting build type to Release, for debug builds use"
-    "'-DCMAKE_BUILD_TYPE=Debug'.")
-  set(CMAKE_BUILD_TYPE "Release")
+    message(STATUS "Setting build type to Release, for debug builds use"
+        "'-DCMAKE_BUILD_TYPE=Debug'.")
+    set(CMAKE_BUILD_TYPE "Release")
 else()
-  message(STATUS "Build type is ${CMAKE_BUILD_TYPE}.")
-  add_definitions(-DDEBUG_MODE)
-  set(CMAKE_BUILD_TYPE "Debug")
+    message(STATUS "Build type is ${CMAKE_BUILD_TYPE}.")
+    add_definitions(-DDEBUG_MODE)
+    set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-if ((UNIX AND NOT APPLE) OR USE_X11)
-  if (NOT NO_X11_DEPS)
-    find_package(X11)
-    if (X11_FOUND)
-      message(STATUS "Will compile using X11 Libraries (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)")
-      set(LINK_LIBS ${LINK_LIBS} ${X11_LIBRARIES})
-      include_directories(${X11_INCLUDE_DIR})
+if((UNIX AND NOT APPLE) OR USE_X11)
+    if(NOT NO_X11_DEPS)
+        find_package(X11)
+
+        if(X11_FOUND)
+            message(STATUS "Will compile using X11 Libraries (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)")
+            set(LINK_LIBS ${LINK_LIBS} ${X11_LIBRARIES})
+            include_directories(${X11_INCLUDE_DIR})
+        else()
+            message(STATUS "X11 libraries not found, will compile without X11 dependence")
+        endif()
     else()
-      message(STATUS "X11 libraries not found, will compile without X11 dependence")
+        message(STATUS "Will compile without X11 dependence")
     endif()
-  else()
-    message(STATUS "Will compile without X11 dependence")
-  endif()
 endif()
 
 if(UNIX AND NOT APPLE)
-  add_definitions(-DSUPPRESS_AVAHI_COMPAT_WARNING)
+    add_definitions(-DSUPPRESS_AVAHI_COMPAT_WARNING)
 else()
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
 # Define target architecture and OS
@@ -55,26 +57,26 @@ option(BUILD_SERVER "Build only server components" OFF)
 option(BUILD_CLIENT "Build only client components" OFF)
 
 # Ensure mutually exclusive build options
-if((BUILD_FULL AND BUILD_SERVER) OR (BUILD_FULL AND BUILD_CLIENT) OR (BUILD_SERVER AND BUILD_CLIENT))
-  message(FATAL_ERROR "You must enable only one of BUILD_FULL, BUILD_SERVER, or BUILD_CLIENT.")
+if((BUILD_FULL AND BUILD_SERVER) OR(BUILD_FULL AND BUILD_CLIENT) OR(BUILD_SERVER AND BUILD_CLIENT))
+    message(FATAL_ERROR "You must enable only one of BUILD_FULL, BUILD_SERVER, or BUILD_CLIENT.")
 endif()
 
 # Default to BUILD_FULL if none are selected
 if(NOT BUILD_FULL AND NOT BUILD_SERVER AND NOT BUILD_CLIENT)
-  message(STATUS "No specific build selected, defaulting to full build.")
-  set(BUILD_FULL ON)
+    message(STATUS "No specific build selected, defaulting to full build.")
+    set(BUILD_FULL ON)
 endif()
 
 # Set preprocessor definitions based on the build type
 if(BUILD_FULL)
-  add_definitions(-DBUILD_FULL)
-  message("Building full code")
+    add_definitions(-DBUILD_FULL)
+    message("Building full code")
 elseif(BUILD_SERVER)
-  add_definitions(-DBUILD_SERVER)
-  message("Building server code")
+    add_definitions(-DBUILD_SERVER)
+    message("Building server code")
 elseif(BUILD_CLIENT)
-  add_definitions(-DBUILD_CLIENT)
-  message("Building client code")
+    add_definitions(-DBUILD_CLIENT)
+    message("Building client code")
 endif()
 
 # Include the toolchain file based on the architecture and OS
@@ -103,6 +105,7 @@ endif()
 
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
+
 if(OpenSSL_FOUND)
     message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")
     include_directories(${OPENSSL_INCLUDE_DIR})
@@ -112,8 +115,10 @@ endif()
 
 # Check if nlohmann_json exists and handle accordingly
 find_package(nlohmann_json)
+
 if(NOT nlohmann_json_FOUND)
     message(WARNING "nlohmann_json not found, will build from source.")
+
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/json")
         message(FATAL_ERROR "json source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
     else()
@@ -123,34 +128,59 @@ if(NOT nlohmann_json_FOUND)
     endif()
 else()
     message(STATUS "nlohmann_json found")
-    include_directories(${JSON_INCLUDE_DIR}) 
+    include_directories(${JSON_INCLUDE_DIR})
 endif()
 
 if(BUILD_FULL OR BUILD_SERVER)
     # Check if OpenCV exists and handle accordingly
     message("building full/server code")
     find_package(OpenCV)
+
     if(NOT OpenCV_FOUND)
         message(WARNING "OpenCV not found, will build from source.")
+
         if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/opencv")
             message(FATAL_ERROR "OpenCV source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
         else()
             set(OPENCV_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/opencv")
             add_subdirectory(${OPENCV_SOURCE_DIR} "${CMAKE_BINARY_DIR}/opencv")
             include_directories(${OPENCV_SOURCE_DIR}/include)
-            set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui)  # Add other required OpenCV modules here
+            set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui) # Add other required OpenCV modules here
         endif()
     else()
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
-        include_directories(${OpenCV_INCLUDE_DIRS}) 
+        include_directories(${OpenCV_INCLUDE_DIRS})
     endif()
 
     # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
     set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
     include_directories("${TFLITE_SOURCE_DIR}")
     include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
+
     # Add TensorFlow Lite directory to the project
     add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
+
+    # Find the httpserver package
+    find_package(httpserver)
+
+    if(NOT httpserver_FOUND)
+        message(WARNING "LibHTTPServer not found, will build from source.")
+
+        if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/libhttpserver")
+            message(FATAL_ERROR "LibHTTPServer source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        else()
+            set(LibHttpServer_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/libhttpserver")
+            include_directories("${LibHttpServer_SOURCE_DIR}/src") # Ensure the src folder is included
+            add_subdirectory(${LibHttpServer_SOURCE_DIR} "${CMAKE_BINARY_DIR}/httpserver" EXCLUDE_FROM_ALL)
+
+            # After building, include the path to httpserver.h
+            include_directories("${CMAKE_BINARY_DIR}/httpserver/include") # This might change depending on your structure
+        endif()
+    else()
+        message(STATUS "LibHTTPServer found")
+        include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
+    endif()
+
 endif()
 
 # Find GLIB using pkg-config
@@ -161,10 +191,10 @@ include_directories(${GLIB2_INCLUDE_DIRS})
 link_directories(${GLIB2_LIBRARY_DIRS})
 add_definitions(${GLIB2_CFLAGS_OTHER})
 
-if ( UNIX AND NOT APPLE )
-add_definitions( -DSUPPRESS_AVAHI_COMPAT_WARNING )
+if(UNIX AND NOT APPLE)
+    add_definitions(-DSUPPRESS_AVAHI_COMPAT_WARNING)
 else()
-set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
 add_subdirectory(include/AirPlayServer/lib/llhttp)
@@ -172,13 +202,15 @@ add_subdirectory(include/AirPlayServer/lib/playfair)
 add_subdirectory(include/AirPlayServer/lib)
 add_subdirectory(include/AirPlayServer/renderers)
 
-if (GST_MACOS)
-    add_definitions( -DGST_MACOS )
-    message( STATUS "define GST_MACOS" )
-    if (GST_124)
-        add_definitions( -DGST_124 )
-        message( STATUS "define GST_124" )
+if(GST_MACOS)
+    add_definitions(-DGST_MACOS)
+    message(STATUS "define GST_MACOS")
+
+    if(GST_124)
+        add_definitions(-DGST_124)
+        message(STATUS "define GST_124")
     endif()
+
     set(AIRPLAYSERVER_PATH "-I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -lglib-2.0 -lgobject-2.0")
 endif()
 
@@ -200,6 +232,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/Tokenizer"
     "${PROJECT_SOURCE_DIR}/include/ClientInfo"
     "${PROJECT_SOURCE_DIR}/include/prometheus"
+    "${PROJECT_SOURCE_DIR}/include/webServer"
 )
 
 file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
@@ -226,13 +259,13 @@ endif()
 
 if("${TARGET_OS}" STREQUAL "linux")
     if(BUILD_FULL OR BUILD_SERVER)
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
+        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json httpserver_lib)
     else()
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
 elseif("${TARGET_OS}" STREQUAL "windows")
     if(BUILD_FULL OR BUILD_SERVER)
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread  ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
+        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json httpserver_lib)
     else()
         target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
