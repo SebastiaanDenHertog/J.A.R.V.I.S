@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(J.A.R.V.I.S)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(DEBUG_MODE "Enable debug prints" OFF)
+option(DEBUG_MODE "Enable debug prints" ON)
 
 # Double colon in target name means ALIAS or IMPORTED target.
 cmake_policy(SET CMP0028 NEW)
@@ -16,21 +16,23 @@ cmake_policy(SET CMP0028 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to Release, for debug builds use"
-        "'-DCMAKE_BUILD_TYPE=Debug'.")
-    set(CMAKE_BUILD_TYPE "Release")
+    message(STATUS "Setting build type to Release, for debug builds use
+        '-DCMAKE_BUILD_TYPE=Debug'.")
+    set(CMAKE_BUILD_TYPE Release)
 else()
-    message(STATUS "Build type is ${CMAKE_BUILD_TYPE}.")
+    message(STATUS Build type is ${CMAKE_BUILD_TYPE}.)
     add_definitions(-DDEBUG_MODE)
-    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_BUILD_TYPE Debug)
 endif()
+
+message(STATUS PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 
 if((UNIX AND NOT APPLE) OR USE_X11)
     if(NOT NO_X11_DEPS)
         find_package(X11)
 
         if(X11_FOUND)
-            message(STATUS "Will compile using X11 Libraries (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)")
+            message(STATUS "Will compile using X11 Libraries(use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted")
             set(LINK_LIBS ${LINK_LIBS} ${X11_LIBRARIES})
             include_directories(${X11_INCLUDE_DIR})
         else()
@@ -52,7 +54,7 @@ set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64
 set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
 
 # Options for different components
-option(BUILD_FULL "Build everything (server + client)" OFF)
+option(BUILD_FULL "Build everything(server + client)" OFF)
 option(BUILD_SERVER "Build only server components" OFF)
 option(BUILD_CLIENT "Build only client components" OFF)
 
@@ -81,13 +83,13 @@ endif()
 
 # Include the toolchain file based on the architecture and OS
 if("${TARGET_ARCH}" STREQUAL "aarch64" AND "${TARGET_OS}" STREQUAL "linux")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/aarch64_linux_toolchain.cmake")
+    set(CMAKE_TOOLCHAIN_FILE ${PROJECT_SOURCE_DIR}/cmake/aarch64_linux_toolchain.cmake)
     message(STATUS "Using aarch64 Linux toolchain")
 elseif("${TARGET_ARCH}" STREQUAL "x86_64" AND "${TARGET_OS}" STREQUAL "linux")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/x86_64_linux_toolchain.cmake")
+    set(CMAKE_TOOLCHAIN_FILE ${PROJECT_SOURCE_DIR}/cmake/x86_64_linux_toolchain.cmake)
     message(STATUS "Using x86_64 Linux toolchain")
 elseif("${TARGET_ARCH}" STREQUAL "x86" AND "${TARGET_OS}" STREQUAL "windows")
-    set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/cmake/x86_windows_toolchain.cmake")
+    set(CMAKE_TOOLCHAIN_FILE ${PROJECT_SOURCE_DIR}/cmake/x86_windows_toolchain.cmake)
     message(STATUS "Using x86 Windows toolchain")
 else()
     message(FATAL_ERROR "Unsupported combination of ${TARGET_ARCH} and ${TARGET_OS}")
@@ -119,11 +121,11 @@ find_package(nlohmann_json)
 if(NOT nlohmann_json_FOUND)
     message(WARNING "nlohmann_json not found, will build from source.")
 
-    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/json")
-        message(FATAL_ERROR "json source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/json)
+        message(FATAL_ERROR "Json source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
     else()
-        set(JSON_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/json")
-        add_subdirectory(${JSON_SOURCE_DIR} "${CMAKE_BINARY_DIR}/json")
+        set(JSON_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/json)
+        add_subdirectory(${JSON_SOURCE_DIR} ${CMAKE_BINARY_DIR}/json)
         include_directories(${JSON_SOURCE_DIR}/include)
     endif()
 else()
@@ -133,17 +135,17 @@ endif()
 
 if(BUILD_FULL OR BUILD_SERVER)
     # Check if OpenCV exists and handle accordingly
-    message("building full/server code")
+    message(building full/server code)
     find_package(OpenCV)
 
     if(NOT OpenCV_FOUND)
         message(WARNING "OpenCV not found, will build from source.")
 
-        if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/opencv")
+        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/opencv)
             message(FATAL_ERROR "OpenCV source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
         else()
-            set(OPENCV_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/opencv")
-            add_subdirectory(${OPENCV_SOURCE_DIR} "${CMAKE_BINARY_DIR}/opencv")
+            set(OPENCV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/opencv)
+            add_subdirectory(${OPENCV_SOURCE_DIR} ${CMAKE_BINARY_DIR}/opencv)
             include_directories(${OPENCV_SOURCE_DIR}/include)
             set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui) # Add other required OpenCV modules here
         endif()
@@ -152,13 +154,26 @@ if(BUILD_FULL OR BUILD_SERVER)
         include_directories(${OpenCV_INCLUDE_DIRS})
     endif()
 
-    # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
-    set(TFLITE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite")
-    include_directories("${TFLITE_SOURCE_DIR}")
-    include_directories("${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include")
+    find_package(tensorflow-lite)
 
-    # Add TensorFlow Lite directory to the project
-    add_subdirectory(${TFLITE_SOURCE_DIR} "${CMAKE_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
+    if(NOT tensorflow-lite_FOUND)
+        message(WARNING "TensorFlow not found, will build from source.")
+
+        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/tensorflow)
+            message(FATAL_ERROR "TensorFlow source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        else()
+            # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
+            set(TFLITE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
+            include_directories(${TFLITE_SOURCE_DIR})
+            include_directories(${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include)
+
+            # Add TensorFlow Lite directory to the project
+            add_subdirectory(${TFLITE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/tensorflow-lite EXCLUDE_FROM_ALL)
+        endif()
+    else()
+        message(STATUS "TensorFlow found")
+        include_directories(${TENSORFLOW_INCLUDE_DIR})
+    endif()
 
     # Find the httpserver package
     find_package(httpserver)
@@ -166,121 +181,152 @@ if(BUILD_FULL OR BUILD_SERVER)
     if(NOT httpserver_FOUND)
         message(WARNING "LibHTTPServer not found, will build from source.")
 
-        if(NOT EXISTS "${PROJECT_SOURCE_DIR}/lib/libhttpserver")
+        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
             message(FATAL_ERROR "LibHTTPServer source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
         else()
-            set(LibHttpServer_SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/libhttpserver")
-            include_directories("${LibHttpServer_SOURCE_DIR}/src") # Ensure the src folder is included
-            add_subdirectory(${LibHttpServer_SOURCE_DIR} "${CMAKE_BINARY_DIR}/httpserver" EXCLUDE_FROM_ALL)
-
-            # After building, include the path to httpserver.h
-            include_directories("${CMAKE_BINARY_DIR}/httpserver/include") # This might change depending on your structure
+            set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
+            include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
+            include_directories(${CMAKE_BINARY_DIR}/httpserver/include) # This might change depending on your structure
+            add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
         endif()
     else()
         message(STATUS "LibHTTPServer found")
         include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
     endif()
-
 endif()
 
-# Find GLIB using pkg-config
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+if(BUILD_FULL OR BUILD_CLIENT)
+    # Find GLIB using pkg-config
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 
-include_directories(${GLIB2_INCLUDE_DIRS})
-link_directories(${GLIB2_LIBRARY_DIRS})
-add_definitions(${GLIB2_CFLAGS_OTHER})
+    include_directories(${GLIB2_INCLUDE_DIRS})
+    link_directories(${GLIB2_LIBRARY_DIRS})
+    add_definitions(${GLIB2_CFLAGS_OTHER})
 
-if(UNIX AND NOT APPLE)
-    add_definitions(-DSUPPRESS_AVAHI_COMPAT_WARNING)
-else()
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif()
-
-add_subdirectory(include/AirPlayServer/lib/llhttp)
-add_subdirectory(include/AirPlayServer/lib/playfair)
-add_subdirectory(include/AirPlayServer/lib)
-add_subdirectory(include/AirPlayServer/renderers)
-
-if(GST_MACOS)
-    add_definitions(-DGST_MACOS)
-    message(STATUS "define GST_MACOS")
-
-    if(GST_124)
-        add_definitions(-DGST_124)
-        message(STATUS "define GST_124")
+    if(UNIX AND NOT APPLE)
+        add_definitions(-DSUPPRESS_AVAHI_COMPAT_WARNING)
+    else()
+        set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     endif()
 
-    set(AIRPLAYSERVER_PATH "-I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -lglib-2.0 -lgobject-2.0")
+    add_subdirectory(include/AirPlayServer/lib)
+    add_subdirectory(include/AirPlayServer/lib/llhttp)
+    add_subdirectory(include/AirPlayServer/lib/playfair)
+    add_subdirectory(include/AirPlayServer/renderers)
+
+    if(GST_MACOS)
+        add_definitions(-DGST_MACOS)
+        message(STATUS "define GST_MACOS")
+
+        if(GST_124)
+            add_definitions(-DGST_124)
+            message(STATUS "define GST_124")
+        endif()
+
+        set(AIRPLAYSERVER_PATH -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -lglib-2.0 -lgobject-2.0)
+    endif()
 endif()
+
+message(STATUS "buildstatus ${BUILD_FULL} ${BUILD_SERVER} ${BUILD_CLIENT}")
 
 # Include directories for the project
 include_directories(
-    "${PROJECT_SOURCE_DIR}/include/additions"
-    "${PROJECT_SOURCE_DIR}/include/ac10x"
-    "${PROJECT_SOURCE_DIR}/include/bluethoothcomm"
-    "${PROJECT_SOURCE_DIR}/include/ml"
-    "${PROJECT_SOURCE_DIR}/include/web_server"
-    "${PROJECT_SOURCE_DIR}/include/networkmanager"
-    "${PROJECT_SOURCE_DIR}/include/mediaplayer"
-    "${PROJECT_SOURCE_DIR}/include/AirPlayServer"
-    "${PROJECT_SOURCE_DIR}/include/hardwareinterface"
-    "${PROJECT_SOURCE_DIR}/include/task"
-    "${PROJECT_SOURCE_DIR}/include/taskprocessor"
-    "${PROJECT_SOURCE_DIR}/include/inputhandler"
-    "${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI"
-    "${PROJECT_SOURCE_DIR}/include/Tokenizer"
-    "${PROJECT_SOURCE_DIR}/include/ClientInfo"
-    "${PROJECT_SOURCE_DIR}/include/prometheus"
-    "${PROJECT_SOURCE_DIR}/include/webServer"
+    ${PROJECT_SOURCE_DIR}/include/additions
+    ${PROJECT_SOURCE_DIR}/include/ac10x
+    ${PROJECT_SOURCE_DIR}/include/bluethoothcomm
+    ${PROJECT_SOURCE_DIR}/include/ml
+    ${PROJECT_SOURCE_DIR}/include/web_server
+    ${PROJECT_SOURCE_DIR}/include/networkmanager
+    ${PROJECT_SOURCE_DIR}/include/mediaplayer
+    ${PROJECT_SOURCE_DIR}/include/AirPlayServer
+    ${PROJECT_SOURCE_DIR}/include/hardwareinterface
+    ${PROJECT_SOURCE_DIR}/include/task
+    ${PROJECT_SOURCE_DIR}/include/taskprocessor
+    ${PROJECT_SOURCE_DIR}/include/inputhandler
+    ${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI
+    ${PROJECT_SOURCE_DIR}/include/Tokenizer
+    ${PROJECT_SOURCE_DIR}/include/ClientInfo
+    ${PROJECT_SOURCE_DIR}/include/prometheus
+    ${PROJECT_SOURCE_DIR}/include/webServer
 )
-
-file(GLOB DEFEALT_SOURCES "${PROJECT_SOURCE_DIR}/src/defealt/*/*.cpp")
-file(GLOB DEFEALT_SOURCESS "${PROJECT_SOURCE_DIR}/src/defealt/*/*/*.cpp")
-
-# Set the runtime output directory to the root of the build directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Source files
 if(BUILD_FULL)
-    file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*/*/*.cpp")
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/full.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
+    message("Building full code")
+
+    # Common (default) sources
+    file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
+    file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
+
+    # Full-specific sources (includes both server and client)
+    file(GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/src/server/*/*.cpp)
+    file(GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/src/client/*/*.cpp)
+
+    add_executable(full ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${CLIENT_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
+    add_compile_definitions(FULL_BUILD)
+
 elseif(BUILD_SERVER)
-    file(GLOB SERVER_SOURCES "${PROJECT_SOURCE_DIR}/src/server/*/*.cpp")
-    set(SOURCES ${SERVER_SOURCES})
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/server.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
+    message("Building server code")
+
+    # Common (default) sources
+    file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
+    file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
+
+    # Server-specific sources (no client sources)
+    file(GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/src/server/*/*.cpp)
+
+    # Ensure client sources are not included
+    add_executable(server ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
     add_compile_definitions(SERVER_BUILD)
 elseif(BUILD_CLIENT)
-    file(GLOB CLIENT_SOURCES "${PROJECT_SOURCE_DIR}/src/client/*/*.cpp")
-    set(SOURCES ${CLIENT_SOURCES})
-    add_executable(main "${PROJECT_SOURCE_DIR}/src/client.cpp" ${SOURCES} ${DEFEALT_SOURCES} ${DEFEALT_SOURCESS})
+    message("Building client code")
+
+    # Common (default) sources
+    file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
+    file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
+
+    # Client-specific sources (no server sources)
+    file(GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/src/client/*/*.cpp)
+
+    add_executable(client ${PROJECT_SOURCE_DIR}/src/main.cpp ${CLIENT_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
     add_compile_definitions(CLIENT_BUILD)
 endif()
 
-if("${TARGET_OS}" STREQUAL "linux")
-    if(BUILD_FULL OR BUILD_SERVER)
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json httpserver_lib)
-    else()
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
+message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+
+if(${TARGET_OS} STREQUAL linux)
+    if(BUILD_FULL)
+        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+    elseif(BUILD_SERVER)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+    elseif(BUILD_CLIENT)
+        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
-elseif("${TARGET_OS}" STREQUAL "windows")
-    if(BUILD_FULL OR BUILD_SERVER)
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json httpserver_lib)
-    else()
-        target_link_libraries(main PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
+elseif(${TARGET_OS} STREQUAL windows)
+    if(BUILD_FULL)
+        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+    elseif(BUILD_SERVER)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+    elseif(BUILD_CLIENT)
+        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11)
     endif()
 endif()
 
-if("${TARGET_OS}" STREQUAL "linux")
-    if(BUILD_FULL OR BUILD_SERVER)
-        target_compile_options(main PRIVATE -Wall -g -pthread -DSERVER_MODE)
-    else()
-        target_compile_options(main PRIVATE -Wall -g -pthread)
+if(${TARGET_OS} STREQUAL linux)
+    if(BUILD_FULL)
+        target_compile_options(full PRIVATE -Wall -g -pthread -DSERVER_MODE)
+    elseif(BUILD_SERVER)
+        target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
+    elseif(BUILD_CLIENT)
+        target_compile_options(client PRIVATE -Wall -g -pthread)
     endif()
-elseif("${TARGET_OS}" STREQUAL "windows")
-    if(BUILD_FULL OR BUILD_SERVER)
-        target_compile_options(main PRIVATE -Wall -g -pthread -DSERVER_MODE)
-    else()
-        target_compile_options(main PRIVATE -Wall -g -pthread)
+elseif(${TARGET_OS} STREQUAL windows)
+    if(BUILD_FULL)
+        target_compile_options(full PRIVATE -Wall -g -pthread -DSERVER_MODE)
+    elseif(BUILD_SERVER)
+        target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
+    elseif(BUILD_CLIENT)
+        target_compile_options(client PRIVATE -Wall -g -pthread)
     endif()
 endif()

@@ -36,7 +36,7 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
 
 // Global thread variables
 std::thread webServerThread;
-std::thread bluetoothThread;
+std::thread bluetoothThread;    
 std::thread networkThread;
 std::thread terminalInputThread;
 std::thread homeAssistantThread;
