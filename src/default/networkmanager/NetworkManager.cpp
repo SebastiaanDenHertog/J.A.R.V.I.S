@@ -139,6 +139,7 @@ void NetworkManager::runServer()
 {
     if (protocol == TCP)
     {
+        std::cout << "TCP connection setup." << std::endl;
         while (true)
         {
             acceptClient();
@@ -146,6 +147,7 @@ void NetworkManager::runServer()
     }
     else if (protocol == UDP)
     {
+        std::cout << "UDP connection setup." << std::endl;
         while (true)
         {
             uint8_t buffer[1024];
@@ -172,6 +174,7 @@ void NetworkManager::connectClient()
 {
     if (protocol == TCP)
     {
+        std::cout << "TCP connection setup." << std::endl;
         connectToServer();
 
     }
@@ -196,6 +199,8 @@ void NetworkManager::setupClientSocket()
 void NetworkManager::connectToServer()
 {
     servAddr.sin_addr.s_addr = inet_addr(serverIp);
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_port = htons(port);
     std::cout << "Client trying to connect to server at IP: " << serverIp << " on port: " << port << std::endl;
 
     int connectionStatus = -1;
