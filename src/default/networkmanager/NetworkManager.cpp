@@ -81,13 +81,36 @@ void NetworkManager::setupServerSocket()
     int opt = 1;
     if (setsockopt(serverSd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
-        perror("setsockopt");
+        perror("setsockopt failed");
         exit(1);
     }
 
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(port);
+
+    std::cout << "Attempting to bind TCP server socket on port " << port << std::endl;
+
+    // Try binding to the specified port, retry if it fails
+    int bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+    if (bindStatus < 0)
+    {
+        perror("Error binding socket to local address. Retrying on a different port...");
+        // If bind fails, try a fallback port (port + 1)
+        servAddr.sin_port = htons(port + 1);
+        bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+        if (bindStatus < 0)
+        {
+            perror("Failed to bind even on fallback port. Exiting...");
+            exit(1);
+        }
+        std::cout << "Server socket bound to fallback port: " << port + 1 << std::endl;
+    }
+    else
+    {
+        std::cout << "Server socket bound to port: " << port << std::endl;
+    }
+
     std::cout << "TCP Server socket created with descriptor: " << serverSd << std::endl;
 }
 
@@ -173,6 +196,7 @@ void NetworkManager::setupClientSocket()
 void NetworkManager::connectToServer()
 {
     servAddr.sin_addr.s_addr = inet_addr(serverIp);
+    std::cout << "Client trying to connect to server at IP: " << serverIp << " on port: " << port << std::endl;
 
     int connectionStatus = -1;
     while (connectionStatus < 0)
@@ -180,12 +204,14 @@ void NetworkManager::connectToServer()
         connectionStatus = connect(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
         if (connectionStatus < 0)
         {
-            perror("Error connecting to server. Retrying in 5 seconds...");
+            std::cerr << "Error connecting to server. Error: " << strerror(errno) << std::endl;
+            std::cerr << "Retrying connection in 5 seconds..." << std::endl;
             sleep(5);
         }
     }
-    std::cout << "Successfully connected to the server." << std::endl;
+    std::cout << "Successfully connected to the server!" << std::endl;
 }
+
 
 void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
 {
@@ -262,7 +288,9 @@ void NetworkManager::listenForClients()
         perror("Error listening on socket");
         exit(1);
     }
+    std::cout << "Server is now listening for clients..." << std::endl;
 }
+
 
 void NetworkManager::acceptClient()
 {
@@ -274,6 +302,7 @@ void NetworkManager::acceptClient()
 
     sockaddr_in newSockAddr;
     socklen_t newSockAddrSize = sizeof(newSockAddr);
+    std::cout << "Waiting for client connection..." << std::endl;
     int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
     if (newSd < 0)
     {

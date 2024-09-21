@@ -404,11 +404,10 @@ int main(int argc, char *argv[])
                 port, serverIP, NetworkManager::Protocol::TCP);
             client.connectClient();
 
-            if (client.isConnectedToSpecialServer())
-            {
+
                 NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
                 NetworkSpeechThread.detach();
-            }
+            
             std::cout << "Client finished." << std::endl;
         }
         catch (const std::exception &e)
