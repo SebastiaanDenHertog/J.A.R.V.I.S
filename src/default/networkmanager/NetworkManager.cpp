@@ -151,20 +151,11 @@ void NetworkManager::connectClient()
     {
         connectToServer();
 
-        if (std::strcmp(serverIp, "192.168.30.11") == 0)
-        {
-            connectedToSpecialServer = true;
-        }
     }
     else if (protocol == UDP)
     {
         std::cout << "UDP connection setup." << std::endl;
     }
-}
-
-bool NetworkManager::isConnectedToSpecialServer() const
-{
-    return connectedToSpecialServer;
 }
 
 void NetworkManager::setupClientSocket()

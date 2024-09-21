@@ -70,7 +70,6 @@ public:
 
     void runServer();
     void connectClient();
-    bool isConnectedToSpecialServer() const;
 
     void sendSoundData(const uint8_t *data, size_t length);
     void receiveResponse();
