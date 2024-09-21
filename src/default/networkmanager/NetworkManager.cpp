@@ -89,29 +89,7 @@ void NetworkManager::setupServerSocket()
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(port);
 
-    std::cout << "Attempting to bind TCP server socket on port " << port << std::endl;
-
-    // Try binding to the specified port, retry if it fails
-    int bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
-    if (bindStatus < 0)
-    {
-        perror("Error binding socket to local address. Retrying on a different port...");
-        // If bind fails, try a fallback port (port + 1)
-        servAddr.sin_port = htons(port + 1);
-        bindStatus = bind(serverSd, (struct sockaddr *)&servAddr, sizeof(servAddr));
-        if (bindStatus < 0)
-        {
-            perror("Failed to bind even on fallback port. Exiting...");
-            exit(1);
-        }
-        std::cout << "Server socket bound to fallback port: " << port + 1 << std::endl;
-    }
-    else
-    {
-        std::cout << "Server socket bound to port: " << port << std::endl;
-    }
-
-    std::cout << "TCP Server socket created with descriptor: " << serverSd << std::endl;
+    std::cout << "Server socket created" << std::endl;
 }
 
 void NetworkManager::setupUDPSocket()
