@@ -1,10 +1,16 @@
 #include <iostream>
 #include <thread>
 #include <memory>
+#include <string>
+#include <cstdio> 
+#include <sstream>
+#include <algorithm> 
 
 // Common headers
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
+#include "webServer.h"
+#include "ClientInfo.h"
 
 // Debug print macro
 #ifdef DEBUG_MODE
@@ -12,6 +18,68 @@
 #else
 #define DEBUG_PRINT(x)
 #endif
+
+// common variables
+std::thread webServerThread;
+bool use_web_server = true;
+unsigned short web_server_port = 15881;
+bool web_server_secure = false;
+std::string web_server_cert_path;
+std::string web_server_key_path;
+int threads = 10;
+int network_port = 15880;
+
+// common functions
+
+// Get local IP (server-specific)
+std::string getLocalIP()
+{
+    std::string local_ip;
+    std::string cmd = "hostname -I";
+
+    // Use unique_ptr for automatic pipe cleanup
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe)
+    {
+        std::cerr << "popen() failed!" << std::endl;
+        return "";
+    }
+
+    // Read from the pipe
+    char buffer[128];
+    while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr)
+    {
+        local_ip += buffer;
+    }
+
+    // Remove newline character if it exists
+    local_ip.erase(std::remove(local_ip.begin(), local_ip.end(), '\n'), local_ip.end());
+
+    // Extract the first IP address from the result
+    std::stringstream ss(local_ip);
+    std::string first_ip;
+    ss >> first_ip;
+
+    return first_ip;
+}
+
+bool checkBluetoothAvailability()
+{
+    int dev_id = hci_get_route(NULL);
+    if (dev_id < 0)
+    {
+        return false;
+    }
+
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+    {
+        return false;
+    }
+
+    hci_close_dev(sock);
+    return true;
+}
 
 #ifdef CLIENT_BUILD OR FULL_BUILD
 // Client-specific headers
@@ -34,35 +102,8 @@ std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
 std::thread NetworkSpeechThread;
-int port;
+int server_port;
 const char *serverIP;
-
-// Check Bluetooth availability
-bool checkBluetoothAvailability()
-{
-    try
-    {
-        int dev_id = hci_get_route(NULL);
-        if (dev_id < 0)
-        {
-            return false;
-        }
-
-        int sock = hci_open_dev(dev_id);
-        if (sock < 0)
-        {
-            return false;
-        }
-
-        hci_close_dev(sock);
-        return true;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Bluetooth availability check failed: " << e.what() << std::endl;
-        return false;
-    }
-}
 
 // Send speech data (client-specific)
 void send_speech_data(NetworkManager &client)
@@ -85,6 +126,8 @@ void run_main_loop(AirPlayServer *server)
     server->main_loop();
 }
 
+ClientInfo device{"client", getLocalIP(), network_port, {}};
+
 #endif // CLIENT_BUILD
 
 #ifdef SERVER_BUILD OR FULL_BUILD
@@ -102,13 +145,10 @@ void run_main_loop(AirPlayServer *server)
 #include "InputHandler.h"
 #include "TaskProcessor.h"
 #include "HomeAssistantAPI.h"
-#include "ClientInfo.h"
 #include "counter.h"
 #include "registry.h"
-#include "webServer.h"
 
 // Server-specific variables and functions
-std::thread webServerThread;
 std::thread bluetoothThread;
 std::thread networkThread;
 std::thread terminalInputThread;
@@ -120,69 +160,15 @@ std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 NetworkManager *networkserver = nullptr;
 std::vector<std::thread> io_threads;
 
-int network_port = 15880;
-unsigned short web_server_port = 15881;
-int threads = 10;
 int homeassistant_port = 0;
 bool setbluetooth = false;
 bool use_homeassistant = false;
 bool use_terminal_input = false;
-bool use_web_server = true;
-bool web_server_secure = false;
-std::string web_server_cert_path;
-std::string web_server_key_path;
+
 std::string homeassistant_ip;
 std::string homeassistant_token;
 
-// Get local IP (server-specific)
-std::string getLocalIP()
-{
-    std::string local_ip;
-    std::string cmd = "hostname -I";
-    FILE *pipe = popen(cmd.c_str(), "r");
-    if (!pipe)
-    {
-        std::cerr << "popen() failed!" << std::endl;
-        return "";
-    }
-    char buffer[128];
-    while (!feof(pipe))
-    {
-        if (fgets(buffer, 128, pipe) != NULL)
-        {
-            local_ip += buffer;
-        }
-    }
-    pclose(pipe);
-    local_ip.erase(std::remove(local_ip.begin(), local_ip.end(), '\n'), local_ip.end());
-
-    std::istringstream iss(local_ip);
-    std::string first_ip;
-    iss >> first_ip;
-
-    return first_ip;
-}
-
 ClientInfo device{"server", getLocalIP(), network_port, {}};
-
-// Check Bluetooth availability (server-specific)
-bool checkBluetoothAvailability()
-{
-    int dev_id = hci_get_route(NULL);
-    if (dev_id < 0)
-    {
-        return false;
-    }
-
-    int sock = hci_open_dev(dev_id);
-    if (sock < 0)
-    {
-        return false;
-    }
-
-    hci_close_dev(sock);
-    return true;
-}
 
 Task::TaskType stringToTaskType(const std::string &str)
 {
@@ -277,7 +263,6 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
     }
 }
 
-
 #endif // SERVER_BUILD
 
 int main(int argc, char *argv[])
@@ -287,7 +272,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef CLIENT_BUILD OR FULL_BUILD
-    
+
     if (argc > 1)
     {
         for (int i = 1; i < argc; ++i)
@@ -296,7 +281,7 @@ int main(int argc, char *argv[])
             {
                 if (i + 1 < argc)
                 {
-                    port = std::atoi(argv[i + 1]);
+                    server_port = std::atoi(argv[i + 1]);
                 }
             }
 
@@ -305,6 +290,19 @@ int main(int argc, char *argv[])
                 if (i + 1 < argc)
                 {
                     serverIP = argv[i + 1];
+                }
+            }
+
+            if (std::string(argv[i]) == "-start-web-server")
+            {
+                use_web_server = true;
+            }
+
+            if (std::string(argv[i]) == "-web-server-port")
+            {
+                if (i + 1 < argc)
+                {
+                    web_server_port = static_cast<unsigned short>(std::atoi(argv[i + 1]));
                 }
             }
 
@@ -361,6 +359,13 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    if (use_web_server)
+    {
+        webServerThread = std::thread(setup_server, web_server_secure, web_server_cert_path, web_server_key_path, web_server_port, threads);
+        DEBUG_PRINT("Web service is running in the background");
+    }
+
     if (use_blutooth)
     {
         try
@@ -401,7 +406,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Client started." << std::endl;
             NetworkManager client(
-                port, serverIP, NetworkManager::Protocol::TCP);
+                server_port, serverIP, NetworkManager::Protocol::TCP);
             client.connectClient();
 
 
@@ -468,6 +473,7 @@ int main(int argc, char *argv[])
             return -1;
         } });
 
+    std::cout << "Press Ctrl+C to exit...\n";
     hardwareThread.join();
 
     if (bluetoothComm)
@@ -477,13 +483,15 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
-    DEBUG_PRINT("PixelRing animation stopped.");
-    std::cout << "Application finished." << std::endl;
-
     // Wait for the AirPlayServerThread to finish
+
     if (AirPlayServerThread.joinable())
     {
         AirPlayServerThread.join();
+    }
+    if (webServerThread.joinable())
+    {
+        webServerThread.join();
     }
 
     return 0;
@@ -492,7 +500,7 @@ int main(int argc, char *argv[])
 
 #ifdef SERVER_BUILD OR FULL_BUILD
     // Process server-specific arguments
-   
+
     auto registry = std::make_shared<prometheus::Registry>();
     auto &PHstatusset = prometheus::BuildCounter()
                             .Name("api_status")
@@ -707,7 +715,6 @@ int main(int argc, char *argv[])
         terminalInputThread = std::thread(terminalInputFunction, std::ref(NER_Model), std::ref(Classification_Model), homeAssistantAPI.get(), std::ref(inputHandler), std::ref(taskProcessor));
     }
 
-
     // Wait for threads to join on exit
     std::cout << "Press Ctrl+C to exit...\n";
 
@@ -734,6 +741,5 @@ int main(int argc, char *argv[])
     delete networkserver;
     std::cout << "Application finished." << std::endl;
     return 0;
-    #endif // SERVER_BUILD
-
+#endif // SERVER_BUILD
 }

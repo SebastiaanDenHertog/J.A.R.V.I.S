@@ -174,25 +174,6 @@ if(BUILD_FULL OR BUILD_SERVER)
         message(STATUS "TensorFlow found")
         include_directories(${TENSORFLOW_INCLUDE_DIR})
     endif()
-
-    # Find the httpserver package
-    find_package(httpserver)
-
-    if(NOT httpserver_FOUND)
-        message(WARNING "LibHTTPServer not found, will build from source.")
-
-        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
-            message(FATAL_ERROR "LibHTTPServer source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
-        else()
-            set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
-            include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-            include_directories(${CMAKE_BINARY_DIR}/httpserver/include) # This might change depending on your structure
-            add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
-        endif()
-    else()
-        message(STATUS "LibHTTPServer found")
-        include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
-    endif()
 endif()
 
 if(BUILD_FULL OR BUILD_CLIENT)
@@ -228,6 +209,26 @@ if(BUILD_FULL OR BUILD_CLIENT)
     endif()
 endif()
 
+
+# Find the httpserver package
+find_package(httpserver)
+
+if(NOT httpserver_FOUND)
+    message(WARNING "LibHTTPServer not found, will build from source.")
+
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
+        message(FATAL_ERROR "LibHTTPServer source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+    else()
+        set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
+        include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include) # This might change depending on your structure
+        add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
+    endif()
+else()
+    message(STATUS "LibHTTPServer found")
+    include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
+endif()
+
 message(STATUS "buildstatus ${BUILD_FULL} ${BUILD_SERVER} ${BUILD_CLIENT}")
 
 # Include directories for the project
@@ -236,7 +237,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/ac10x
     ${PROJECT_SOURCE_DIR}/include/bluethoothcomm
     ${PROJECT_SOURCE_DIR}/include/ml
-    ${PROJECT_SOURCE_DIR}/include/web_server
     ${PROJECT_SOURCE_DIR}/include/networkmanager
     ${PROJECT_SOURCE_DIR}/include/mediaplayer
     ${PROJECT_SOURCE_DIR}/include/AirPlayServer
