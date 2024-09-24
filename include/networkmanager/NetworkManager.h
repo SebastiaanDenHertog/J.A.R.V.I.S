@@ -62,9 +62,9 @@ public:
     };
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
-    NetworkManager(int port, const char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
+    NetworkManager(int port, char* serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
-    NetworkManager(int port, const char *serverIp, Protocol protocol);
+    NetworkManager(int port, char* serverIp, Protocol protocol);
 #endif
     ~NetworkManager();
 
@@ -83,7 +83,7 @@ public:
 
 private:
     int port;
-    const char *serverIp;
+    const char* serverIp;
     int serverSd;
     int udpSd;
     sockaddr_in servAddr;

@@ -32,7 +32,7 @@ int threads = 10;
 // common functions
 
 // Get local IP (server-specific)
-std::string getLocalIP()
+const char* getLocalIP()
 {
     std::string local_ip;
     std::string cmd = "hostname -I";
@@ -60,10 +60,10 @@ std::string getLocalIP()
     std::string first_ip;
     ss >> first_ip;
 
-    return first_ip;
+    return strdup(first_ip.c_str());
 }
 
-const char *deviceIP = getLocalIP();
+const char* deviceIP = getLocalIP();
 
 bool checkBluetoothAvailability()
 {
@@ -99,7 +99,7 @@ uint8_t ledCount = 16;
 bool setbluetooth = false;
 bool use_airplay = false;
 bool use_blutooth = false;
-std::string main_server_ip;
+char* main_server_ip;
 int main_server_port = 15880;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
@@ -128,7 +128,7 @@ void run_main_loop(AirPlayServer *server)
     server->main_loop();
 }
 
-ClientInfo device{"client", main_server_ip, main_server_port, {}};
+ClientInfo device{"client", getLocalIP(), main_server_port, {}};
 
 #endif // CLIENT_BUILD
 
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
     std::cout << "Debug mode is ON" << std::endl;
 #endif
 
-#ifdef CLIENT_BUILD OR FULL_BUILD
+#ifdef CLIENT_BUILD || FULL_BUILD
 
     if (argc > 1)
     {
@@ -289,10 +289,10 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (std::string(argc[i]) == "-main-server-ip")
+            if (std::string(argv[i]) == "-main-server-ip")
             {
                 if (i + 1 < argc){
-                    main_server_ip = std::atoi(argv[i + 1]);
+                    main_server_ip =  argv[i + 1];
                 }   
             }
 
@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Client started." << std::endl;
             NetworkManager client(
-                main_server_port, main_server_ip, NetworkManager::Protocol::TCP);
+                main_server_port, main_server_ip , NetworkManager::Protocol::TCP);
             client.connectClient();
 
 

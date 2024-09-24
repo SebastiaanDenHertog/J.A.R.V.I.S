@@ -5,7 +5,7 @@
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
 
-NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
+NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
@@ -30,7 +30,7 @@ NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol
     }
 }
 #else
-NetworkManager::NetworkManager(int port, const char *serverIp, Protocol protocol)
+NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
