@@ -1,37 +1,34 @@
 #include "webServer.h"
-#include <httpserver.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
 
-using namespace httpserver;
-
 // Simple request handler
-class ServiceResource : public http_resource
+class ServiceResource : public httpserver::http_resource
 {
 public:
-    std::shared_ptr<http_response> render_GET(const http_request &req) override
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
         std::cout << "Received GET request on: " << req.get_path() << std::endl;
-        return std::make_shared<string_response>("GET response", 200);
+        return std::make_shared<httpserver::string_response>("GET response", 200);
     }
 
-    std::shared_ptr<http_response> render_POST(const http_request &req) override
+    std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req) override
     {
         std::cout << "Received POST request on: " << req.get_path() << std::endl;
-        return std::make_shared<string_response>("POST response", 200);
+        return std::make_shared<httpserver::string_response>("POST response", 200);
     }
 
-    std::shared_ptr<http_response> render_PUT(const http_request &req) override
+    std::shared_ptr<httpserver::http_response> render_PUT(const httpserver::http_request &req) override
     {
         std::cout << "Received PUT request on: " << req.get_path() << std::endl;
-        return std::make_shared<string_response>("PUT response", 200);
+        return std::make_shared<httpserver::string_response>("PUT response", 200);
     }
 
-    std::shared_ptr<http_response> render_DELETE(const http_request &req) override
+    std::shared_ptr<httpserver::http_response> render_DELETE(const httpserver::http_request &req) override
     {
         std::cout << "Received DELETE request on: " << req.get_path() << std::endl;
-        return std::make_shared<string_response>("DELETE response", 200);
+        return std::make_shared<httpserver::string_response>("DELETE response", 200);
     }
 };
 
@@ -39,7 +36,7 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
 {
     try
     {
-        create_webserver ws_builder = create_webserver(port).max_threads(threads);
+        httpserver::create_webserver ws_builder = httpserver::create_webserver(port).max_threads(threads);
         if (key.empty() || cert.empty())
         {
             secure = false;
@@ -50,11 +47,11 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
             std::cout << "Using SSL with cert: " << cert << " and key: " << key << std::endl;
         }
 
-        webserver ws = webserver(ws_builder);
+        httpserver::webserver ws = httpserver::webserver(ws_builder);
         ServiceResource *res = new ServiceResource();
         ws.register_resource("/service", res, true);
 
-        ws.start(false);
+        ws.start(false); // No ambiguity here, fully qualified call
         std::cout << "Server running on port: " << port << std::endl;
 
         while (ws.is_running())

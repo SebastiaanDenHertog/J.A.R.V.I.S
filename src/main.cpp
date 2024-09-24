@@ -20,6 +20,7 @@
 #endif
 
 // common variables
+// webserver var
 std::thread webServerThread;
 bool use_web_server = true;
 unsigned short web_server_port = 15881;
@@ -27,7 +28,6 @@ bool web_server_secure = false;
 std::string web_server_cert_path;
 std::string web_server_key_path;
 int threads = 10;
-int network_port = 15880;
 
 // common functions
 
@@ -63,6 +63,8 @@ std::string getLocalIP()
     return first_ip;
 }
 
+const char *deviceIP = getLocalIP();
+
 bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(NULL);
@@ -97,13 +99,13 @@ uint8_t ledCount = 16;
 bool setbluetooth = false;
 bool use_airplay = false;
 bool use_blutooth = false;
+std::string main_server_ip;
+int main_server_port = 15880;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 spi_config_t spiConfig;
 std::thread AirPlayServerThread;
 std::thread NetworkSpeechThread;
-int server_port;
-const char *serverIP;
 
 // Send speech data (client-specific)
 void send_speech_data(NetworkManager &client)
@@ -126,7 +128,7 @@ void run_main_loop(AirPlayServer *server)
     server->main_loop();
 }
 
-ClientInfo device{"client", getLocalIP(), network_port, {}};
+ClientInfo device{"client", main_server_ip, main_server_port, {}};
 
 #endif // CLIENT_BUILD
 
@@ -165,10 +167,12 @@ bool setbluetooth = false;
 bool use_homeassistant = false;
 bool use_terminal_input = false;
 
+int main_server_port = 15880
+
 std::string homeassistant_ip;
 std::string homeassistant_token;
 
-ClientInfo device{"server", getLocalIP(), network_port, {}};
+ClientInfo device{"server", deviceIP, main_server_port, {}};
 
 Task::TaskType stringToTaskType(const std::string &str)
 {
@@ -277,20 +281,19 @@ int main(int argc, char *argv[])
     {
         for (int i = 1; i < argc; ++i)
         {
-            if (std::string(argv[i]) == "-server-port")
+            if (std::string(argv[i]) == "-main-server-port")
             {
                 if (i + 1 < argc)
                 {
-                    server_port = std::atoi(argv[i + 1]);
+                    main_server_port = std::atoi(argv[i + 1]);
                 }
             }
 
-            if (std::string(argv[i]) == "-server-ip")
+            if (std::string(argc[i]) == "-main-server-ip")
             {
-                if (i + 1 < argc)
-                {
-                    serverIP = argv[i + 1];
-                }
+                if (i + 1 < argc){
+                    main_server_ip = std::atoi(argv[i + 1]);
+                }   
             }
 
             if (std::string(argv[i]) == "-start-web-server")
@@ -406,7 +409,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Client started." << std::endl;
             NetworkManager client(
-                server_port, serverIP, NetworkManager::Protocol::TCP);
+                main_server_port, main_server_ip, NetworkManager::Protocol::TCP);
             client.connectClient();
 
 
