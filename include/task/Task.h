@@ -41,6 +41,7 @@ public:
         Summarize,
         Translate,
         WeatherQuery,
+        Info,
         ERROR
     };
 

@@ -14,7 +14,7 @@ This project include multiple projects:
 from OpenMAX-based [RPiPlay](https://github.com/FD-/RPiPlay), which in turn derives from
 [AirplayServer](https://github.com/KqsMea8/AirplayServer),
 [shairplay](https://github.com/juhovh/shairplay), and [playfair](https://github.com/EstebanKubata/playfair).
-
+[libhttpserver](https://github.com/etr/libhttpserver)
 
 # Install or run:
 ## Linux

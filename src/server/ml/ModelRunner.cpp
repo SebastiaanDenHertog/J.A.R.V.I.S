@@ -100,6 +100,7 @@ bool ModelRunner::RunInference(const std::string &input_text, std::vector<std::v
         throw std::runtime_error("Model not loaded.");
     }
 
+    // Tokenize input
     std::vector<int> tokenized_input = TokenizeInput(input_text);
 
     TfLiteTensor *input_tensor = interpreter_->tensor(interpreter_->inputs()[0]);
@@ -107,20 +108,83 @@ bool ModelRunner::RunInference(const std::string &input_text, std::vector<std::v
     {
         throw std::runtime_error("Failed to get input tensor");
     }
-    std::memcpy(input_tensor->data.raw, tokenized_input.data(), tokenized_input.size() * sizeof(int));
 
+    // Determine the data type of the input tensor
+    switch (input_tensor->type)
+    {
+    case kTfLiteInt32:
+    {
+        std::memcpy(input_tensor->data.raw, tokenized_input.data(), tokenized_input.size() * sizeof(int));
+        break;
+    }
+    case kTfLiteFloat32:
+    {
+        // Convert tokenized_input to float
+        std::vector<float> float_input(tokenized_input.begin(), tokenized_input.end());
+        std::memcpy(input_tensor->data.f, float_input.data(), float_input.size() * sizeof(float));
+        break;
+    }
+    // Add more cases if your models use different types
+    default:
+    {
+        throw std::runtime_error("Unsupported input tensor type");
+    }
+    }
+
+    // Invoke the interpreter
     if (interpreter_->Invoke() != kTfLiteOk)
     {
         throw std::runtime_error("Failed to invoke TFLite interpreter");
     }
 
     TfLiteTensor *output_tensor = interpreter_->tensor(interpreter_->outputs()[0]);
-    int output_size = output_tensor->dims->data[1];
-    int num_classes = output_tensor->dims->data[2];
-    result.resize(output_size, std::vector<float>(num_classes));
-    for (int i = 0; i < output_size; ++i)
+    if (output_tensor == nullptr)
     {
-        std::memcpy(result[i].data(), output_tensor->data.f + i * num_classes, num_classes * sizeof(float));
+        throw std::runtime_error("Failed to get output tensor");
+    }
+
+    // Debug: Print output tensor information
+    std::cout << "Output Tensor Type: " << output_tensor->type << std::endl;
+    std::cout << "Output Tensor Dimensions: ";
+    for (int i = 0; i < output_tensor->dims->size; ++i)
+    {
+        std::cout << output_tensor->dims->data[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Handle different output tensor shapes based on the model type
+    if (output_tensor->type == kTfLiteFloat32)
+    {
+        if (output_tensor->dims->size == 2)
+        {
+            int batch_size = output_tensor->dims->data[0];
+            int num_classes = output_tensor->dims->data[1];
+            result.resize(batch_size, std::vector<float>(num_classes));
+            for (int i = 0; i < batch_size; ++i)
+            {
+                std::memcpy(result[i].data(), output_tensor->data.f + i * num_classes, num_classes * sizeof(float));
+            }
+        }
+        else if (output_tensor->dims->size == 3)
+        {
+            // Assuming NER model output: [batch_size, sequence_length, num_entities]
+            int batch_size = output_tensor->dims->data[0];
+            int sequence_length = output_tensor->dims->data[1];
+            int num_entities = output_tensor->dims->data[2];
+            result.resize(sequence_length, std::vector<float>(num_entities));
+            for (int i = 0; i < sequence_length; ++i)
+            {
+                std::memcpy(result[i].data(), output_tensor->data.f + i * num_entities, num_entities * sizeof(float));
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unexpected output tensor dimensions");
+        }
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported output tensor type");
     }
 
     return true;
@@ -157,42 +221,15 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
 {
     std::vector<std::vector<float>> results;
 
-    std::cout << "Running inference for input: " << input << std::endl;
-
-    // Run inference and check if it succeeded
+    // Run inference
     if (!RunInference(input, results))
     {
         throw std::runtime_error("Failed to run inference on input: " + input);
     }
 
-    // Debug: Print the results size
-    std::cout << "Inference results size: " << results.size() << " x "
-              << (results.empty() ? 0 : results[0].size()) << std::endl;
-
-    int predicted_class_index = std::distance(results[0].begin(), std::max_element(results[0].begin(), results[0].end()));
-    std::string task_description = "Unknown";
-
-    // Debug: Print the predicted class index and corresponding probability
-    std::cout << "Predicted class index for task: " << predicted_class_index
-              << " with probability: " << results[0][predicted_class_index] << std::endl;
-
-    if (!labels_.empty())
-    {
-        try
-        {
-            task_description = labels_.at(predicted_class_index);
-        }
-        catch (const std::out_of_range &)
-        {
-            std::cerr << "Error: Label not found for key: " << predicted_class_index << std::endl;
-        }
-    }
-    else
-    {
-        std::cerr << "Error: Labels are empty." << std::endl;
-    }
-
+    std::string task_description = "Entities Extracted";
     std::vector<std::string> entity_descriptions;
+
     std::istringstream iss(input);
     std::vector<std::string> words;
     std::string word;
@@ -201,18 +238,31 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
         words.push_back(word);
     }
 
-    // Debug: Print the words and their corresponding inference result
+    // Print the predicted entity indices for each word
     std::cout << "Words and their corresponding entity indices:" << std::endl;
     for (int i = 0; i < words.size(); ++i)
     {
+        if (i >= results.size())
+            break;
+
         int predicted_entity_index = std::distance(results[i].begin(), std::max_element(results[i].begin(), results[i].end()));
         std::cout << "Word: " << words[i]
                   << " -> Predicted entity index: " << predicted_entity_index
                   << " with probability: " << results[i][predicted_entity_index] << std::endl;
 
-        if (labels_[predicted_entity_index] != "O")
+        // If index 44 is consistently predicted, print label information for index 44
+        if (predicted_entity_index == 44 && labels_.find(44) != labels_.end())
+        {
+            std::cout << "Entity Label for Index 44: " << labels_[44] << std::endl;
+        }
+
+        if (labels_.find(predicted_entity_index) != labels_.end())
         {
             entity_descriptions.push_back(words[i] + " (" + labels_[predicted_entity_index] + ")");
+        }
+        else
+        {
+            entity_descriptions.push_back(words[i] + " (Unknown)");
         }
     }
 
@@ -233,19 +283,31 @@ std::string ModelRunner::ClassifySentence(const std::string &input)
     if (results.empty() || results[0].empty())
     {
         std::cerr << "Inference results are empty for input: " << input << std::endl;
-        return "Unknown"; // Returning a default value or handling it as per your application logic
+        return "Unknown";
     }
 
-    // Since this function is for classifying the whole sentence, we only need to consider the first output
+    // Find the class with the highest probability
     int predicted_class_index = std::distance(results[0].begin(), std::max_element(results[0].begin(), results[0].end()));
+    float predicted_probability = results[0][predicted_class_index];
 
-    // Retrieve the corresponding label for the predicted class
+    // Debug: Print the predicted class and probability
+    std::cout << "Predicted class index: " << predicted_class_index
+              << " with probability: " << predicted_probability << std::endl;
+
+    // Check if the predicted probability is below the threshold
+    if (predicted_probability < 0.85)
+    {
+        return "Info"; // Return "Info" if the confidence is below 0.85
+    }
+
+    // Otherwise, return the label corresponding to the predicted class
     std::string sentence_label = "Unknown";
     if (!labels_.empty())
     {
         try
         {
             sentence_label = labels_.at(predicted_class_index);
+            std::cout << "Mapped Label: " << sentence_label << std::endl;
         }
         catch (const std::out_of_range &)
         {
