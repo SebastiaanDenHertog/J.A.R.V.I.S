@@ -10,3 +10,6 @@
 [submodule "lib/libhttpserver"]
 	path = lib/libhttpserver
 	url = git@github.com:SebastiaanDenHertog/libhttpserver.git
+[submodule "lib/pytorch"]
+	path = lib/pytorch
+	url = git@github.com:pytorch/pytorch.git

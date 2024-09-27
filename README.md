@@ -40,19 +40,15 @@ the cmake option `-DNO_X11_DEPS=ON`.
 
 
 # How to run
-
+```
 git submodule init
 git submodule update
 git submodule foreach git pull
+```
 
 
 Linux: chmod +x build_project.sh
 ./build_project.sh
-
-do this in the lib folder:
-wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
-unzip libtorch-shared-with-deps-latest.zip
-rm libtorch-shared-with-deps-latest.zip
 
 in the mlpackchange cmakefile.txt to 
 file(READ ${CMAKE_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS) -> file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS)
