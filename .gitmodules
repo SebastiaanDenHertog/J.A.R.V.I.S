@@ -10,3 +10,6 @@
 [submodule "lib/libhttpserver"]
 	path = lib/libhttpserver
 	url = git@github.com:SebastiaanDenHertog/libhttpserver.git
+[submodule "lib/kaldi"]
+	path = lib/kaldi
+	url = git@github.com:kaldi-asr/kaldi.git
