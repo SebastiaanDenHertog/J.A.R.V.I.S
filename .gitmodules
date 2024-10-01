@@ -13,3 +13,6 @@
 [submodule "lib/kaldi"]
 	path = lib/kaldi
 	url = git@github.com:kaldi-asr/kaldi.git
+[submodule "lib/llama.cpp"]
+	path = lib/llama.cpp
+	url = git@github.com:ggerganov/llama.cpp.git
