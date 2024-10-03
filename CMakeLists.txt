@@ -9,30 +9,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(DEBUG_MODE "Enable debug prints" ON)
 
-# Double colon in target name means ALIAS or IMPORTED target.
 cmake_policy(SET CMP0028 NEW)
-
-# Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
 
 if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to Release, for debug builds use
-        '-DCMAKE_BUILD_TYPE=Debug'.")
+    message(STATUS "Setting build type to Release, for debug builds use '-DCMAKE_BUILD_TYPE=Debug'.")
     set(CMAKE_BUILD_TYPE Release)
 else()
-    message(STATUS Build type is ${CMAKE_BUILD_TYPE}.)
+    message(STATUS "Build type is ${CMAKE_BUILD_TYPE}.")
     add_definitions(-DDEBUG_MODE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-message(STATUS PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
 if((UNIX AND NOT APPLE) OR USE_X11)
     if(NOT NO_X11_DEPS)
         find_package(X11)
 
         if(X11_FOUND)
-            message(STATUS "Will compile using X11 Libraries(use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted")
+            message(STATUS "Will compile using X11 Libraries (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)")
             set(LINK_LIBS ${LINK_LIBS} ${X11_LIBRARIES})
             include_directories(${X11_INCLUDE_DIR})
         else()
@@ -110,7 +106,7 @@ find_package(OpenSSL REQUIRED)
 
 if(OpenSSL_FOUND)
     message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")
-    include_directories(${OPENSSL_INCLUDE_DIR})
+    include_directories(${OpenSSL_INCLUDE_DIR})
 else()
     message(FATAL_ERROR "OpenSSL not found: ${OPENSSL_VERSION}")
 endif()
@@ -134,8 +130,6 @@ else()
 endif()
 
 if(BUILD_FULL OR BUILD_SERVER)
-    # Check if OpenCV exists and handle accordingly
-    message(building full/server code)
     find_package(OpenCV)
 
     if(NOT OpenCV_FOUND)
@@ -152,6 +146,53 @@ if(BUILD_FULL OR BUILD_SERVER)
     else()
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
         include_directories(${OpenCV_INCLUDE_DIRS})
+    endif()
+endif()
+
+if(BUILD_FULL OR BUILD_SERVER)
+    find_package(Whisper)
+
+    if(NOT Whisper_FOUND)
+        message(WARNING "Whisper.cpp not found, will build from source.")
+
+        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
+            message(FATAL_ERROR "Whisper.cpp source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        else()
+            # Set Whisper source directory
+            set(WHISPER_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
+
+            # Add Whisper.cpp directory to the project
+            add_subdirectory(${WHISPER_SOURCE_DIR} ${CMAKE_BINARY_DIR}/whisper EXCLUDE_FROM_ALL)
+
+            # Include Whisper headers
+            include_directories(${WHISPER_SOURCE_DIR})
+
+            # Link the Whisper library
+            set(WhisperCPP_LIBRARIES whisper)
+        endif()
+    else()
+        message(STATUS "Whisper.cpp found")
+        include_directories(${WhisperCPP_INCLUDE_DIR})
+    endif()
+
+    find_package(LlamaCPP)
+
+    if(NOT LlamaCPP_FOUND)
+        message(WARNING "llama.cpp not found, will build from source.")
+
+        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/llama.cpp)
+            message(FATAL_ERROR "llama.cpp source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        else()
+            # Set llama.cpp source directory
+            set(LLAMA_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/llama.cpp)
+            include_directories(${LLAMA_SOURCE_DIR})
+
+            # Add llama.cpp directory to the project
+            add_subdirectory(${LLAMA_SOURCE_DIR} ${CMAKE_BINARY_DIR}/llama EXCLUDE_FROM_ALL)
+        endif()
+    else()
+        message(STATUS "llama.cpp found")
+        include_directories(${LlamaCPP_INCLUDE_DIR})
     endif()
 
     find_package(tensorflow-lite)
@@ -209,7 +250,6 @@ if(BUILD_FULL OR BUILD_CLIENT)
     endif()
 endif()
 
-
 # Find the httpserver package
 find_package(httpserver)
 
@@ -249,6 +289,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/ClientInfo
     ${PROJECT_SOURCE_DIR}/include/prometheus
     ${PROJECT_SOURCE_DIR}/include/webServer
+    ${PROJECT_SOURCE_DIR}/include/whisperTranscriber
 )
 
 # Source files
@@ -295,24 +336,26 @@ endif()
 
 message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
+# Linking libraries
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_FULL)
-        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_SERVER)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_CLIENT)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_FULL)
-        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_SERVER)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_CLIENT)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
     endif()
 endif()
 
+# Compile options
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_FULL)
         target_compile_options(full PRIVATE -Wall -g -pthread -DSERVER_MODE)

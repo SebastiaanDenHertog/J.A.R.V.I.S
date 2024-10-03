@@ -5,11 +5,18 @@
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
 
-NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
+NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
     std::cout << "Server Port: " << port << std::endl;
+
+    // WhisperTranscriber setup
+    WhisperTranscriber::Params transcriberParams;
+    transcriberParams.language = "en";
+    transcriberParams.n_threads = 4;                          // Adjust the number of threads
+    transcriberParams.model_path = "models/ggml-base.en.bin"; // Provide the correct model path
+    transcriber.setup(transcriberParams);
 
     if (protocol == TCP)
     {
@@ -29,8 +36,10 @@ NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol, Mode
         setupUDPSocket();
     }
 }
+
 #else
-NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol)
+
+NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
 {
     std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
@@ -54,7 +63,30 @@ NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol)
         setupUDPSocket();
     }
 }
+
 #endif
+
+void NetworkManager::processSoundData(const SoundData *inputData, uint8_t *outputData)
+{
+#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+    // Transcribe the received sound data using WhisperTranscriber
+    std::vector<float> pcmf32(inputData->data, inputData->data + inputData->length / sizeof(float)); // Convert the sound data to PCM float
+    std::string transcription = transcriber.transcribeLiveData(pcmf32);
+
+    if (!transcription.empty())
+    {
+        std::cout << "Transcription: " << transcription << std::endl;
+        // Process the transcription result here if needed (e.g., sending it back to the client)
+    }
+
+#else
+    // Default sound processing (e.g., inverting the data)
+    for (size_t i = 0; i < inputData->length; ++i)
+    {
+        outputData[i] = ~inputData->data[i]; // Example processing: inverting the data
+    }
+#endif
+}
 
 NetworkManager::~NetworkManager()
 {
@@ -154,7 +186,6 @@ void NetworkManager::connectClient()
     {
         std::cout << "TCP connection setup." << std::endl;
         connectToServer();
-
     }
     else if (protocol == UDP)
     {
@@ -194,7 +225,6 @@ void NetworkManager::connectToServer()
     }
     std::cout << "Successfully connected to the server!" << std::endl;
 }
-
 
 void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
 {
@@ -273,7 +303,6 @@ void NetworkManager::listenForClients()
     }
     std::cout << "Server is now listening for clients..." << std::endl;
 }
-
 
 void NetworkManager::acceptClient()
 {
@@ -384,14 +413,6 @@ void NetworkManager::closeSocket(int sd)
     }
 }
 
-void NetworkManager::processSoundData(const SoundData *inputData, uint8_t *outputData)
-{
-    for (size_t i = 0; i < inputData->length; ++i)
-    {
-        outputData[i] = ~inputData->data[i]; // Example processing: inverting the data
-    }
-}
-
 bool NetworkManager::isKnownClient(int clientSd)
 {
     std::lock_guard<std::mutex> guard(clientMutex);
@@ -423,4 +444,3 @@ int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)
 {
     return ::recv(sd, buffer, length, flags);
 }
-

@@ -11,7 +11,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
-    #include "ModelRunner.h"
+#include "ModelRunner.h"
+#include "WhisperTranscriber.h"
 #endif
 
 struct SoundData
@@ -62,9 +63,9 @@ public:
     };
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
-    NetworkManager(int port, char* serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
+    NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
-    NetworkManager(int port, char* serverIp, Protocol protocol);
+    NetworkManager(int port, char *serverIp, Protocol protocol);
 #endif
     ~NetworkManager();
 
@@ -83,7 +84,7 @@ public:
 
 private:
     int port;
-    const char* serverIp;
+    const char *serverIp;
     int serverSd;
     int udpSd;
     sockaddr_in servAddr;
@@ -105,13 +106,14 @@ private:
     void session(int clientSd);
     void sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType);
     void closeSocket(int sd);
-    void processSoundData(const SoundData *inputData, uint8_t *outputData);
     bool isKnownClient(int clientSd);
     void addKnownClient(int clientSd);
+    void processSoundData(const SoundData *inputData, uint8_t *outputData);
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
-    ModelRunner *nerModel;  // Model for NER
+    ModelRunner *nerModel;            // Model for NER
     ModelRunner *classificationModel; // Model for Classification
+    WhisperTranscriber transcriber;   // Whisper transcriber for live audio transcription
 #endif
 };
 
