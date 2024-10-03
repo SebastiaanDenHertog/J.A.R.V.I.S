@@ -5,6 +5,8 @@
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/kernels/register.h>
 #include <tensorflow/lite/op_resolver.h>
+#include <tensorflow/lite/tools/command_line_flags.h>
+#include <tensorflow/lite/tools/list_flex_ops.h>
 #include <string>
 #include <vector>
 #include <unordered_map>

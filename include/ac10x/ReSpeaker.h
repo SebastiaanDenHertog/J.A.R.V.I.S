@@ -1,3 +1,10 @@
+/*
+Create by: Sebastiaan den Hertog
+Date: 2024-09-01
+
+Description: 
+*/
+
 #ifndef RESPEAKER_H
 #define RESPEAKER_H
 

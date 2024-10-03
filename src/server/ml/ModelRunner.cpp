@@ -14,7 +14,6 @@ ModelRunner::ModelRunner(const std::string &model_path)
     {
         throw std::runtime_error("Failed to load model: " + model_path);
     }
-
     tflite::ops::builtin::BuiltinOpResolver resolver;
     tflite::InterpreterBuilder(*model_, resolver)(&interpreter_);
     if (!interpreter_)
@@ -221,7 +220,7 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
 {
     std::vector<std::vector<float>> results;
 
-    // Run inference
+    // Run inference on the input text to get NER predictions
     if (!RunInference(input, results))
     {
         throw std::runtime_error("Failed to run inference on input: " + input);
@@ -230,6 +229,7 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
     std::string task_description = "Entities Extracted";
     std::vector<std::string> entity_descriptions;
 
+    // Tokenize the input text into words
     std::istringstream iss(input);
     std::vector<std::string> words;
     std::string word;
@@ -238,31 +238,38 @@ std::pair<std::string, std::vector<std::string>> ModelRunner::PredictlabelFromIn
         words.push_back(word);
     }
 
-    // Print the predicted entity indices for each word
-    std::cout << "Words and their corresponding entity indices:" << std::endl;
+    // Check if the number of words matches the result size (predicted entities)
+    if (words.size() > results.size())
+    {
+        std::cerr << "Warning: Fewer predictions than words in the input text." << std::endl;
+    }
+
+    // Map each word to its predicted NER label
     for (int i = 0; i < words.size(); ++i)
     {
+        // Ensure we do not exceed the number of predictions
         if (i >= results.size())
             break;
 
+        // Find the predicted entity index with the highest probability
         int predicted_entity_index = std::distance(results[i].begin(), std::max_element(results[i].begin(), results[i].end()));
+        float predicted_probability = results[i][predicted_entity_index];
+
+        // Debug: Print the word and the predicted entity
         std::cout << "Word: " << words[i]
                   << " -> Predicted entity index: " << predicted_entity_index
-                  << " with probability: " << results[i][predicted_entity_index] << std::endl;
+                  << " with probability: " << predicted_probability << std::endl;
 
-        // If index 44 is consistently predicted, print label information for index 44
-        if (predicted_entity_index == 44 && labels_.find(44) != labels_.end())
+        // Only add the predicted label if the confidence is high enough (e.g., > 0.5)
+        if (predicted_probability > 0.5 && labels_.find(predicted_entity_index) != labels_.end())
         {
-            std::cout << "Entity Label for Index 44: " << labels_[44] << std::endl;
-        }
-
-        if (labels_.find(predicted_entity_index) != labels_.end())
-        {
-            entity_descriptions.push_back(words[i] + " (" + labels_[predicted_entity_index] + ")");
+            std::string predicted_label = labels_[predicted_entity_index];
+            entity_descriptions.push_back(words[i] + " (" + predicted_label + ")");
         }
         else
         {
-            entity_descriptions.push_back(words[i] + " (Unknown)");
+            // If confidence is too low or the label is unknown, mark as "O" (outside entity)
+            entity_descriptions.push_back(words[i] + " (O)");
         }
     }
 
@@ -273,7 +280,7 @@ std::string ModelRunner::ClassifySentence(const std::string &input)
 {
     std::vector<std::vector<float>> results;
 
-    // Run inference
+    // Run inference on the input text to get classification predictions
     if (!RunInference(input, results))
     {
         throw std::runtime_error("Failed to run inference on input: " + input);
@@ -286,18 +293,23 @@ std::string ModelRunner::ClassifySentence(const std::string &input)
         return "Unknown";
     }
 
+    // The results should contain a vector of probabilities for each class
+    const std::vector<float> &class_probabilities = results[0];
+
     // Find the class with the highest probability
-    int predicted_class_index = std::distance(results[0].begin(), std::max_element(results[0].begin(), results[0].end()));
-    float predicted_probability = results[0][predicted_class_index];
+    int predicted_class_index = std::distance(class_probabilities.begin(),
+                                              std::max_element(class_probabilities.begin(),
+                                                               class_probabilities.end()));
+    float predicted_probability = class_probabilities[predicted_class_index];
 
     // Debug: Print the predicted class and probability
     std::cout << "Predicted class index: " << predicted_class_index
               << " with probability: " << predicted_probability << std::endl;
 
-    // Check if the predicted probability is below the threshold
+    // Check if the predicted probability is below a threshold (e.g., 0.85)
     if (predicted_probability < 0.85)
     {
-        return "Info"; // Return "Info" if the confidence is below 0.85
+        return "Info"; // Return "Info" if the confidence is below the threshold
     }
 
     // Otherwise, return the label corresponding to the predicted class

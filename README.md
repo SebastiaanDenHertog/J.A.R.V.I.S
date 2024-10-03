@@ -36,6 +36,10 @@ the cmake option `-DNO_X11_DEPS=ON`.
 3.  `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`. (\*_Skip if you built Gstreamer from source_)
 4. `sudo apt-get install libmicrohttpd-dev`
 
+# kaldi install
+
+1. `sudo apt-get install libopenblas-dev && sudo apt-get install libblas-dev`
+
 
 
 
