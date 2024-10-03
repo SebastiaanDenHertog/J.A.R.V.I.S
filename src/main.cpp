@@ -101,6 +101,7 @@ bool use_airplay = false;
 bool use_blutooth = false;
 char *main_server_ip;
 int main_server_port = 15880;
+
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
 spi_config_t spiConfig;
@@ -373,6 +374,7 @@ int main(int argc, char *argv[])
 #include "HomeAssistantAPI.h"
 #include "counter.h"
 #include "registry.h"
+#include "LlamaWrapper.h"
 
 // Server-specific variables and functions
 std::thread bluetoothThread;
@@ -395,6 +397,11 @@ int main_server_port = 15880;
 
 std::string homeassistant_ip;
 std::string homeassistant_token;
+
+// llm arguments
+std::string llama_model_path;
+std::string llama_prompt = "default prompt";
+int llama_num_tokens = 128;
 
 ClientInfo device{"server", deviceIP, main_server_port, {}};
 
@@ -574,18 +581,53 @@ int main(int argc, char *argv[])
                 std::cerr << "Using homeAssistant" << std::endl;
             }
 
+            if (std::string(argv[i]) == "-llm-path")
+            {
+                if (i + 1 < argc)
+                {
+                    llama_model_path = argv[i + 1];
+                }
+                else
+                {
+                    std::cerr << "Error: --llm-path option requires a model path." << std::endl;
+                    return -1;
+                }
+            }
+            if (std::string(argv[i]) == "-llm-prompt")
+            {
+                if (i + 1 < argc)
+                {
+                    llama_prompt = argv[i + 1];
+                }
+                else
+                {
+                    std::cerr << "Error: --llm-prompt option requires a prompt." << std::endl;
+                    return -1;
+                }
+            }
+            if (std::string(argv[i]) == "-llm-num-tokens")
+            {
+                if (i + 1 < argc)
+                {
+                    llama_num_tokens = std::atoi(argv[i + 1]);
+                }
+            }
+
             if (std::string(argv[i]) == "-help")
             {
                 std::cout << "Usage: " << argv[0] << " [options]\n"
-                          << "Options:\n"
-                          << "  -terminal-input: Enable terminal input\n"
-                          << "  -network-port <port>: Set the network port\n"
-                          << "  -web-server-port <port>: Set the web server port\n"
-                          << "  -threads <number>: Set the number of threads\n"
-                          << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
-                          << "  -start-web-server: Start the web server\n"
-                          << "  -web-server-secure <cert> <key>: Start the web server with SSL using the provided certificate and key\n"
-                          << "  -help: Display this help message\n";
+                        << "Options:\n"
+                        << "  -terminal-input: Enable terminal input\n"
+                        << "  -network-port <port>: Set the network port\n"
+                        << "  -web-server-port <port>: Set the web server port\n"
+                        << "  -threads <number>: Set the number of threads\n"
+                        << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
+                        << "  -start-web-server: Start the web server\n"
+                        << "  -web-server-secure <cert> <key>: Start the web server with SSL using the provided certificate and key\n"
+                        << "  -llm-path <model-path>: Path to the Llama model\n"
+                        << "  -llm-prompt <prompt>: Prompt for Llama model\n"
+                        << "  -llm-num-tokens <number>: Number of tokens to generate\n"
+                        << "  -help: Display this help message\n";
                 return 0;
             }
         }
