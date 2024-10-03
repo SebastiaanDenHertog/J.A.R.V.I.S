@@ -1,5 +1,6 @@
 #include "TaskProcessor.h"
 #include "MediaPlayer.h"
+
 #include <iostream>
 
     TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
@@ -14,7 +15,7 @@
         };
     }
 
-void TaskProcessor::processTask(const Task &task)
+void TaskProcessor::processTask(const Task &task, LlamaWrapper &llamaWrapper)
 {
     // Ignore empty tasks
     if (task.description.empty())

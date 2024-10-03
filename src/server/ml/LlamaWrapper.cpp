@@ -11,12 +11,10 @@ Description:
 
 gpt_params *LlamaWrapper::g_params = nullptr;
 
-LlamaWrapper::LlamaWrapper(int argc, char **argv) : is_interacting(false), need_insert_eot(false)
+LlamaWrapper::LlamaWrapper(int argc, char **argv) : is_interacting(false), need_insert_eot(false), running(true)
 {
-    
-    g_params = &params;
-    if (!gpt_params_parse(argc, argv, params, LLAMA_EXAMPLE_MAIN, [](int argc, char **argv)
-                          {}))
+
+    if (!gpt_params_parse(argc, argv, params, LLAMA_EXAMPLE_MAIN, [](int argc, char **argv) {}))
     {
         exit(1);
     }
@@ -54,10 +52,84 @@ LlamaWrapper::LlamaWrapper(int argc, char **argv) : is_interacting(false), need_
 
 LlamaWrapper::~LlamaWrapper()
 {
+    stop();
     gpt_sampler_free(sampler);
     llama_free(ctx);
     llama_free_model(model);
     llama_backend_free();
+}
+
+void LlamaWrapper::addSentence(const std::string &sentence, std::function<void(const std::string &)> callback)
+{
+    std::lock_guard<std::mutex> lock(queueMutex);
+    sentenceQueue.push(SentenceJob{sentence, callback});
+    queueCondition.notify_one(); // Notify the processing thread
+}
+
+void LlamaWrapper::stop()
+{
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        running = false;
+    }
+    queueCondition.notify_all();
+}
+
+void LlamaWrapper::processQueue()
+{
+    while (running)
+    {
+        SentenceJob job;
+
+        // Wait for a sentence to be added to the queue or for the thread to stop
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            queueCondition.wait(lock, [&]()
+                                { return !sentenceQueue.empty() || !running; });
+
+            if (!running)
+            {
+                break; // Exit if the thread is stopped
+            }
+
+            job = sentenceQueue.front();
+            sentenceQueue.pop();
+        }
+
+        // Process the sentence using Llama
+        std::vector<llama_token> embd_inp = tokenize_input(job.sentence);
+
+        if (!embd_inp.empty())
+        {
+            int n_past = 0;
+            int n_remain = params.n_predict;
+
+            while (n_remain != 0)
+            {
+                for (int i = 0; i < (int)embd_inp.size(); i += params.n_batch)
+                {
+                    int n_eval = (int)embd_inp.size() - i;
+                    if (n_eval > params.n_batch)
+                    {
+                        n_eval = params.n_batch;
+                    }
+
+                    llama_decode(ctx, llama_batch_get_one(&embd_inp[i], n_eval, n_past, 0));
+                    n_past += n_eval;
+                }
+
+                const llama_token id = gpt_sampler_sample(sampler, ctx, -1);
+                embd_inp.clear();
+                embd_inp.push_back(id);
+                output_ss << llama_token_to_piece(ctx, id);
+                --n_remain;
+            }
+
+            // Call the callback with the generated result
+            job.callback(output_ss.str());
+            output_ss.str(""); // Clear the stream for next input
+        }
+    }
 }
 
 void LlamaWrapper::run()

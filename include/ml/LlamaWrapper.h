@@ -20,6 +20,11 @@ Description:
 #include <sstream>
 #include <csignal>
 #include <cstdio>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <functional>
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
@@ -36,8 +41,10 @@ class LlamaWrapper
 public:
     LlamaWrapper(int argc, char **argv);
     ~LlamaWrapper();
+    void addSentence(const std::string &sentence, std::function<void(const std::string &)> callback);
 
     void run();
+    void stop();
 
 private:
     llama_context *ctx;
@@ -50,6 +57,19 @@ private:
     std::ostringstream output_ss;
     bool is_interacting;
     bool need_insert_eot;
+
+    struct SentenceJob
+    {
+        std::string sentence;
+        std::function<void(const std::string &)> callback;
+    };
+
+    std::queue<SentenceJob> sentenceQueue;
+    std::mutex queueMutex;
+    std::condition_variable queueCondition;
+    bool running;
+
+    void processQueue();
 
     std::vector<llama_token> tokenize_input(const std::string &prompt, bool add_bos = true);
     bool file_exists(const std::string &path);

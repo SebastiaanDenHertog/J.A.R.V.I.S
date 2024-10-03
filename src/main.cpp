@@ -387,6 +387,7 @@ std::unique_ptr<BluetoothComm> bluetoothComm;
 std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
 NetworkManager *networkserver = nullptr;
 std::vector<std::thread> io_threads;
+std::unique_ptr<LlamaWrapper> llamaWrapper;
 
 int homeassistant_port = 0;
 bool setbluetooth = false;
@@ -496,7 +497,7 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
         Task task(sentence_label, 1, device, taskType, {predicted_entities});
 
         inputHandler.addTask(task);
-        taskProcessor.processTask(task);
+        taskProcessor.processTask(task, *llamaWrapper);
     }
 }
 
@@ -616,21 +617,30 @@ int main(int argc, char *argv[])
             if (std::string(argv[i]) == "-help")
             {
                 std::cout << "Usage: " << argv[0] << " [options]\n"
-                        << "Options:\n"
-                        << "  -terminal-input: Enable terminal input\n"
-                        << "  -network-port <port>: Set the network port\n"
-                        << "  -web-server-port <port>: Set the web server port\n"
-                        << "  -threads <number>: Set the number of threads\n"
-                        << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
-                        << "  -start-web-server: Start the web server\n"
-                        << "  -web-server-secure <cert> <key>: Start the web server with SSL using the provided certificate and key\n"
-                        << "  -llm-path <model-path>: Path to the Llama model\n"
-                        << "  -llm-prompt <prompt>: Prompt for Llama model\n"
-                        << "  -llm-num-tokens <number>: Number of tokens to generate\n"
-                        << "  -help: Display this help message\n";
+                          << "Options:\n"
+                          << "  -terminal-input: Enable terminal input\n"
+                          << "  -network-port <port>: Set the network port\n"
+                          << "  -web-server-port <port>: Set the web server port\n"
+                          << "  -threads <number>: Set the number of threads\n"
+                          << "  -homeassistant <ip> <port> <token>: Enable Home Assistant integration\n"
+                          << "  -start-web-server: Start the web server\n"
+                          << "  -web-server-secure <cert> <key>: Start the web server with SSL using the provided certificate and key\n"
+                          << "  -llm-path <model-path>: Path to the Llama model\n"
+                          << "  -llm-prompt <prompt>: Prompt for Llama model\n"
+                          << "  -llm-num-tokens <number>: Number of tokens to generate\n"
+                          << "  -help: Display this help message\n";
                 return 0;
             }
         }
+    }
+    try
+    {
+        LlamaWrapper llamaWrapper(argc, argv);
+        llamaWrapper.run();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
     }
 
     if (use_web_server)
@@ -730,7 +740,7 @@ int main(int argc, char *argv[])
             {
                 Task task = inputHandler.getNextTask();
                 std::cout << "Processing task: " << task.description << std::endl;
-                taskProcessor.processTask(task);
+                taskProcessor.processTask(task, *llamaWrapper);
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });
@@ -747,6 +757,8 @@ int main(int argc, char *argv[])
 
     // Wait for threads to join on exit
     std::cout << "Press Ctrl+C to exit...\n";
+
+    llamaWrapper->stop();
 
     if (bluetoothThread.joinable())
     {
