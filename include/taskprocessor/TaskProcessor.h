@@ -14,8 +14,8 @@ public:
     void processTask(const Task &task);
 private:
     std::function<void(const Task &task)> taskHandler_;
-    void processGeneralTask(const Task &task);
-    void processHomeAssistantTask(const Task &task);
+    bool processGeneralTask(const Task &task);
+    bool processHomeAssistantTask(const Task &task);
     ModelRunner &nerModel_;
     ModelRunner &classificationModel_;
     HomeAssistantAPI *homeAssistantAPI_;

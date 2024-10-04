@@ -27,7 +27,7 @@ public:
     bool stop();
 
     // Method to select the playback protocol
-    void setProtocol(const std::string &protocol);
+    bool setProtocol(const std::string &protocol);
 
 private:
     std::string currentProtocol;

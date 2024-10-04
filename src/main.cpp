@@ -484,10 +484,13 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
         std::string sentence_label = classificationModel.ClassifySentence(user_input);
         std::cout << "Intent: " << sentence_label << std::endl;
 
+        UserCommand user_command(user_input, sentence_entities, sentence_label, predicted_entities);
+
         // Convert predicted intent to Task::TaskType
         Task::TaskType taskType = stringToTaskType(sentence_label);
-        Task task(sentence_label, 1, device, taskType, {predicted_entities});
+        Task task(user_input, 1, device, taskType, user_command);
 
+        // Add the task to the handler
         inputHandler.addTask(task);
         taskProcessor.processTask(task);
     }

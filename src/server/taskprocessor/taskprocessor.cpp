@@ -1,5 +1,5 @@
 #include "TaskProcessor.h"
-#include "MediaPlayer.h"
+#include "MediaPlayer.h"   
 #include <iostream>
 
     TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
@@ -42,6 +42,7 @@ void TaskProcessor::processTask(const Task &task)
         break;
     case Task::ControlHeating:
         processHomeAssistantTask(task);
+        
         // Add your code to control heating here
         break;
     case Task::ControlLight:
@@ -89,6 +90,7 @@ void TaskProcessor::processTask(const Task &task)
         MediaPlayer player;
         player.setoutput(task.device, task.output);
         player.play(player.FindSong(task.entities));
+        
         break;
     }
     case Task::PlayVideo:
@@ -136,13 +138,14 @@ void TaskProcessor::processTask(const Task &task)
     }
 }
 
-void TaskProcessor::processGeneralTask(const Task &task)
+bool TaskProcessor::processGeneralTask(const Task &task)
 {
     // General task processing logic here
     std::cout << "Processing general task: " << task.description << std::endl;
+    return true;
 }
 
-void TaskProcessor::processHomeAssistantTask(const Task &task)
+bool TaskProcessor::processHomeAssistantTask(const Task &task)
 {
     std::cout << "Processing Home Assistant task: " << task.description << std::endl;
     if (homeAssistantAPI_)
@@ -150,15 +153,18 @@ void TaskProcessor::processHomeAssistantTask(const Task &task)
         if (!task.service.empty())
         {
             homeAssistantAPI_->callService("homeassistant", task.service, task.entityId);
+            return true;
         }
         else if (!task.newState.empty())
         {
             homeAssistantAPI_->sendStateChange(task.entityId, task.newState);
+            return true;
         }
     }
     else
     {
         std::cerr << "Home Assistant API is not initialized." << std::endl;
+        return false;
     }
 
 }

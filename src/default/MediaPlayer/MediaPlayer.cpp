@@ -109,7 +109,7 @@ bool MediaPlayer::playAUX(const std::string &mediaPath)
     return true;
 }
 
-void MediaPlayer::setoutput(ClientInfo device, std::string output)
+bool MediaPlayer::setoutput(ClientInfo device, std::string output)
 {
     for (auto musicOutput : device.getMusicOutputs())
     {
@@ -117,11 +117,12 @@ void MediaPlayer::setoutput(ClientInfo device, std::string output)
         {
             std::cout << "Setting output to: " << output << std::endl;
             setProtocol(output);
-            return;
+            return true;
         }
     }
 
     std::cerr << "Output not found: " << output << std::endl;
+    return false;
 }
 
 std::string MediaPlayer::FindSong(std::vector<std::vector<std::string>> entities)
