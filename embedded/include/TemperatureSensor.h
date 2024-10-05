@@ -5,9 +5,6 @@
  * @Description     constuctor, destructor and methods for the TemperatureSensor class
  **/
 
-#ifndef TEMPERATURESENSOR_H
-#define TEMPERATURESENSOR_H
-
 #include <DHT.h>
 
 class TemperatureSensor {
@@ -20,5 +17,3 @@ public:
     float readTemperature();
     float readHumidity();
 };
-
-#endif

@@ -5,9 +5,6 @@
  * @Description     constuctor, destructor and methods for the GPIOMgr class
  **/
 
-#ifndef GPIOMGR_H
-#define GPIOMGR_H
-
 #include <Arduino.h>
 
 class GPIOMgr {
@@ -16,5 +13,3 @@ public:
     int readGPIO(int pin);
     void writeGPIO(int pin, int value);
 };
-
-#endif

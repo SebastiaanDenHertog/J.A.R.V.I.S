@@ -28,7 +28,7 @@ void WebServer::begin()
     server.addHandler(&ws);
 
     // Define a basic route
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+    server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
               { request->send(200, "text/html", "<h1>ESP32 Web Interface</h1>"); });
 
     // Start the server
@@ -38,7 +38,7 @@ void WebServer::begin()
 
 void WebServer::addGPIOConfigRoute()
 {
-    server.on("/gpio", HTTP_GET, [](AsyncWebServerRequest *request)
+    server.on("/gpio", HTTP_GET, [this](AsyncWebServerRequest *request)
               {
         String html = "<h1>GPIO Configuration</h1>";
         html += "<form method='POST' action='/set_gpio'>";

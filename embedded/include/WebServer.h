@@ -5,9 +5,6 @@
  * @Description     constuctor, destructor and methods for the webServer class
  **/
 
-#ifndef WEBSERVER_H
-#define WEBSERVER_H
-
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 
@@ -25,5 +22,3 @@ public:
     void addGPIOConfigRoute();
     void broadcastTemperature(float temp);
 };
-
-#endif
