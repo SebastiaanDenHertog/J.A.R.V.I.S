@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    15-08-2024
+ * @Date updated    24-08-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the webServer class
+ **/
+
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 

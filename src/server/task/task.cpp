@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    06-06-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the Task class
+ **/
+
 #include "Task.h"
 
 Task::Task(const std::string &description, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities)

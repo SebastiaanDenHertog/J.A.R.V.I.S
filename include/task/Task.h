@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    06-06-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the Task class
+ **/
+
 #ifndef TASK_H_
 #define TASK_H_
 
@@ -65,7 +72,7 @@ public:
     // Constructors
     Task(const std::string &description, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
 
-    Task(const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type,  UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
+    Task(const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
 
 private:
 };

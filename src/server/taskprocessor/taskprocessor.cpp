@@ -1,18 +1,24 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    09-08-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the TaskProcessor class
+ **/
+
 #include "TaskProcessor.h"
-#include "MediaPlayer.h"   
+#include "MediaPlayer.h"
 #include <iostream>
 
-    TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel):
-    homeAssistantAPI_(homeAssistantAPI), nerModel_(nerModel), classificationModel_(classificationModel)
+TaskProcessor::TaskProcessor(HomeAssistantAPI *homeAssistantAPI, ModelRunner &nerModel, ModelRunner &classificationModel) : homeAssistantAPI_(homeAssistantAPI), nerModel_(nerModel), classificationModel_(classificationModel)
+{
+    // Initialize taskHandler_ with a valid function
+    taskHandler_ = [this](const Task &task)
     {
-        // Initialize taskHandler_ with a valid function
-        taskHandler_ = [this](const Task &task)
-        {
-            // Example task handling code
-            std::cout << "Handling task: " << task.description << std::endl;
-            // Additional task processing logic
-        };
-    }
+        // Example task handling code
+        std::cout << "Handling task: " << task.description << std::endl;
+        // Additional task processing logic
+    };
+}
 
 void TaskProcessor::processTask(const Task &task)
 {
@@ -42,7 +48,7 @@ void TaskProcessor::processTask(const Task &task)
         break;
     case Task::ControlHeating:
         processHomeAssistantTask(task);
-        
+
         // Add your code to control heating here
         break;
     case Task::ControlLight:
@@ -90,7 +96,7 @@ void TaskProcessor::processTask(const Task &task)
         MediaPlayer player;
         player.setoutput(task.device, task.output);
         player.play(player.FindSong(task.entities));
-        
+
         break;
     }
     case Task::PlayVideo:
@@ -166,5 +172,4 @@ bool TaskProcessor::processHomeAssistantTask(const Task &task)
         std::cerr << "Home Assistant API is not initialized." << std::endl;
         return false;
     }
-
 }

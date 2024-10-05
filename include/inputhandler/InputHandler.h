@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    06-06-2024
+ * @Date updated    13-06-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the InputHandler class
+ **/
+
 #ifndef INPUTHANDLER_H
 #define INPUTHANDLER_H
 

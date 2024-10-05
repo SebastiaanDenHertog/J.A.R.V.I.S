@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    03-04-2024
+ * @Date updated    01-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     Main
+ **/
+
 #include <iostream>
 #include <thread>
 #include <memory>

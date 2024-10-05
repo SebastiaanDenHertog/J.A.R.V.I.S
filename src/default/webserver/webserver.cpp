@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    19-08-2024
+ * @Date updated    24-08-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the webServer class
+ **/
+
 #include "webServer.h"
 #include <iostream>
 #include <thread>

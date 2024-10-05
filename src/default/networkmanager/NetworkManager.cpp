@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    02-05-2024
+ * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the NetworkManager class and the SoundData struct
+ **/
+
 #include "NetworkManager.h"
 #include <cerrno>
 #include <cstring>

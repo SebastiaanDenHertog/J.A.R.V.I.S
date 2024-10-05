@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    24-05-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the MediaPlayer class
+ **/
+
 #include "MediaPlayer.h"
 
 MediaPlayer::MediaPlayer() : isInitialized(false) {}

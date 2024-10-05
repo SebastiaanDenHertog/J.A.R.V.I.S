@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    09-05-2024
+ * @Date updated    16-05-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the DeviceScanner class
+ **/
+
 #ifndef DEVICESCANNER_H
 #define DEVICESCANNER_H
 
