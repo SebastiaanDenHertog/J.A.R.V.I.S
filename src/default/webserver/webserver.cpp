@@ -68,3 +68,55 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         std::cerr << "Server failed to start: " << e.what() << std::endl;
     }
 }
+
+class ConfigurationResource : public httpserver::http_resource {
+public:
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override {
+        auto& config = ConfigurationManager::getInstance();
+        std::ostringstream oss;
+        oss << "{"
+            << "\"useWebServer\": " << (config.getUseWebServer() ? "true" : "false") << ","
+            << "\"webServerPort\": " << config.getWebServerPort() << ","
+            << "\"mainServerIP\": \"" << config.getMainServerIP() << "\","
+            << "\"mainServerPort\": " << config.getMainServerPort() << ","
+            << "\"useBluetooth\": " << (config.getUseBluetooth() ? "true" : "false") << ","
+            << "\"useAirPlay\": " << (config.getUseAirPlay() ? "true" : "false")
+            << "}";
+        return std::make_shared<httpserver::string_response>(oss.str(), 200, "application/json");
+    }
+
+    std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req) override {
+        auto& config = ConfigurationManager::getInstance();
+        const auto& body = req.get_content();
+
+        // Parse JSON body (use a JSON library or manual parsing)
+        // Here, we assume simple parsing; in a real scenario, use a JSON library like nlohmann::json.
+
+        if (body.find("useWebServer") != std::string::npos) {
+            config.setUseWebServer(body.find("true") != std::string::npos);
+        }
+
+        if (body.find("webServerPort") != std::string::npos) {
+            unsigned short port = /* extract port from body */;
+            config.setWebServerPort(port);
+        }
+
+        if (body.find("mainServerIP") != std::string::npos) {
+            std::string ip = /* extract IP from body */;
+            config.setMainServerIP(ip);
+        }
+
+        if (body.find("mainServerPort") != std::string::npos) {
+            int port = /* extract port from body */;
+            config.setMainServerPort(port);
+        }
+
+        // Other configuration updates...
+
+        return std::make_shared<httpserver::string_response>("Configuration updated", 200);
+    }
+};
+
+// In setup_server function
+ConfigurationResource* configRes = new ConfigurationResource();
+ws.register_resource("/config", configRes, true);
