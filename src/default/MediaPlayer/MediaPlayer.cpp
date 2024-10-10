@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    24-05-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the MediaPlayer class
+ **/
+
 #include "MediaPlayer.h"
 
 MediaPlayer::MediaPlayer() : isInitialized(false) {}
@@ -109,7 +116,7 @@ bool MediaPlayer::playAUX(const std::string &mediaPath)
     return true;
 }
 
-void MediaPlayer::setoutput(ClientInfo device, std::string output)
+bool MediaPlayer::setoutput(ClientInfo device, std::string output)
 {
     for (auto musicOutput : device.getMusicOutputs())
     {
@@ -117,11 +124,12 @@ void MediaPlayer::setoutput(ClientInfo device, std::string output)
         {
             std::cout << "Setting output to: " << output << std::endl;
             setProtocol(output);
-            return;
+            return true;
         }
     }
 
     std::cerr << "Output not found: " << output << std::endl;
+    return false;
 }
 
 std::string MediaPlayer::FindSong(std::vector<std::vector<std::string>> entities)

@@ -1,15 +1,24 @@
-#ifndef TASK_H
-#define TASK_H
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    06-06-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the Task class
+ **/
+
+#ifndef TASK_H_
+#define TASK_H_
 
 #include <string>
 #include <vector>
 #include "ClientInfo.h"
+#include "DataStructures.h"
 
 class Task
 {
 public:
     enum TaskType
     {
+        // All the task types
         Book,
         Calculate,
         Calendar,
@@ -57,11 +66,15 @@ public:
     std::string newState;
     std::vector<std::vector<std::string>> entities;
 
-    Task(const std::string &description, int priority, const ClientInfo &device, TaskType type, const std::vector<std::vector<std::string>> &entities = {});
+    // Add UserCommand as a member
+    UserCommand userCommand;
 
-    Task(const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type, const std::vector<std::vector<std::string>> &entities = {});
+    // Constructors
+    Task(const std::string &description, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
+
+    Task(const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
 
 private:
 };
 
-#endif // TASK_H
+#endif // TASK_H_

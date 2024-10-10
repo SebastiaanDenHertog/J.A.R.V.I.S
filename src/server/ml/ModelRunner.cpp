@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    13-06-2024
+ * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the ModelRunner class
+ **/
+
 #include "ModelRunner.h"
 #include <iostream>
 #include <fstream>

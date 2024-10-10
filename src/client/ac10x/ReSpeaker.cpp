@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    12-04-2024
+ * @Date updated    06-06-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the ReSpeaker class
+**/
+
 #include "ReSpeaker.h"
 
 // Constructor

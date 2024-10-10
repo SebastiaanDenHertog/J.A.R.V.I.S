@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    29-07-2024
+ * @Date updated    21-09-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the ClientInfo class
+ **/
+
 #include "ClientInfo.h"
 
 // Constructor

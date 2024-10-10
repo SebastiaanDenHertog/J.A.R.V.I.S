@@ -1,8 +1,8 @@
 /**
  * @Authors         Sebastiaan den Hertog
  * @Date created    19-08-2024
- * @Date updated    08-10-2024 (By: ChatGPT)
- * @Description     Constructor, destructor, and methods for the webServer class
+ * @Date updated    08-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the webServer class
  **/
 
 #include "webServer.h"
