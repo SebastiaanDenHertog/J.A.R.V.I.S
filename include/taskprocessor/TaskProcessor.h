@@ -1,11 +1,10 @@
 #ifndef TASKPROCESSOR_H
 #define TASKPROCESSOR_H
 
-#include "Task.h"
 #include <functional>
+#include "Task.h"
 #include "HomeAssistantAPI.h"
 #include "ModelRunner.h"
-
 
 class TaskProcessor
 {

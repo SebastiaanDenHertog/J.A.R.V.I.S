@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="checkbox"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Application Configuration</h1>
+        <form id="configForm">
+            <h2>Web Server Settings</h2>
+            <label>
+                <input type="checkbox" id="use_web_server" name="use_web_server">
+                Use Web Server
+            </label>
+            <label>
+                Web Server Port:
+                <input type="number" id="web_server_port" name="web_server_port" min="1" max="65535">
+            </label>
+            <label>
+                <input type="checkbox" id="web_server_secure" name="web_server_secure">
+                Enable HTTPS
+            </label>
+            <label>
+                Certificate Path:
+                <input type="text" id="web_server_cert_path" name="web_server_cert_path">
+            </label>
+            <label>
+                Key Path:
+                <input type="text" id="web_server_key_path" name="web_server_key_path">
+            </label>
+            <label>
+                Number of Threads:
+                <input type="number" id="threads" name="threads" min="1">
+            </label>
+
+            <h2>Client Settings</h2>
+            <label>
+                <input type="checkbox" id="use_client" name="use_client">
+                Use Client
+            </label>
+            <label>
+                Client Port:
+                <input type="number" id="client_port" name="client_port" min="1" max="65535">
+            </label>
+            <label>
+                Client Server IP:
+                <input type="text" id="client_server_ip" name="client_server_ip" placeholder="e.g., 192.168.1.100">
+            </label>
+            <label>
+                <input type="checkbox" id="use_airplay" name="use_airplay">
+                Use AirPlay
+            </label>
+            <label>
+                <input type="checkbox" id="use_bluetooth" name="use_bluetooth">
+                Use Bluetooth
+            </label>
+
+            <h2>Server Settings</h2>
+            <label>
+                <input type="checkbox" id="use_server" name="use_server">
+                Use Server
+            </label>
+
+            <button type="button" onclick="submitConfig()">Update Configuration</button>
+        </form>
+        <div id="response" style="margin-top:20px;"></div>
+    </div>
+
+    <script>
+        // Function to fetch current configuration and populate the form
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch config: ${response.statusText}`);
+                }
+                const config = await response.json();
+
+                document.getElementById('use_web_server').checked = config.use_web_server;
+                document.getElementById('web_server_port').value = config.web_server_port;
+                document.getElementById('web_server_secure').checked = config.web_server_secure;
+                document.getElementById('web_server_cert_path').value = config.web_server_cert_path;
+                document.getElementById('web_server_key_path').value = config.web_server_key_path;
+                document.getElementById('threads').value = config.threads;
+
+                document.getElementById('use_client').checked = config.use_client;
+                document.getElementById('client_port').value = config.client_port;
+                document.getElementById('client_server_ip').value = config.client_server_ip;
+                document.getElementById('use_airplay').checked = config.use_airplay;
+                document.getElementById('use_bluetooth').checked = config.use_bluetooth;
+
+                document.getElementById('use_server').checked = config.use_server;
+            }
+            catch (error) {
+                console.error(error);
+                document.getElementById('response').innerText = `Error loading configuration: ${error.message}`;
+            }
+        }
+
+        // Function to submit updated configuration
+        async function submitConfig() {
+            // Gather form data
+            const config = {
+                use_web_server: document.getElementById('use_web_server').checked,
+                web_server_port: parseInt(document.getElementById('web_server_port').value) || 15881,
+                web_server_secure: document.getElementById('web_server_secure').checked,
+                web_server_cert_path: document.getElementById('web_server_cert_path').value.trim(),
+                web_server_key_path: document.getElementById('web_server_key_path').value.trim(),
+                threads: parseInt(document.getElementById('threads').value) || 10,
+                use_client: document.getElementById('use_client').checked,
+                client_port: parseInt(document.getElementById('client_port').value) || 15880,
+                client_server_ip: document.getElementById('client_server_ip').value.trim(),
+                use_airplay: document.getElementById('use_airplay').checked,
+                use_bluetooth: document.getElementById('use_bluetooth').checked,
+                use_server: document.getElementById('use_server').checked
+            };
+
+            // Basic validation
+            if (config.use_web_server && config.web_server_secure) {
+                if (!config.web_server_cert_path || !config.web_server_key_path) {
+                    alert("Certificate and Key paths must be provided for secure web server.");
+                    return;
+                }
+            }
+
+            if (config.use_client) {
+                const ipPattern = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+                if (!ipPattern.test(config.client_server_ip)) {
+                    alert("Invalid Client Server IP address.");
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('response').innerText = `Success: ${result.message}`;
+                } else {
+                    document.getElementById('response').innerText = `Error: ${result.message}`;
+                }
+            }
+            catch (error) {
+                console.error(error);
+                document.getElementById('response').innerText = `Error updating configuration: ${error.message}`;
+            }
+        }
+
+        // Load configuration on page load
+        window.onload = loadConfig;
+    </script>
+</body>
+
+</html>
