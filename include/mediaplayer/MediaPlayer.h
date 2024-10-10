@@ -24,7 +24,7 @@ public:
     bool initializeWiFi();
     bool initializeAUX();
 
-    void setoutput(ClientInfo device, std::string output);
+    bool setoutput(ClientInfo device, std::string output);
 
     std::string FindSong(std::vector<std::vector<std::string>> entities);
 

@@ -2,7 +2,7 @@
  * @Authors         Sebastiaan den Hertog
  * @Date created    19-08-2024
  * @Date updated    08-10-2024 (By: Sebastiaan den Hertog)
- * @Description     constuctor, destructor and methods for the webServer class
+ * @Description     Constructor, destructor, and methods for the webServer class.
  **/
 
 #include "webServer.h"
@@ -11,6 +11,7 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <memory>
 #include "Configuration.h"
 
 // For simplicity, using nlohmann::json
@@ -36,7 +37,10 @@ public:
         j["use_airplay"] = config.use_airplay;
         j["use_bluetooth"] = config.use_bluetooth;
         j["use_server"] = config.use_server;
-        // Add other fields as needed
+        j["use_home_assistant"] = config.use_home_assistant;
+        j["home_assistant_ip"] = config.home_assistant_ip;
+        j["home_assistant_port"] = config.home_assistant_port;
+        j["home_assistant_token"] = config.home_assistant_token;
 
         std::string response_body = j.dump(4);
         return std::make_shared<httpserver::string_response>(response_body, 200, "application/json");
@@ -53,67 +57,53 @@ public:
         {
             // Parse JSON body
             json j = json::parse(req.get_content());
-
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration();
+            // Update configuration fields using a map-like approach for brevity
+            std::vector<std::pair<std::string, std::function<void(const json &)>>> mappings = {
+                {"use_web_server", [&](const json &val)
+                 { current_config.use_web_server = val; }},
+                {"web_server_port", [&](const json &val)
+                 { current_config.web_server_port = val; }},
+                {"web_server_secure", [&](const json &val)
+                 { current_config.web_server_secure = val; }},
+                {"web_server_cert_path", [&](const json &val)
+                 { current_config.web_server_cert_path = val; }},
+                {"web_server_key_path", [&](const json &val)
+                 { current_config.web_server_key_path = val; }},
+                {"threads", [&](const json &val)
+                 { current_config.threads = val; }},
+                {"use_client", [&](const json &val)
+                 { current_config.use_client = val; }},
+                {"main_server_port", [&](const json &val)
+                 { current_config.main_server_port = val; }},
+                {"client_server_ip", [&](const json &val)
+                 { current_config.client_server_ip = val; }},
+                {"use_airplay", [&](const json &val)
+                 { current_config.use_airplay = val; }},
+                {"use_bluetooth", [&](const json &val)
+                 { current_config.use_bluetooth = val; }},
+                {"use_server", [&](const json &val)
+                 { current_config.use_server = val; }},
+                {"use_home_assistant", [&](const json &val)
+                 { current_config.use_home_assistant = val; }},
+                {"home_assistant_ip", [&](const json &val)
+                 { current_config.home_assistant_ip = val; }},
+                {"home_assistant_port", [&](const json &val)
+                 { current_config.home_assistant_port = val; }},
+                {"home_assistant_token", [&](const json &val)
+                 { current_config.home_assistant_token = val; }}};
 
-            // Update fields if they exist in the JSON
-            if (j.contains("use_web_server"))
+            for (const auto &[key, updateFunc] : mappings)
             {
-                current_config.use_web_server = j["use_web_server"];
+                if (j.contains(key))
+                {
+                    updateFunc(j[key]);
+                }
             }
-            if (j.contains("web_server_port"))
-            {
-                current_config.web_server_port = j["web_server_port"];
-            }
-            if (j.contains("web_server_secure"))
-            {
-                current_config.web_server_secure = j["web_server_secure"];
-            }
-            if (j.contains("web_server_cert_path"))
-            {
-                current_config.web_server_cert_path = j["web_server_cert_path"];
-            }
-            if (j.contains("web_server_key_path"))
-            {
-                current_config.web_server_key_path = j["web_server_key_path"];
-            }
-            if (j.contains("threads"))
-            {
-                current_config.threads = j["threads"];
-            }
-            if (j.contains("use_client"))
-            {
-                current_config.use_client = j["use_client"];
-            }
-            if (j.contains("client_port"))
-            {
-                current_config.main_server_port = j["main_server_port"];
-            }
-            if (j.contains("client_server_ip"))
-            {
-                current_config.client_server_ip = j["client_server_ip"];
-            }
-            if (j.contains("use_airplay"))
-            {
-                current_config.use_airplay = j["use_airplay"];
-            }
-            if (j.contains("use_bluetooth"))
-            {
-                current_config.use_bluetooth = j["use_bluetooth"];
-            }
-            if (j.contains("use_server"))
-            {
-                current_config.use_server = j["use_server"];
-            }
-            // Add other fields as needed
 
-            // Update the configuration
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-
-            // Save the updated configuration to file
             ConfigurationManager::getInstance().saveConfiguration("config.json");
 
-            // Respond with the updated configuration
             json response_json = {
                 {"status", "success"},
                 {"message", "Configuration updated and saved"}};
@@ -135,10 +125,27 @@ class ConfigPageResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("config_page.html");
+        std::ifstream html_file("webserver/private/pages/config_page.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
+        }
+
+        std::stringstream buffer;
+        buffer << html_file.rdbuf();
+        return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
+    }
+};
+
+class HomePageResource : public httpserver::http_resource
+{
+public:
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
+    {
+        std::ifstream html_file("webserver/private/pages/home.html");
+        if (!html_file.is_open())
+        {
+            return std::make_shared<httpserver::string_response>("Home page not found.", 404, "text/plain");
         }
 
         std::stringstream buffer;
@@ -164,18 +171,20 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
 
         httpserver::webserver ws = httpserver::webserver(ws_builder);
 
-        // Register API resources
-        GetConfigResource *getConfig = new GetConfigResource();
-        ws.register_resource("/api/config", getConfig, true);
+        // Register resources using smart pointers for automatic cleanup
+        auto homePage = std::make_unique<HomePageResource>();
+        ws.register_resource("/", homePage.get(), true);
 
-        UpdateConfigResource *updateConfig = new UpdateConfigResource();
-        ws.register_resource("/api/config/update", updateConfig, true);
+        auto configPage = std::make_unique<ConfigPageResource>();
+        ws.register_resource("/config", configPage.get(), true);
 
-        // Register HTML config page
-        ConfigPageResource *configPage = new ConfigPageResource();
-        ws.register_resource("/config", configPage, true);
+        auto getConfig = std::make_unique<GetConfigResource>();
+        ws.register_resource("/api/config", getConfig.get(), true);
 
-        ws.start(false); // No ambiguity here, fully qualified call
+        auto updateConfig = std::make_unique<UpdateConfigResource>();
+        ws.register_resource("/api/config/update", updateConfig.get(), true);
+
+        ws.start(false);
         std::cout << "Web Server running on port: " << port << std::endl;
 
         while (ws.is_running())
@@ -184,10 +193,6 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         }
 
         std::cout << "Web Server stopped" << std::endl;
-        ws.stop();
-        delete getConfig;
-        delete updateConfig;
-        delete configPage;
     }
     catch (const std::exception &e)
     {

@@ -23,14 +23,13 @@ struct Configuration
     bool web_server_secure = false;
     std::string web_server_cert_path;
     std::string web_server_key_path;
+    bool use_bluetooth = false;
     int threads = 10;
 
     // Client-specific settings
-    bool use_client = false;
     unsigned short main_server_port = 15880;
     std::string client_server_ip;
     bool use_airplay = false;
-    bool use_bluetooth = false;
     const char *spiDevicePath = "/dev/spidev0.0";
     const char *i2cDevicePath = "/dev/i2c-1";
     uint8_t i2cDeviceAddress = 0x3b;
@@ -39,12 +38,23 @@ struct Configuration
     char *main_server_ip;
 
     // Server-specific settings
-    bool use_server = false;
     bool use_terminal_input = false;
-    bool use_homeassistant = false;
+    bool use_home_assistant = false;
     std::string home_assistant_ip;
     std::string home_assistant_token;
     int home_assistant_port = 0;
+
+#ifdef CLIENT_BUILD
+    bool use_client = true;
+#else
+    bool use_client = false;
+#endif
+
+#ifdef SERVER_BUILD
+    bool use_server = true;
+#else
+    bool use_server = false;
+#endif
 
     // Method to convert AppMode to string
     std::string get_mode_string() const

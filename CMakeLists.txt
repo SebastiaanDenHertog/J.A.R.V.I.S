@@ -55,7 +55,7 @@ option(BUILD_CLIENT "Build only client components" OFF)
 
 # Default to BUILD_SERVER if none are selected
 if(NOT BUILD_SERVER AND NOT BUILD_CLIENT)
-    message(STATUS "No specific build selected, defaulting to full build.")
+    message(STATUS "No specific build selected, defaulting to server build.")
     set(BUILD_SERVER ON)
 endif()
 

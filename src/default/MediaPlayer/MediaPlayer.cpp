@@ -41,16 +41,18 @@ bool MediaPlayer::initializeAUX()
     return true;
 }
 
-void MediaPlayer::setProtocol(const std::string &protocol)
+bool MediaPlayer::setProtocol(const std::string &protocol)
 {
     if (protocol == "Bluetooth" || protocol == "WiFi" || protocol == "AUX")
     {
         currentProtocol = protocol;
         std::cout << "Protocol set to " << protocol << std::endl;
+        return true;
     }
     else
     {
         std::cerr << "Unknown protocol: " << protocol << std::endl;
+        return false;
     }
 }
 

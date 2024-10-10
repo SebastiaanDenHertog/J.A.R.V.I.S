@@ -17,7 +17,6 @@ Watchdog::~Watchdog()
     stopMonitoring();
     if (bluetoothComm)
     {
-        // Assuming BluetoothComm has a method to stop safely if needed.
         bluetoothComm->terminate();
         bluetoothComm.reset();
     }
@@ -50,6 +49,8 @@ void Watchdog::checkServices()
         if (mode == Mode::SERVER)
         {
             // Monitor Web Server
+            logEvent("Checking services...");
+            logEvent("Web server: " + std::to_string(config.use_web_server));
             if (config.use_web_server && !webServerRunning)
             {
                 logEvent("Web server is not running. Attempting to start.");
@@ -57,7 +58,7 @@ void Watchdog::checkServices()
             }
 
             // Monitor Home Assistant
-            if (config.use_server && !homeAssistantRunning)
+            if (config.use_home_assistant && !homeAssistantRunning)
             { // Assuming use_server controls Home Assistant
                 logEvent("Home Assistant API is not running. Attempting to start.");
                 startService("homeAssistant");
