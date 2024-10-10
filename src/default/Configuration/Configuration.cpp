@@ -18,9 +18,9 @@ nlohmann::json Configuration::to_json() const
     j["use_airplay"] = use_airplay;
     j["use_bluetooth"] = use_bluetooth;
     j["use_server"] = use_server;
-    j["home_assistant_ip"] = homeassistant_ip;
-    j["home_assistant_port"] = homeassistant_port;
-    j["home_assistant_token"] = homeassistant_token;
+    j["home_assistant_ip"] = home_assistant_ip;
+    j["home_assistant_port"] = home_assistant_port;
+    j["home_assistant_token"] = home_assistant_token;
     // Add other fields as needed
     return j;
 }

@@ -31,7 +31,7 @@ public:
         j["web_server_key_path"] = config.web_server_key_path;
         j["threads"] = config.threads;
         j["use_client"] = config.use_client;
-        j["client_port"] = config.client_port;
+        j["main_server_port"] = config.main_server_port;
         j["client_server_ip"] = config.client_server_ip;
         j["use_airplay"] = config.use_airplay;
         j["use_bluetooth"] = config.use_bluetooth;
@@ -87,7 +87,7 @@ public:
             }
             if (j.contains("client_port"))
             {
-                current_config.client_port = j["client_port"];
+                current_config.main_server_port = j["main_server_port"];
             }
             if (j.contains("client_server_ip"))
             {

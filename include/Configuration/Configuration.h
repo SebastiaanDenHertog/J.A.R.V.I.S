@@ -36,8 +36,6 @@ struct Configuration
     uint8_t i2cDeviceAddress = 0x3b;
     uint8_t micCount = 4;
     uint8_t ledCount = 16;
-    bool setbluetooth = false;
-    bool use_airplay = false;
     char *main_server_ip;
 
     // Server-specific settings

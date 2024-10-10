@@ -132,6 +132,9 @@ void send_speech_data(NetworkManager &client)
         std::cerr << "Error sending speech data: " << e.what() << std::endl;
     }
 }
+#endif
+
+#ifdef SERVER_BUILD
 
 // Convert string to Task::TaskType
 Task::TaskType stringToTaskType(const std::string &str)
@@ -279,7 +282,7 @@ void start_server_network_manager(int server_port)
 {
     try
     {
-        serverNetworkManager = new NetworkManager(server_port, nullptr, NetworkManager::Protocol::TCP);
+        serverNetworkManager = new NetworkManager(server_port, nullptr, NetworkManager::Protocol::TCP, nerModel.get(), classificationModel.get());
         std::thread networkThread(&NetworkManager::runServer, serverNetworkManager);
         networkThread.detach();
         DEBUG_PRINT("Server NetworkManager started on port " << server_port);
@@ -295,7 +298,6 @@ void stop_server_network_manager()
 {
     if (serverNetworkManager)
     {
-        serverNetworkManager->stop(); // Assuming NetworkManager has a stop function
         delete serverNetworkManager;
         serverNetworkManager = nullptr;
         DEBUG_PRINT("Server NetworkManager stopped.");
