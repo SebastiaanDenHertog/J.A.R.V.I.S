@@ -1,9 +1,9 @@
-/*
-Create by: Sebastiaan den Hertog
-Date: 2024-09-01
-
-Description: This class is used to convert speech to text. It uses kaldi to do this. This function is only used on heavier devices to excuse the best quality.
-*/
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    03-10-2024
+ * @Date updated    01-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the WhisperTranscriber class
+ **/
 
 #ifndef WHISPERTRANSCRIBER_H
 #define WHISPERTRANSCRIBER_H

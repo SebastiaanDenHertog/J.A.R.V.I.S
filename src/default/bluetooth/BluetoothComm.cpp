@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    12-04-2024
+ * @Date updated    21-09-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the bluetooth class
+ **/
+
 #include "BluetoothComm.h"
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>

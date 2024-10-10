@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    29-05-2024
+ * @Date updated    10-09-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the airplayServer class
+ **/
+
 #include "AirPlayServer.h"
 #include <csignal>
 #include <iostream>

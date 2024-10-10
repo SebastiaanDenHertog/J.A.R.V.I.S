@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    24-05-2024
+ * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the MediaPlayer class
+ **/
+
 #ifndef MEDIAPLAYER_H
 #define MEDIAPLAYER_H
 
@@ -27,7 +34,7 @@ public:
     bool stop();
 
     // Method to select the playback protocol
-    void setProtocol(const std::string &protocol);
+    bool setProtocol(const std::string &protocol);
 
 private:
     std::string currentProtocol;

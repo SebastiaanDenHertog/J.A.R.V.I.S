@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    27-05-2024
+ * @Date updated    29-05-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the SpiManager and gpio  class
+ **/
+
 #include "HardwareInterface.h"
 
 // GPIO class implementation

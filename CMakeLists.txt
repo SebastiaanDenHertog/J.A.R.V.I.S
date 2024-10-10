@@ -281,6 +281,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/prometheus
     ${PROJECT_SOURCE_DIR}/include/webServer
     ${PROJECT_SOURCE_DIR}/include/whisperTranscriber
+    ${PROJECT_SOURCE_DIR}/include/dataStructures
     ${PROJECT_SOURCE_DIR}/include/WatchDog
     ${PROJECT_SOURCE_DIR}/include/Configuration
 )
