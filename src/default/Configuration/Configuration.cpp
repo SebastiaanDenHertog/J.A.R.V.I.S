@@ -2,7 +2,11 @@
 #include <fstream>
 #include <iostream>
 
-// Serialize Configuration to JSON
+/**
+ * @brief Save the configuration to a JSON file.
+ * @return The JSON object representing the configuration.
+ */
+
 nlohmann::json Configuration::to_json() const
 {
     nlohmann::json j;
@@ -21,11 +25,14 @@ nlohmann::json Configuration::to_json() const
     j["home_assistant_ip"] = home_assistant_ip;
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
-    // Add other fields as needed
     return j;
 }
 
-// Deserialize Configuration from JSON
+/**
+ * @brief Load the configuration from a JSON object.
+ * @param j The JSON object to load the configuration from.
+ */
+
 void Configuration::from_json(const nlohmann::json &j)
 {
     if (j.contains("use_web_server"))
@@ -58,10 +65,13 @@ void Configuration::from_json(const nlohmann::json &j)
         home_assistant_port = j["home_assistant_port"];
     if (j.contains("home_assistant_token"))
         home_assistant_token = j["home_assistant_token"];
-    // Add other fields as needed
 }
 
-// Save configuration to a JSON file
+/**
+ * @brief Update the configuration with a new configuration.
+ * @param filepath The path to the JSON file to save the configuration to.
+ */
+
 void ConfigurationManager::saveConfiguration(const std::string &filepath)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
@@ -72,12 +82,16 @@ void ConfigurationManager::saveConfiguration(const std::string &filepath)
         std::cerr << "Failed to open configuration file for writing: " << filepath << std::endl;
         return;
     }
-    file << j.dump(4); // Pretty print with 4 spaces indentation
+    file << j.dump(4);
     file.close();
     std::cout << "Configuration saved to " << filepath << std::endl;
 }
 
-// Load configuration from a JSON file
+/**
+ * @brief Load the configuration from a JSON file.
+ * @param filepath The path to the JSON file to load the configuration from.
+ */
+
 void ConfigurationManager::loadConfiguration(const std::string &filepath)
 {
     std::lock_guard<std::mutex> lock(config_mutex);

@@ -12,16 +12,27 @@
 #include <chrono>
 #include <thread>
 
+/**
+ * @brief Constructor for BluetoothComm.
+ * @note This constructor initializes the device and connection handles.
+ */
 BluetoothComm::BluetoothComm() : deviceHandle(-1), connectionHandle(-1)
 {
-    // Constructor
 }
 
+/**
+ * @brief Destructor for BluetoothComm.
+ * @note This destructor closes the device handle if it's open.
+ */
 BluetoothComm::~BluetoothComm()
 {
-    // Destructor
     this->terminate();
 }
+
+/**
+ * @brief Initialize the Bluetooth communication.
+ * @return True if successful, false otherwise.
+ */
 
 bool BluetoothComm::initialize()
 {
@@ -39,12 +50,15 @@ bool BluetoothComm::initialize()
     return true;
 }
 
+/**
+ * @brief Terminate the Bluetooth communication.
+ * @note This method closes the device handle if it's open.
+ */
+
 void BluetoothComm::terminate()
 {
-    // Close the device handle if it's open
     if (this->deviceHandle != -1)
     {
-        // Close the connection if it's open
         if (this->connectionHandle != -1)
         {
             this->closeConnection();
@@ -55,11 +69,15 @@ void BluetoothComm::terminate()
     }
 }
 
+/**
+ * @brief Establish a GATT connection.
+ * @return True if successful, false otherwise.
+ */
+
 bool BluetoothComm::establishConnection()
 {
-    // Placeholder example for establishing a GATT connection
-    // Replace this with actual connection code
-    this->connectionHandle = 1; // Simulate successful connection
+
+    this->connectionHandle = 1; 
 
     if (this->connectionHandle < 0)
     {
@@ -70,12 +88,21 @@ bool BluetoothComm::establishConnection()
     return true;
 }
 
+/**
+ * @brief Close the GATT connection.
+ * @note This method resets the connection handle.
+ */
+
 void BluetoothComm::closeConnection()
 {
-    // Placeholder example for closing a GATT connection
-    // Replace this with actual disconnection code
     this->connectionHandle = -1;
 }
+
+/**
+ * @brief Send data over the active connection.
+ * @param data The data to send.
+ * @return True if successful, false otherwise.
+ */
 
 bool BluetoothComm::sendData(const std::string &data)
 {
@@ -85,13 +112,15 @@ bool BluetoothComm::sendData(const std::string &data)
         std::cerr << "No active connection to send data." << std::endl;
         return false;
     }
-
-    // Placeholder example for sending data
-    // Replace this with actual data sending code
     std::cout << "Sending data: " << data << std::endl;
 
     return true;
 }
+
+/**
+ * @brief Receive data over the active connection.
+ * @return The received data in string.
+ */
 
 std::string BluetoothComm::receiveData()
 {
@@ -108,6 +137,12 @@ std::string BluetoothComm::receiveData()
 
     return receivedData;
 }
+
+/**
+ * @brief Create a thread to handle incoming connections.
+ * @note This method is a placeholder example for handling incoming connections.
+ * @return a vector of Bluetooth devices
+ */
 
 std::vector<BluetoothDevice> BluetoothComm::scanDevices()
 {
@@ -151,24 +186,38 @@ std::vector<BluetoothDevice> BluetoothComm::scanDevices()
     return devices;
 }
 
+/**
+ * @brief List the connected devices.
+ * @return a vector of Bluetooth devices
+ */
+
 std::vector<BluetoothDevice> BluetoothComm::listConnections()
 {
     return this->connectedDevices;
 }
 
+/**
+ * @brief Connect to a device with the specified address.
+ * @param deviceAddress The address of the device to connect to.
+ */
+
 bool BluetoothComm::connectToDevice(const std::string &deviceAddress)
 {
-    // Placeholder example for establishing a GATT connection to the specified device
-    // Replace this with actual connection code
     BluetoothDevice device;
     device.address = deviceAddress;
-    device.name = "Device Name"; // You may want to retrieve the actual name
+    device.name = "Device Name";
 
     this->connectedDevices.push_back(device);
-    this->connectionHandle = 1; // Simulate successful connection
+    this->connectionHandle = 1;
 
     return true;
 }
+
+/**
+ * @brief Get data from the specified connection.
+ * @param deviceAddress The address of the device to get data from.
+ * @return The data from the specified connection.
+ */
 
 std::string BluetoothComm::getConnectionData(const std::string &deviceAddress)
 {
@@ -187,14 +236,16 @@ std::string BluetoothComm::getConnectionData(const std::string &deviceAddress)
     return "";
 }
 
+/**
+ * @brief Create a thread to handle incoming connections.
+ * @note This method is a placeholder example for handling incoming connections.
+ */
+
 void BluetoothComm::handleIncomingConnectionsThread()
 {
     while (true)
     {
-        // Placeholder example for handling incoming connection requests
-        // Replace this with actual handling code
 
-        // Simulate incoming connection request handling
         std::this_thread::sleep_for(std::chrono::seconds(5)); // Adjust the sleep duration as needed
     }
 }

@@ -3,7 +3,7 @@
  * @Date created    17-05-2024
  * @Date updated    30-05-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the PixelRing class
- **/
+ */
 
 #ifndef PIXELRING_H
 #define PIXELRING_H

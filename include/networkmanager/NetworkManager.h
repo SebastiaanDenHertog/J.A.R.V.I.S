@@ -3,7 +3,7 @@
  * @Date created    10-04-2024
  * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the NetworkManager class and the SoundData struct
- **/
+ */
 
 #ifndef NETWORKMANAGER_H
 #define NETWORKMANAGER_H

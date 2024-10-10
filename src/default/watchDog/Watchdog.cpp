@@ -9,8 +9,16 @@ extern std::unique_ptr<TaskProcessor> taskProcessor;
 extern std::unique_ptr<InputHandler> inputHandler;
 #endif
 
+/**
+ * @brief Constructor for Watchdog.
+ */
+
 Watchdog::Watchdog(Mode mode)
     : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false), homeAssistantRunning(false) {}
+
+/**
+ * @brief Destructor for Watchdog.
+ */
 
 Watchdog::~Watchdog()
 {
@@ -22,12 +30,20 @@ Watchdog::~Watchdog()
     }
 }
 
+/**
+ * @brief Start monitoring services.
+ */
+
 void Watchdog::startMonitoring()
 {
     running = true;
     monitoringThread = std::thread(&Watchdog::checkServices, this);
     logEvent("Watchdog started.");
 }
+
+/**
+ * @brief Stop monitoring services.
+ */
 
 void Watchdog::stopMonitoring()
 {
@@ -38,6 +54,10 @@ void Watchdog::stopMonitoring()
     }
     logEvent("Watchdog stopped.");
 }
+
+/**
+ * @brief Check the status of various services based on the current configuration.
+ */
 
 void Watchdog::checkServices()
 {
@@ -85,6 +105,11 @@ void Watchdog::checkServices()
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 }
+
+/**
+ * @brief Start a specific service.
+ * @param service The service to start.
+ */
 
 void Watchdog::startService(const std::string &service)
 {
@@ -172,6 +197,11 @@ void Watchdog::startService(const std::string &service)
         logEvent("Home Assistant API started.");
     }
 }
+
+/**
+ * @brief Log an event message.
+ * @param message The message to log.
+ */
 
 void Watchdog::logEvent(const std::string &message)
 {

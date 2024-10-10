@@ -3,7 +3,7 @@
  * @Date created    13-07-2024
  * @Date updated    13-07-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the Tokenizer class
- **/
+ */
 
 #ifndef TOKENIZER_H
 #define TOKENIZER_H

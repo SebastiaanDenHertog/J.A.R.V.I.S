@@ -3,7 +3,7 @@
  * @Date created    19-08-2024
  * @Date updated    08-10-2024 (By: Sebastiaan den Hertog)
  * @Description     Constructor, destructor, and methods for the webServer class.
- **/
+ */
 
 #include "webServer.h"
 #include <iostream>
@@ -14,10 +14,14 @@
 #include <memory>
 #include "Configuration.h"
 
-// For simplicity, using nlohmann::json
+/**
+ * @brief Setup the web server with the given parameters.
+ */
 using json = nlohmann::json;
 
-// Endpoint to get current configuration
+/**
+ * @brief Setup the web server with the given parameters.
+ */
 class GetConfigResource : public httpserver::http_resource
 {
 public:
@@ -47,7 +51,9 @@ public:
     }
 };
 
-// Endpoint to update configuration
+/**
+ * @brief Resource to update the configuration settings.
+ */
 class UpdateConfigResource : public httpserver::http_resource
 {
 public:
@@ -119,7 +125,9 @@ public:
     }
 };
 
-// Endpoint to serve a simple HTML configuration page
+/**
+ * @brief Resource to serve the configuration page.
+ */
 class ConfigPageResource : public httpserver::http_resource
 {
 public:
@@ -136,7 +144,9 @@ public:
         return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
     }
 };
-
+/**
+ * @brief Resource to serve the home page.
+ */
 class HomePageResource : public httpserver::http_resource
 {
 public:
@@ -153,6 +163,15 @@ public:
         return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
     }
 };
+
+/**
+ * @brief Setup the web server with the given parameters.
+ * @param secure Bool Whether to use SSL
+ * @param cert Path to the SSL certificate
+ * @param key Path to the SSL key
+ * @param port Port number to listen on
+ * @param threads Number of threads to use
+ */
 
 void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads)
 {

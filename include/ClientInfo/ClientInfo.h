@@ -3,7 +3,7 @@
  * @Date created    29-07-2024
  * @Date updated    21-09-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the ClientInfo class
- **/
+ */
 
 #ifndef CLIENTINFO_H
 #define CLIENTINFO_H

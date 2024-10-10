@@ -3,7 +3,7 @@
  * @Date created    03-10-2024
  * @Date updated    01-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the WhisperTranscriber class
- **/
+ */
 
 #ifndef WHISPERTRANSCRIBER_H
 #define WHISPERTRANSCRIBER_H

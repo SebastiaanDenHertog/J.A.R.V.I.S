@@ -3,7 +3,7 @@
  * @Date created    06-06-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the Task class
- **/
+ */
 
 #ifndef TASK_H_
 #define TASK_H_

@@ -3,7 +3,7 @@
  * @Date created    12-04-2024
  * @Date updated    10-05-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the bluetooth class
- **/
+ */
 
 #ifndef BLUETOOTHCOMM_H
 #define BLUETOOTHCOMM_H
