@@ -17,7 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+#ifdef SERVER_BUILD
 #include "ModelRunner.h"
 #include "WhisperTranscriber.h"
 #endif
@@ -69,7 +69,7 @@ public:
         UDP
     };
 
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+#if defined(BUILD_SERVER)
     NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
     NetworkManager(int port, char *serverIp, Protocol protocol);
@@ -117,7 +117,7 @@ private:
     void addKnownClient(int clientSd);
     void processSoundData(const SoundData *inputData, uint8_t *outputData);
 
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+#if defined(BUILD_SERVER)
     ModelRunner *nerModel;            // Model for NER
     ModelRunner *classificationModel; // Model for Classification
     WhisperTranscriber transcriber;   // Whisper transcriber for live audio transcription

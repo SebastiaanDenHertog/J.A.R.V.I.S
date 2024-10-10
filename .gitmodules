@@ -1,21 +1,28 @@
 [submodule "lib/tensorflow"]
 	path = lib/tensorflow
 	url = git@github.com:tensorflow/tensorflow.git
+	branch = master
 [submodule "lib/opencv"]
 	path = lib/opencv
 	url = git@github.com:opencv/opencv.git
+	branch = 4.x
 [submodule "lib/json"]
 	path = lib/json
 	url = git@github.com:nlohmann/json.git
+	branch = master
 [submodule "lib/libhttpserver"]
 	path = lib/libhttpserver
 	url = git@github.com:SebastiaanDenHertog/libhttpserver.git
+	branch = master
 [submodule "lib/kaldi"]
 	path = lib/kaldi
 	url = git@github.com:kaldi-asr/kaldi.git
+	branch = master
 [submodule "lib/llama.cpp"]
 	path = lib/llama.cpp
 	url = git@github.com:ggerganov/llama.cpp.git
+	branch = master
 [submodule "lib/whisper.cpp"]
 	path = lib/whisper.cpp
 	url = git@github.com:ggerganov/whisper.cpp.git
+	branch = master
