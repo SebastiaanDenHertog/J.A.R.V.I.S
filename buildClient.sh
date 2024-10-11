@@ -17,7 +17,7 @@ cd "$BUILD_DIR"
 # Check if the CMakeCache.txt exists and if BUILD_SERVER is correctly configured
 if [ ! -f "CMakeCache.txt" ] || ! grep -q "BUILD_CLIENT:BOOL=ON" CMakeCache.txt; then
     echo "CMakeCache.txt does not exist or configuration changed. Running CMake..."
-    cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_CLIENT:BOOL=ON -DBUILD_CLIENT=ON -DDEBUG_MODE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF ..
+    cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_CLIENT:BOOL=ON -DBUILD_CLIENT=ON -DDEBUG_MODE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF ..
 else
     echo "CMakeCache.txt found and configuration is valid. Skipping CMake reconfiguration."
 fi
