@@ -14,7 +14,7 @@ This project include multiple projects:
 from OpenMAX-based [RPiPlay](https://github.com/FD-/RPiPlay), which in turn derives from
 [AirplayServer](https://github.com/KqsMea8/AirplayServer),
 [shairplay](https://github.com/juhovh/shairplay), and [playfair](https://github.com/EstebanKubata/playfair).
-
+[libhttpserver](https://github.com/etr/libhttpserver)
 
 # Install or run:
 ## Linux
@@ -35,6 +35,10 @@ the cmake option `-DNO_X11_DEPS=ON`.
 2.  `sudo apt install libavahi-compat-libdnssd-dev`
 3.  `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`. (\*_Skip if you built Gstreamer from source_)
 4. `sudo apt-get install libmicrohttpd-dev`
+
+# kaldi install
+
+1. `sudo apt-get install libopenblas-dev && sudo apt-get install libblas-dev`
 
 
 

@@ -127,6 +127,9 @@ void TaskProcessor::processTask(const Task &task)
     case Task::ERROR:
         std::cerr << "Error task received: " << task.description << std::endl;
         break;
+    case Task::Info:
+        std::cerr << "Error task received: " << task.description << std::endl;
+        break;
     default:
         std::cerr << "Unknown task type received: " << task.description << std::endl;
         break;

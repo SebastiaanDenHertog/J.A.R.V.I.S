@@ -2,9 +2,9 @@
 #include <thread>
 #include <memory>
 #include <string>
-#include <cstdio> 
+#include <cstdio>
 #include <sstream>
-#include <algorithm> 
+#include <algorithm>
 
 // Common headers
 #include "BluetoothComm.h"
@@ -32,7 +32,7 @@ int threads = 10;
 // common functions
 
 // Get local IP (server-specific)
-std::string getLocalIP()
+const char *getLocalIP()
 {
     std::string local_ip;
     std::string cmd = "hostname -I";
@@ -60,7 +60,7 @@ std::string getLocalIP()
     std::string first_ip;
     ss >> first_ip;
 
-    return first_ip;
+    return strdup(first_ip.c_str());
 }
 
 const char *deviceIP = getLocalIP();
@@ -99,7 +99,7 @@ uint8_t ledCount = 16;
 bool setbluetooth = false;
 bool use_airplay = false;
 bool use_blutooth = false;
-std::string main_server_ip;
+char *main_server_ip;
 int main_server_port = 15880;
 std::unique_ptr<BluetoothComm> bluetoothComm;
 std::thread bluetoothThread;
@@ -128,155 +128,13 @@ void run_main_loop(AirPlayServer *server)
     server->main_loop();
 }
 
-ClientInfo device{"client", main_server_ip, main_server_port, {}};
-
-#endif // CLIENT_BUILD
-
-#ifdef SERVER_BUILD OR FULL_BUILD
-// Server-specific headers
-#include <unordered_set>
-#include <cstdlib>
-#include <algorithm>
-#include <chrono>
-#include <boost/make_shared.hpp>
-#include <tensorflow/lite/interpreter.h>
-#include <tensorflow/lite/kernels/register.h>
-#include <tensorflow/lite/model.h>
-#include <tensorflow/lite/optional_debug_tools.h>
-#include "ModelRunner.h"
-#include "InputHandler.h"
-#include "TaskProcessor.h"
-#include "HomeAssistantAPI.h"
-#include "counter.h"
-#include "registry.h"
-
-// Server-specific variables and functions
-std::thread bluetoothThread;
-std::thread networkThread;
-std::thread terminalInputThread;
-std::thread homeAssistantThread;
-std::thread taskProcessingThread;
-
-std::unique_ptr<BluetoothComm> bluetoothComm;
-std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
-NetworkManager *networkserver = nullptr;
-std::vector<std::thread> io_threads;
-
-int homeassistant_port = 0;
-bool setbluetooth = false;
-bool use_homeassistant = false;
-bool use_terminal_input = false;
-
-int main_server_port = 15880
-
-std::string homeassistant_ip;
-std::string homeassistant_token;
-
-ClientInfo device{"server", deviceIP, main_server_port, {}};
-
-Task::TaskType stringToTaskType(const std::string &str)
-{
-    static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
-        {"Book", Task::Book},
-        {"Calculate", Task::Calculate},
-        {"Calendar", Task::Calendar},
-        {"Call", Task::Call},
-        {"Connect", Task::Connect},
-        {"ControlHeating", Task::ControlHeating},
-        {"ControlLight", Task::ControlLight},
-        {"Define", Task::Define},
-        {"Email", Task::Email},
-        {"Find", Task::Find},
-        {"GetRecipe", Task::GetRecipe},
-        {"GetShippingInfo", Task::GetShippingInfo},
-        {"Locate", Task::Locate},
-        {"Message", Task::Message},
-        {"Navigate", Task::Navigate},
-        {"NewsQuery", Task::NewsQuery},
-        {"OrderItem", Task::OrderItem},
-        {"PauseMusic", Task::PauseMusic},
-        {"PauseVideo", Task::PauseVideo},
-        {"PlayMusic", Task::PlayMusic},
-        {"PlayVideo", Task::PlayVideo},
-        {"Read", Task::Read},
-        {"Recommend", Task::Recommend},
-        {"ResumeVideo", Task::ResumeVideo},
-        {"SetAlarm", Task::SetAlarm},
-        {"SetTimer", Task::SetTimer},
-        {"SetVolume", Task::SetVolume},
-        {"ShoppingList", Task::ShoppingList},
-        {"Summarize", Task::Summarize},
-        {"Translate", Task::Translate},
-        {"WeatherQuery", Task::WeatherQuery}};
-
-    auto it = strToTaskType.find(str);
-    if (it != strToTaskType.end())
-    {
-        return it->second;
-    }
-    else
-    {
-        return Task::ERROR;
-    }
-}
-
-void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
-{
-    while (true)
-    {
-        std::string user_input;
-        std::cout << "Enter command (type 'exit' to quit): ";
-        std::getline(std::cin, user_input);
-
-        if (user_input == "exit")
-        {
-            break;
-        }
-
-        // Get predicted intent and entities
-        auto [predicted_intent, predicted_entities] = nerModel.PredictlabelFromInput(user_input);
-
-        // Store the sentence and the entities
-        std::vector<std::pair<std::string, std::string>> sentence_entities;
-
-        std::istringstream iss(user_input);
-        std::string word;
-        int entity_index = 0;
-
-        while (iss >> word && entity_index < predicted_entities.size())
-        {
-            sentence_entities.push_back({word, predicted_entities[entity_index]});
-            entity_index++;
-        }
-
-        // Output the sentence and its entities
-        std::cout << "Sentence and Entities: " << std::endl;
-        for (const auto &pair : sentence_entities)
-        {
-            std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
-        }
-
-        std::string sentence_label = classificationModel.ClassifySentence(user_input);
-        std::cout << "Intent: " << sentence_label << std::endl;
-        // Convert predicted intent to Task::TaskType
-        Task::TaskType taskType = stringToTaskType(sentence_label);
-        Task task(predicted_intent, 1, device, taskType, {predicted_entities});
-
-        inputHandler.addTask(task);
-        taskProcessor.processTask(task);
-    }
-}
-
-#endif // SERVER_BUILD
+ClientInfo device{"client", getLocalIP(), main_server_port, {}};
 
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_MODE
     std::cout << "Debug mode is ON" << std::endl;
 #endif
-
-#ifdef CLIENT_BUILD OR FULL_BUILD
-
     if (argc > 1)
     {
         for (int i = 1; i < argc; ++i)
@@ -289,11 +147,12 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (std::string(argc[i]) == "-main-server-ip")
+            if (std::string(argv[i]) == "-main-server-ip")
             {
-                if (i + 1 < argc){
-                    main_server_ip = std::atoi(argv[i + 1]);
-                }   
+                if (i + 1 < argc)
+                {
+                    main_server_ip = argv[i + 1];
+                }
             }
 
             if (std::string(argv[i]) == "-start-web-server")
@@ -409,13 +268,10 @@ int main(int argc, char *argv[])
         {
             std::cout << "Client started." << std::endl;
             NetworkManager client(
-                main_server_port, main_server_ip, NetworkManager::Protocol::TCP);
+                main_server_port, main_server_ip , NetworkManager::Protocol::TCP);
             client.connectClient();
-
-
-                NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
-                NetworkSpeechThread.detach();
-            
+            NetworkSpeechThread = std::thread(send_speech_data, std::ref(client));
+            NetworkSpeechThread.detach();
             std::cout << "Client finished." << std::endl;
         }
         catch (const std::exception &e)
@@ -486,8 +342,6 @@ int main(int argc, char *argv[])
         DEBUG_PRINT("Bluetooth thread joined and communication terminated.");
     }
 
-    // Wait for the AirPlayServerThread to finish
-
     if (AirPlayServerThread.joinable())
     {
         AirPlayServerThread.join();
@@ -498,10 +352,149 @@ int main(int argc, char *argv[])
     }
 
     return 0;
+}
 
 #endif // CLIENT_BUILD
 
 #ifdef SERVER_BUILD OR FULL_BUILD
+// Server-specific headers
+#include <unordered_set>
+#include <cstdlib>
+#include <algorithm>
+#include <chrono>
+#include <boost/make_shared.hpp>
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/optional_debug_tools.h>
+#include "ModelRunner.h"
+#include "InputHandler.h"
+#include "TaskProcessor.h"
+#include "HomeAssistantAPI.h"
+#include "counter.h"
+#include "registry.h"
+
+// Server-specific variables and functions
+std::thread bluetoothThread;
+std::thread networkThread;
+std::thread terminalInputThread;
+std::thread homeAssistantThread;
+std::thread taskProcessingThread;
+
+std::unique_ptr<BluetoothComm> bluetoothComm;
+std::unique_ptr<HomeAssistantAPI> homeAssistantAPI;
+NetworkManager *networkserver = nullptr;
+std::vector<std::thread> io_threads;
+
+int homeassistant_port = 0;
+bool setbluetooth = false;
+bool use_homeassistant = false;
+bool use_terminal_input = false;
+
+int main_server_port = 15880;
+
+std::string homeassistant_ip;
+std::string homeassistant_token;
+
+ClientInfo device{"server", deviceIP, main_server_port, {}};
+
+Task::TaskType stringToTaskType(const std::string &str)
+{
+    static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
+        {"Book", Task::Book},
+        {"Calculate", Task::Calculate},
+        {"Calendar", Task::Calendar},
+        {"Call", Task::Call},
+        {"Connect", Task::Connect},
+        {"ControlHeating", Task::ControlHeating},
+        {"ControlLight", Task::ControlLight},
+        {"Define", Task::Define},
+        {"Email", Task::Email},
+        {"Find", Task::Find},
+        {"GetRecipe", Task::GetRecipe},
+        {"GetShippingInfo", Task::GetShippingInfo},
+        {"Locate", Task::Locate},
+        {"Message", Task::Message},
+        {"Navigate", Task::Navigate},
+        {"NewsQuery", Task::NewsQuery},
+        {"OrderItem", Task::OrderItem},
+        {"PauseMusic", Task::PauseMusic},
+        {"PauseVideo", Task::PauseVideo},
+        {"PlayMusic", Task::PlayMusic},
+        {"PlayVideo", Task::PlayVideo},
+        {"Read", Task::Read},
+        {"Recommend", Task::Recommend},
+        {"ResumeVideo", Task::ResumeVideo},
+        {"SetAlarm", Task::SetAlarm},
+        {"SetTimer", Task::SetTimer},
+        {"SetVolume", Task::SetVolume},
+        {"ShoppingList", Task::ShoppingList},
+        {"Summarize", Task::Summarize},
+        {"Translate", Task::Translate},
+        {"WeatherQuery", Task::WeatherQuery}};
+
+    auto it = strToTaskType.find(str);
+    if (it != strToTaskType.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        return Task::ERROR;
+    }
+}
+
+void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
+{
+    while (true)
+    {
+        std::string user_input;
+        std::cout << "Enter command (type 'exit' to quit): ";
+        std::getline(std::cin, user_input);
+
+        if (user_input == "exit")
+        {
+            break;
+        }
+
+        // Get entities from NER model
+        auto [_, predicted_entities] = nerModel.PredictlabelFromInput(user_input); // Ignore the first part
+
+        // Store the sentence and the entities
+        std::vector<std::pair<std::string, std::string>> sentence_entities;
+
+        std::istringstream iss(user_input);
+        std::string word;
+        int entity_index = 0;
+
+        while (iss >> word && entity_index < predicted_entities.size())
+        {
+            sentence_entities.push_back({word, predicted_entities[entity_index]});
+            entity_index++;
+        }
+
+        // Output the sentence and its entities
+        std::cout << "Sentence and Entities: " << std::endl;
+        for (const auto &pair : sentence_entities)
+        {
+            std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
+        }
+
+        // Get intent from Classification model
+        std::string sentence_label = classificationModel.ClassifySentence(user_input);
+        std::cout << "Intent: " << sentence_label << std::endl;
+
+        // Convert predicted intent to Task::TaskType
+        Task::TaskType taskType = stringToTaskType(sentence_label);
+        Task task(sentence_label, 1, device, taskType, {predicted_entities});
+
+        inputHandler.addTask(task);
+        taskProcessor.processTask(task);
+    }
+}
+
+int main(int argc, char *argv[])
+{
     // Process server-specific arguments
 
     auto registry = std::make_shared<prometheus::Registry>();
@@ -523,14 +516,6 @@ int main(int argc, char *argv[])
                 use_terminal_input = true;
             }
 
-            if (std::string(argv[i]) == "-network-port")
-            {
-                if (i + 1 < argc)
-                {
-                    network_port = std::atoi(argv[i + 1]);
-                    device.setPort(network_port);
-                }
-            }
             if (std::string(argv[i]) == "-start-web-server")
             {
                 use_web_server = true;
@@ -664,7 +649,7 @@ int main(int argc, char *argv[])
     try
     {
         DEBUG_PRINT("Starting NetworkManager as server.");
-        networkserver = new NetworkManager(network_port, nullptr, NetworkManager::Protocol::TCP, &NER_Model, &Classification_Model);
+        networkserver = new NetworkManager(main_server_port, nullptr, NetworkManager::Protocol::TCP, &NER_Model, &Classification_Model);
         networkThread = std::thread(&NetworkManager::runServer, networkserver);
         DEBUG_PRINT("NetworkManager running.");
     }
@@ -697,16 +682,16 @@ int main(int argc, char *argv[])
     {
         taskProcessingThread = std::thread([&]()
                                            {
-            while (true)
+        while (true)
+        {
+            while (inputHandler.hasTasks())
             {
-                while (inputHandler.hasTasks())
-                {
-                    Task task = inputHandler.getNextTask();
-                    std::cout << "Processing task: " << task.description << std::endl;
-                    taskProcessor.processTask(task);
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            } });
+                Task task = inputHandler.getNextTask();
+                std::cout << "Processing task: " << task.description << std::endl;
+                taskProcessor.processTask(task);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } });
     }
     catch (const std::exception &e)
     {
@@ -744,5 +729,5 @@ int main(int argc, char *argv[])
     delete networkserver;
     std::cout << "Application finished." << std::endl;
     return 0;
-#endif // SERVER_BUILD
 }
+#endif // SERVER_BUILD

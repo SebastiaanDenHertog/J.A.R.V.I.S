@@ -10,3 +10,12 @@
 [submodule "lib/libhttpserver"]
 	path = lib/libhttpserver
 	url = git@github.com:SebastiaanDenHertog/libhttpserver.git
+[submodule "lib/kaldi"]
+	path = lib/kaldi
+	url = git@github.com:kaldi-asr/kaldi.git
+[submodule "lib/llama.cpp"]
+	path = lib/llama.cpp
+	url = git@github.com:ggerganov/llama.cpp.git
+[submodule "lib/whisper.cpp"]
+	path = lib/whisper.cpp
+	url = git@github.com:ggerganov/whisper.cpp.git
