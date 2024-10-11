@@ -3,189 +3,249 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Configuration Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server and Client Configuration</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f4f4f4;
         }
 
-        .container {
-            max-width: 600px;
-            margin: auto;
+        h1,
+        h2 {
+            color: #333;
         }
 
-        input[type="text"],
-        input[type="number"],
-        input[type="checkbox"] {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
+        header {
+            background: #007BFF;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        button {
-            padding: 10px 20px;
-            margin-top: 10px;
+        section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #007BFF;
+            color: #fff;
         }
     </style>
+    <script>
+        async function fetchServerConfig() {
+            const response = await fetch('/api/server/config');
+            if (response.ok) {
+                const data = await response.json();
+                displayServerConfig(data);
+            } else {
+                console.error('Failed to fetch server configuration.');
+            }
+        }
+
+        async function fetchClientConfigs() {
+            const response = await fetch('/api/clients');
+            if (response.ok) {
+                const data = await response.json();
+                displayClientConfigs(data);
+            } else {
+                console.error('Failed to fetch client configurations.');
+            }
+        }
+
+        function displayServerConfig(config) {
+            const serverForm = document.getElementById('server-config-form');
+            serverForm.innerHTML = '';
+            for (const [key, value] of Object.entries(config)) {
+                const label = document.createElement('label');
+                label.innerText = key;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.id = `server-${key}`;
+                serverForm.appendChild(label);
+                serverForm.appendChild(input);
+            }
+            const saveButton = document.createElement('button');
+            saveButton.innerText = 'Save Server Configuration';
+            saveButton.onclick = saveServerConfig;
+            serverForm.appendChild(saveButton);
+        }
+
+        async function saveServerConfig() {
+            const inputs = document.querySelectorAll('#server-config-form input');
+            const updatedConfig = {};
+            inputs.forEach(input => {
+                const key = input.id.replace('server-', '');
+                updatedConfig[key] = input.value;
+            });
+
+            const response = await fetch('/api/server/config/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedConfig)
+            });
+
+            if (response.ok) {
+                alert('Server configuration updated successfully.');
+                fetchServerConfig();
+            } else {
+                alert('Failed to update server configuration.');
+            }
+        }
+
+        function displayClientConfigs(clients) {
+            const clientContainer = document.getElementById('client-configs-container');
+            clientContainer.innerHTML = '';
+
+            for (const clientId in clients) {
+                const clientSection = document.createElement('section');
+                const title = document.createElement('h3');
+                title.innerText = `Client ID: ${clientId}`;
+                clientSection.appendChild(title);
+
+                for (const [key, value] of Object.entries(clients[clientId])) {
+                    const label = document.createElement('label');
+                    label.innerText = key;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = value;
+                    input.id = `client-${clientId}-${key}`;
+                    clientSection.appendChild(label);
+                    clientSection.appendChild(input);
+                }
+
+                const saveButton = document.createElement('button');
+                saveButton.innerText = 'Save Client Configuration';
+                saveButton.onclick = () => saveClientConfig(clientId);
+                clientSection.appendChild(saveButton);
+
+                clientContainer.appendChild(clientSection);
+            }
+        }
+
+        async function saveClientConfig(clientId) {
+            const inputs = document.querySelectorAll(`#client-configs-container input[id^='client-${clientId}-']`);
+            const updatedConfig = {};
+            inputs.forEach(input => {
+                const key = input.id.replace(`client-${clientId}-`, '');
+                updatedConfig[key] = input.value;
+            });
+
+            const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedConfig)
+            });
+
+            if (response.ok) {
+                alert('Client configuration updated successfully.');
+                fetchClientConfigs();
+            } else {
+                alert('Failed to update client configuration.');
+            }
+        }
+
+        async function addNewClient() {
+            const clientId = prompt("Enter a new Client ID:");
+            if (!clientId) {
+                alert("Client ID is required.");
+                return;
+            }
+
+            const defaultConfig = {
+                use_web_server: true,
+                web_server_port: 15881,
+                use_bluetooth: false,
+                threads: 10,
+                main_server_port: 15880,
+                client_server_ip: "127.0.0.1",
+                use_airplay: false
+            };
+
+            const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(defaultConfig)
+            });
+
+            if (response.ok) {
+                alert('New client added successfully.');
+                fetchClientConfigs();
+            } else {
+                alert('Failed to add new client.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchServerConfig();
+            fetchClientConfigs();
+        });
+    </script>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Application Configuration</h1>
-        <form id="configForm">
-            <h2>Web Server Settings</h2>
-            <label>
-                <input type="checkbox" id="use_web_server" name="use_web_server">
-                Use Web Server
-            </label>
-            <label>
-                Web Server Port:
-                <input type="number" id="web_server_port" name="web_server_port" min="1" max="65535">
-            </label>
-            <label>
-                <input type="checkbox" id="web_server_secure" name="web_server_secure">
-                Enable HTTPS
-            </label>
-            <label>
-                Certificate Path:
-                <input type="text" id="web_server_cert_path" name="web_server_cert_path">
-            </label>
-            <label>
-                Key Path:
-                <input type="text" id="web_server_key_path" name="web_server_key_path">
-            </label>
-            <label>
-                Number of Threads:
-                <input type="number" id="threads" name="threads" min="1">
-            </label>
+    <header>
+        <h1>Server and Client Configuration</h1>
+    </header>
 
-            <h2>Client Settings</h2>
-            <label>
-                <input type="checkbox" id="use_client" name="use_client">
-                Use Client
-            </label>
-            <label>
-                Client Port:
-                <input type="number" id="client_port" name="client_port" min="1" max="65535">
-            </label>
-            <label>
-                Client Server IP:
-                <input type="text" id="client_server_ip" name="client_server_ip" placeholder="e.g., 192.168.1.100">
-            </label>
-            <label>
-                <input type="checkbox" id="use_airplay" name="use_airplay">
-                Use AirPlay
-            </label>
-            <label>
-                <input type="checkbox" id="use_bluetooth" name="use_bluetooth">
-                Use Bluetooth
-            </label>
+    <section>
+        <h2>Server Configuration</h2>
+        <form id="server-config-form"></form>
+    </section>
 
-            <h2>Server Settings</h2>
-            <label>
-                <input type="checkbox" id="use_server" name="use_server">
-                Use Server
-            </label>
-
-            <button type="button" onclick="submitConfig()">Update Configuration</button>
-        </form>
-        <div id="response" style="margin-top:20px;"></div>
-    </div>
-
-    <script>
-        // Function to fetch current configuration and populate the form
-        async function loadConfig() {
-            try {
-                const response = await fetch('/api/config');
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch config: ${response.statusText}`);
-                }
-                const config = await response.json();
-
-                document.getElementById('use_web_server').checked = config.use_web_server;
-                document.getElementById('web_server_port').value = config.web_server_port;
-                document.getElementById('web_server_secure').checked = config.web_server_secure;
-                document.getElementById('web_server_cert_path').value = config.web_server_cert_path;
-                document.getElementById('web_server_key_path').value = config.web_server_key_path;
-                document.getElementById('threads').value = config.threads;
-
-                document.getElementById('use_client').checked = config.use_client;
-                document.getElementById('client_port').value = config.client_port;
-                document.getElementById('client_server_ip').value = config.client_server_ip;
-                document.getElementById('use_airplay').checked = config.use_airplay;
-                document.getElementById('use_bluetooth').checked = config.use_bluetooth;
-
-                document.getElementById('use_server').checked = config.use_server;
-            }
-            catch (error) {
-                console.error(error);
-                document.getElementById('response').innerText = `Error loading configuration: ${error.message}`;
-            }
-        }
-
-        // Function to submit updated configuration
-        async function submitConfig() {
-            // Gather form data
-            const config = {
-                use_web_server: document.getElementById('use_web_server').checked,
-                web_server_port: parseInt(document.getElementById('web_server_port').value) || 15881,
-                web_server_secure: document.getElementById('web_server_secure').checked,
-                web_server_cert_path: document.getElementById('web_server_cert_path').value.trim(),
-                web_server_key_path: document.getElementById('web_server_key_path').value.trim(),
-                threads: parseInt(document.getElementById('threads').value) || 10,
-                use_client: document.getElementById('use_client').checked,
-                client_port: parseInt(document.getElementById('client_port').value) || 15880,
-                client_server_ip: document.getElementById('client_server_ip').value.trim(),
-                use_airplay: document.getElementById('use_airplay').checked,
-                use_bluetooth: document.getElementById('use_bluetooth').checked,
-                use_server: document.getElementById('use_server').checked
-            };
-
-            // Basic validation
-            if (config.use_web_server && config.web_server_secure) {
-                if (!config.web_server_cert_path || !config.web_server_key_path) {
-                    alert("Certificate and Key paths must be provided for secure web server.");
-                    return;
-                }
-            }
-
-            if (config.use_client) {
-                const ipPattern = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
-                if (!ipPattern.test(config.client_server_ip)) {
-                    alert("Invalid Client Server IP address.");
-                    return;
-                }
-            }
-
-            try {
-                const response = await fetch('/api/config/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById('response').innerText = `Success: ${result.message}`;
-                } else {
-                    document.getElementById('response').innerText = `Error: ${result.message}`;
-                }
-            }
-            catch (error) {
-                console.error(error);
-                document.getElementById('response').innerText = `Error updating configuration: ${error.message}`;
-            }
-        }
-
-        // Load configuration on page load
-        window.onload = loadConfig;
-    </script>
+    <section>
+        <h2>Client Configurations</h2>
+        <div id="client-configs-container"></div>
+        <button onclick="addNewClient()">Add New Client</button>
+    </section>
 </body>
 
 </html>

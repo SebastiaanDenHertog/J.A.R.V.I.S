@@ -66,16 +66,75 @@ void Configuration::from_json(const nlohmann::json &j)
     if (j.contains("home_assistant_token"))
         home_assistant_token = j["home_assistant_token"];
 }
-
 /**
- * @brief Update the configuration with a new configuration.
- * @param filepath The path to the JSON file to save the configuration to.
+ * 
  */
 
-void ConfigurationManager::saveConfiguration(const std::string &filepath)
+ConfigurationManager &ConfigurationManager::getInstance()
+{
+    static ConfigurationManager instance;
+    return instance;
+}
+
+/**
+ * 
+ */
+Configuration ConfigurationManager::getConfiguration(const std::string &client_id)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
-    nlohmann::json j = config.to_json();
+    return configurations[client_id];
+}
+
+/**
+ * 
+ */
+
+Configuration ConfigurationManager::getConfiguration()
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    return global_config;
+}
+
+/**
+ * 
+ */
+void ConfigurationManager::updateConfiguration(const std::string &client_id, const Configuration &new_config)
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    configurations[client_id] = new_config;
+}
+
+/**
+ * 
+ */
+void ConfigurationManager::updateConfiguration(const Configuration &new_config)
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    global_config = new_config;
+}
+
+/**
+ * 
+ */
+nlohmann::json ConfigurationManager::getAllConfigurations()
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    nlohmann::json j;
+    for (const auto &pair : configurations)
+    {
+        j[pair.first] = pair.second.to_json();
+    }
+    return j;
+}
+
+/**
+ * 
+ */
+// Save all client configurations to a JSON file
+void ConfigurationManager::saveConfigurations(const std::string &filepath)
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    nlohmann::json j = getAllConfigurations();
     std::ofstream file(filepath);
     if (!file.is_open())
     {
@@ -83,15 +142,59 @@ void ConfigurationManager::saveConfiguration(const std::string &filepath)
         return;
     }
     file << j.dump(4);
-    file.close();
-    std::cout << "Configuration saved to " << filepath << std::endl;
+    std::cout << "Configurations saved to " << filepath << std::endl;
 }
 
+// Save the global configuration to a JSON file
+void ConfigurationManager::saveConfiguration(const std::string &filepath)
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    nlohmann::json j = global_config.to_json();
+    std::ofstream file(filepath);
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open configuration file for writing: " << filepath << std::endl;
+        return;
+    }
+    file << j.dump(4);
+    std::cout << "Configuration saved to " << filepath << std::endl;
+}
 /**
- * @brief Load the configuration from a JSON file.
- * @param filepath The path to the JSON file to load the configuration from.
+ * 
  */
+// Load all client configurations from a JSON file
+void ConfigurationManager::loadConfigurations(const std::string &filepath)
+{
+    std::lock_guard<std::mutex> lock(config_mutex);
+    std::ifstream file(filepath);
+    if (!file.is_open())
+    {
+        std::cerr << "Configuration file not found: " << filepath << ". Using default settings." << std::endl;
+        return;
+    }
 
+    nlohmann::json j;
+    try
+    {
+        file >> j;
+        for (const auto &item : j.items())
+        {
+            const std::string &client_id = item.key();
+            Configuration config;
+            config.from_json(item.value());
+            configurations[client_id] = config;
+        }
+        std::cout << "Configurations loaded from " << filepath << std::endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error parsing configuration file: " << e.what() << ". Using default settings." << std::endl;
+    }
+}
+/**
+ * 
+ */
+// Load the global configuration from a JSON file
 void ConfigurationManager::loadConfiguration(const std::string &filepath)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
@@ -106,13 +209,11 @@ void ConfigurationManager::loadConfiguration(const std::string &filepath)
     try
     {
         file >> j;
-        config.from_json(j);
+        global_config.from_json(j);
         std::cout << "Configuration loaded from " << filepath << std::endl;
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error parsing configuration file: " << e.what() << ". Using default settings." << std::endl;
     }
-
-    file.close();
 }

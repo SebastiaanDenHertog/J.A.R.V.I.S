@@ -4,6 +4,7 @@
 #include <string>
 #include <mutex>
 #include <memory>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 
 // Enumeration for application modes
@@ -77,42 +78,43 @@ struct Configuration
 class ConfigurationManager
 {
 public:
-    static ConfigurationManager &getInstance()
-    {
-        static ConfigurationManager instance;
-        return instance;
-    }
+    static ConfigurationManager &getInstance();
 
-    // Get a copy of the current configuration
-    Configuration getConfiguration()
-    {
-        std::lock_guard<std::mutex> lock(config_mutex);
-        return config;
-    }
+    // Get the configuration for a specific client
+    Configuration getConfiguration(const std::string &client_id);
 
-    // Update configuration with a new config
-    void updateConfiguration(const Configuration &new_config)
-    {
-        std::lock_guard<std::mutex> lock(config_mutex);
-        config = new_config;
-    }
+    // Get the global configuration (for compatibility with existing code)
+    Configuration getConfiguration();
 
-    // Save configuration to a JSON file
+    // Update the configuration for a specific client
+    void updateConfiguration(const std::string &client_id, const Configuration &new_config);
+
+    // Update the global configuration
+    void updateConfiguration(const Configuration &new_config);
+
+    // Get all configurations as a JSON object
+    nlohmann::json getAllConfigurations();
+
+    // Save the global configuration to a JSON file (for compatibility)
     void saveConfiguration(const std::string &filepath);
 
-    // Load configuration from a JSON file
+    // Load the global configuration from a JSON file (for compatibility)
     void loadConfiguration(const std::string &filepath);
+
+    // Save all client configurations to a JSON file
+    void saveConfigurations(const std::string &filepath);
+
+    // Load all client configurations from a JSON file
+    void loadConfigurations(const std::string &filepath);
 
     // Delete copy constructor and assignment operator
     ConfigurationManager(const ConfigurationManager &) = delete;
     ConfigurationManager &operator=(const ConfigurationManager &) = delete;
 
 private:
-    Configuration config;
-    std::mutex config_mutex;
-
-    // Private constructor for singleton
     ConfigurationManager() {}
+    std::unordered_map<std::string, Configuration> configurations;
+    Configuration global_config;  // For compatibility with single-client code
+    std::mutex config_mutex;
 };
-
 #endif // CONFIGURATION_H

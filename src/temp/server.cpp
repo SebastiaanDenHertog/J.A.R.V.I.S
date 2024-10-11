@@ -36,7 +36,7 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
 
 // Global thread variables
 std::thread webServerThread;
-std::thread bluetoothThread;    
+std::thread bluetoothThread;
 std::thread networkThread;
 std::thread terminalInputThread;
 std::thread homeAssistantThread;
@@ -53,7 +53,7 @@ unsigned short web_server_port = 15881;
 int threads = 10;
 int homeassistant_port = 0;
 bool setbluetooth = false;
-bool use_homeassistant = false;
+bool use_home_assistant = false;
 bool use_terminal_input = false;
 bool use_web_server = true;
 bool web_server_secure = false;
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 
             if (std::string(argv[i]) == "-homeassistant")
             {
-                use_homeassistant = true;
+                use_home_assistant = true;
                 if (i + 3 < argc)
                 {
                     homeassistant_ip = argv[i + 1];
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (use_homeassistant)
+            if (use_home_assistant)
             {
                 std::cerr << "Using homeAssistant" << std::endl;
             }
@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
     }
 
     // Try to initialize Home Assistant API
-    if (use_homeassistant)
+    if (use_home_assistant)
     {
         try
         {
@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
         catch (const std::exception &e)
         {
             std::cerr << "Error in the HomeAssistantAPI: " << e.what() << std::endl;
-            use_homeassistant = false;
+            use_home_assistant = false;
         }
     }
 
