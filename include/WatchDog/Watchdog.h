@@ -88,6 +88,7 @@ private:
     bool bluetoothRunning;
     bool airPlayRunning;
     bool homeAssistantRunning;
+    bool client_server_connection;
 
     std::thread monitoringThread;
     std::mutex logMutex;

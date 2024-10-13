@@ -16,10 +16,12 @@ nlohmann::json Configuration::to_json() const
     j["web_server_cert_path"] = web_server_cert_path;
     j["web_server_key_path"] = web_server_key_path;
     j["threads"] = threads;
+    j["use_server"] = use_server;
     j["use_client"] = use_client;
     j["main_server_port"] = main_server_port;
     j["client_server_ip"] = client_server_ip;
     j["use_airplay"] = use_airplay;
+    j["use_client_server_connection"] = use_client_server_connection;
     j["use_bluetooth"] = use_bluetooth;
     j["use_server"] = use_server;
     j["home_assistant_ip"] = home_assistant_ip;
@@ -47,21 +49,25 @@ void Configuration::from_json(const nlohmann::json &j)
         web_server_key_path = j["web_server_key_path"];
     if (j.contains("threads"))
         threads = j["threads"];
-    if (j.contains("use_client"))
-        use_client = j["use_client"];
     if (j.contains("main_server_port"))
         main_server_port = j["main_server_port"];
-    if (j.contains("main_server_ip") && !j["main_server_ip"].is_null()) {
-        main_server_ip = j["main_server_ip"];
-    } else {
+    if (j.contains("main_server_ip") && !j["main_server_ip"].is_null())
+    {
+        std::string main_server_ip_str = j["main_server_ip"].get<std::string>();
+
+        // If you need a C-style string (char*), use .c_str()
+        main_server_ip = main_server_ip_str.c_str();
+    }
+    else
+    {
         main_server_ip = nullptr;
     }
     if (j.contains("use_airplay"))
         use_airplay = j["use_airplay"];
+    if (j.contains("use_client_server_connection"))
+        use_client_server_connection = j["use_client_server_connection"];
     if (j.contains("use_bluetooth"))
         use_bluetooth = j["use_bluetooth"];
-    if (j.contains("use_server"))
-        use_server = j["use_server"];
     if (j.contains("home_assistant_ip"))
         home_assistant_ip = j["home_assistant_ip"];
     if (j.contains("home_assistant_port"))
@@ -70,7 +76,7 @@ void Configuration::from_json(const nlohmann::json &j)
         home_assistant_token = j["home_assistant_token"];
 }
 /**
- * 
+ *
  */
 
 ConfigurationManager &ConfigurationManager::getInstance()
@@ -80,7 +86,7 @@ ConfigurationManager &ConfigurationManager::getInstance()
 }
 
 /**
- * 
+ *
  */
 Configuration ConfigurationManager::getConfiguration(const std::string &client_id)
 {
@@ -89,7 +95,7 @@ Configuration ConfigurationManager::getConfiguration(const std::string &client_i
 }
 
 /**
- * 
+ *
  */
 
 Configuration ConfigurationManager::getConfiguration()
@@ -99,7 +105,7 @@ Configuration ConfigurationManager::getConfiguration()
 }
 
 /**
- * 
+ *
  */
 void ConfigurationManager::updateConfiguration(const std::string &client_id, const Configuration &new_config)
 {
@@ -108,7 +114,7 @@ void ConfigurationManager::updateConfiguration(const std::string &client_id, con
 }
 
 /**
- * 
+ *
  */
 void ConfigurationManager::updateConfiguration(const Configuration &new_config)
 {
@@ -117,7 +123,7 @@ void ConfigurationManager::updateConfiguration(const Configuration &new_config)
 }
 
 /**
- * 
+ *
  */
 nlohmann::json ConfigurationManager::getAllConfigurations()
 {
@@ -131,7 +137,7 @@ nlohmann::json ConfigurationManager::getAllConfigurations()
 }
 
 /**
- * 
+ *
  */
 // Save all client configurations to a JSON file
 void ConfigurationManager::saveConfigurations(const std::string &filepath)
@@ -163,7 +169,7 @@ void ConfigurationManager::saveConfiguration(const std::string &filepath)
     std::cout << "Configuration saved to " << filepath << std::endl;
 }
 /**
- * 
+ *
  */
 // Load all client configurations from a JSON file
 void ConfigurationManager::loadConfigurations(const std::string &filepath)
@@ -195,7 +201,7 @@ void ConfigurationManager::loadConfigurations(const std::string &filepath)
     }
 }
 /**
- * 
+ *
  */
 // Load the global configuration from a JSON file
 void ConfigurationManager::loadConfiguration(const std::string &filepath)

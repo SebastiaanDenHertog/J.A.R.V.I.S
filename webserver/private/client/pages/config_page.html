@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Client Configuration</h1>
+        <form id="config-form" method="post">
+            <!-- Server IP -->
+            <label for="main_server_ip">Server IP Address</label>
+            <input type="text" id="main_server_ip" name="main_server_ip" placeholder="Enter the server IP address"
+                required>
+
+            <!-- Server Port -->
+            <label for="main_server_port">Server Port</label>
+            <input type="number" id="main_server_port" name="main_server_port" placeholder="Enter the server port"
+                required>
+
+            <!-- Enable/Disable Bluetooth -->
+            <label for="use_bluetooth">
+                <input type="checkbox" id="use_bluetooth" name="use_bluetooth">
+                Enable Bluetooth
+            </label>
+
+            <!-- Enable/Disable AirPlay -->
+            <label for="use_airplay">
+                <input type="checkbox" id="use_airplay" name="use_airplay">
+                Enable AirPlay
+            </label>
+
+            <!-- Submit Button -->
+            <button type="submit">Save Configuration</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('config-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const configData = {
+                main_server_ip: document.getElementById('main_server_ip').value,
+                main_server_port: parseInt(document.getElementById('main_server_port').value),
+                use_bluetooth: document.getElementById('use_bluetooth').checked,
+                use_airplay: document.getElementById('use_airplay').checked
+            };
+
+            try {
+                const response = await fetch('/api/client/config/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Configuration saved successfully!');
+                } else {
+                    alert('Error saving configuration: ' + result.message);
+                }
+            } catch (error) {
+                alert('Failed to save configuration: ' + error.message);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

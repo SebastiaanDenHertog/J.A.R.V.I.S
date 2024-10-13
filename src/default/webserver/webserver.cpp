@@ -29,18 +29,16 @@ public:
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
         json j;
-        j["use_web_server"] = config.use_web_server;
         j["web_server_port"] = config.web_server_port;
         j["web_server_secure"] = config.web_server_secure;
         j["web_server_cert_path"] = config.web_server_cert_path;
         j["web_server_key_path"] = config.web_server_key_path;
         j["threads"] = config.threads;
-        j["use_client"] = config.use_client;
         j["main_server_port"] = config.main_server_port;
         j["client_server_ip"] = config.client_server_ip;
         j["use_airplay"] = config.use_airplay;
         j["use_bluetooth"] = config.use_bluetooth;
-        j["use_server"] = config.use_server;
+        j["use_client_server_connection"] = config.use_client_server_connection;
         j["use_home_assistant"] = config.use_home_assistant;
         j["home_assistant_ip"] = config.home_assistant_ip;
         j["home_assistant_port"] = config.home_assistant_port;
@@ -66,8 +64,6 @@ public:
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration();
             // Update configuration fields using a map-like approach for brevity
             std::vector<std::pair<std::string, std::function<void(const json &)>>> mappings = {
-                {"use_web_server", [&](const json &val)
-                 { current_config.use_web_server = val; }},
                 {"web_server_port", [&](const json &val)
                  { current_config.web_server_port = val; }},
                 {"web_server_secure", [&](const json &val)
@@ -78,8 +74,6 @@ public:
                  { current_config.web_server_key_path = val; }},
                 {"threads", [&](const json &val)
                  { current_config.threads = val; }},
-                {"use_client", [&](const json &val)
-                 { current_config.use_client = val; }},
                 {"main_server_port", [&](const json &val)
                  { current_config.main_server_port = val; }},
                 {"client_server_ip", [&](const json &val)
@@ -88,8 +82,8 @@ public:
                  { current_config.use_airplay = val; }},
                 {"use_bluetooth", [&](const json &val)
                  { current_config.use_bluetooth = val; }},
-                {"use_server", [&](const json &val)
-                 { current_config.use_server = val; }},
+                {"use_client_server_connection", [&](const json &val)
+                 { current_config.use_client_server_connection = val; }},
                 {"use_home_assistant", [&](const json &val)
                  { current_config.use_home_assistant = val; }},
                 {"home_assistant_ip", [&](const json &val)
@@ -128,12 +122,12 @@ public:
 /**
  * @brief Resource to serve the configuration page.
  */
-class ConfigPageResource : public httpserver::http_resource
+class ConfigPageResourceServer : public httpserver::http_resource
 {
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("webserver/private/pages/config_page.html");
+        std::ifstream html_file("webserver/private/server/pages/config_page.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
@@ -144,6 +138,27 @@ public:
         return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
     }
 };
+
+/**
+ * @brief Resource to serve the configuration page.
+ */
+class ConfigPageResourceClient : public httpserver::http_resource
+{
+public:
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
+    {
+        std::ifstream html_file("webserver/private/client/pages/config_page.html");
+        if (!html_file.is_open())
+        {
+            return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
+        }
+
+        std::stringstream buffer;
+        buffer << html_file.rdbuf();
+        return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
+    }
+};
+
 /**
  * @brief Resource to serve the home page.
  */
@@ -268,9 +283,10 @@ public:
  * @param key Path to the SSL key
  * @param port Port number to listen on
  * @param threads Number of threads to use
+ * @param use_server Bool Whether to use the server or client pages
  */
 
-void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads)
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads, bool use_server)
 {
     try
     {
@@ -289,10 +305,16 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
 
         auto homePage = std::make_unique<HomePageResource>();
         ws.register_resource("/", homePage.get(), true);
-
-        auto configPage = std::make_unique<ConfigPageResource>();
-        ws.register_resource("/config", configPage.get(), true);
-
+        if (use_server)
+        {
+            auto configPage = std::make_unique<ConfigPageResourceServer>();
+            ws.register_resource("/config", configPage.get(), true);
+        }
+        else
+        {
+            auto configPage = std::make_unique<ConfigPageResourceClient>();
+            ws.register_resource("/config", configPage.get(), true);
+        }
         auto getServerConfig = std::make_unique<GetServerConfigResource>();
         ws.register_resource("/api/server/config", getServerConfig.get(), true);
 
@@ -303,7 +325,7 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         ws.register_resource("/api/clients", listClients.get(), true);
 
         auto updateClientConfig = std::make_unique<UpdateClientConfigResource>();
-        ws.register_resource("/api/clients/update", updateClientConfig.get(), true);
+        ws.register_resource("/api/client/config/update", updateClientConfig.get(), true);
 
         ws.start(false);
         std::cout << "Web Server running on port: " << port << std::endl;

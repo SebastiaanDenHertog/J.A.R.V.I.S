@@ -207,7 +207,8 @@
                 threads: 10,
                 main_server_port: 15880,
                 client_server_ip: "127.0.0.1",
-                use_airplay: false
+                use_airplay: false,
+                use_client_server_connection: false
             };
 
             const response = await fetch(`/api/clients/update?client_id=${clientId}`, {

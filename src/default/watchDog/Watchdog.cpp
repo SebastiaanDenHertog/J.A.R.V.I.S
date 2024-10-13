@@ -14,7 +14,7 @@ extern std::unique_ptr<InputHandler> inputHandler;
  */
 
 Watchdog::Watchdog(Mode mode)
-    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false) {}
+    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false), client_server_connection(false) {}
 
 /**
  * @brief Destructor for Watchdog.
@@ -67,17 +67,16 @@ void Watchdog::checkServices()
         Configuration config = configManager.getConfiguration();
 
         logEvent("Checking services...");
-            logEvent("Web server: " + std::to_string(config.use_web_server));
-            if (config.use_web_server && !webServerRunning)
-            {
-                logEvent("Web server is not running. Attempting to start.");
-                startService("webServer");
-            }
+        logEvent("Web server: " + std::to_string(config.use_web_server));
+        if (config.use_web_server && !webServerRunning)
+        {
+            logEvent("Web server is not running. Attempting to start.");
+            startService("webServer");
+        }
 
         if (mode == Mode::SERVER)
         {
             // Monitor Web Server
-            
 
             // Monitor Home Assistant
             if (config.use_home_assistant && !homeAssistantRunning)
@@ -100,6 +99,11 @@ void Watchdog::checkServices()
             {
                 logEvent("AirPlay is not running. Attempting to start.");
                 startService("airplay");
+            }
+            if (config.use_client_server_connection && !client_server_connection)
+            {
+                logEvent("Client server connection is not running. Attempting to start.");
+                startService("client_server_connection");
             }
         }
 
@@ -129,7 +133,8 @@ void Watchdog::startService(const std::string &service)
                 config.web_server_cert_path,
                 config.web_server_key_path,
                 config.web_server_port,
-                config.threads
+                config.threads,
+                config.use_server
             );
             webServerRunning = false; })
             .detach();
@@ -171,6 +176,13 @@ void Watchdog::startService(const std::string &service)
             .detach();
         logEvent("AirPlay server started.");
     }
+    else if (service == "client_server_connection")
+    {
+        client_server_connection = true;
+        clientNetworkManager = new NetworkManager(config.server_port, config.server_ip, NetworkManager::Protocol::TCP);
+        std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
+        clientThread.detach();
+    }
 #endif
 #ifdef SERVER_BUILD
     else if (service == "homeAssistant")
@@ -199,7 +211,7 @@ void Watchdog::startService(const std::string &service)
             .detach();
         logEvent("Home Assistant API started.");
     }
-    #endif
+#endif
 }
 
 /**

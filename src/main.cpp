@@ -330,37 +330,6 @@ void initialize_models_and_task_processor()
     }
 }
 
-#endif
-
-#ifdef CLIENT_BUILD
-// Function to start the client network manager
-void start_client_network_manager(char &server_ip, int server_port)
-{
-    try
-    {
-        clientNetworkManager = new NetworkManager(server_port, server_ip, NetworkManager::Protocol::TCP);
-        std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
-        clientThread.detach();
-        DEBUG_PRINT("Client NetworkManager started, connecting to " << server_ip << ":" << server_port);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Failed to start Client NetworkManager: " << e.what() << std::endl;
-    }
-}
-
-// Function to stop the client network manager
-void stop_client_network_manager()
-{
-    if (clientNetworkManager)
-    {
-        delete clientNetworkManager;
-        clientNetworkManager = nullptr;
-        DEBUG_PRINT("Client NetworkManager stopped.");
-    }
-}
-#endif
-#ifdef SERVER_BUILD
 // Function to start terminal input handling for the server
 void start_terminal_input()
 {
@@ -403,17 +372,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-#ifdef CLIENT_BUILD
-    if (initial_config.use_client)
-    {
-        std::cout << initial_config.main_server_ip << std::endl;
-        std::cout << initial_config.main_server_port << std::endl;
-        start_client_network_manager(initial_config.main_server_ip, initial_config.main_server_port);
-        std::thread clientThread(run_client, initial_config);
-        clientThread.detach();
-    }
-#endif
-
     // Start Watchdog Monitoring
     watchdog.startMonitoring();
 
@@ -427,9 +385,6 @@ int main(int argc, char *argv[])
     watchdog.stopMonitoring();
 #ifdef SERVER_BUILD
     stop_server_network_manager();
-#endif
-#ifdef CLIENT_BUILD
-    stop_client_network_manager();
 #endif
 
     std::cout << "Application exited gracefully." << std::endl;

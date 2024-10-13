@@ -31,12 +31,13 @@ struct Configuration
     unsigned short main_server_port = 15880;
     std::string client_server_ip;
     bool use_airplay = false;
+    bool use_client_server_connection = false;
     const char *spiDevicePath = "/dev/spidev0.0";
     const char *i2cDevicePath = "/dev/i2c-1";
     uint8_t i2cDeviceAddress = 0x3b;
     uint8_t micCount = 4;
     uint8_t ledCount = 16;
-    char *main_server_ip;
+    const char *main_server_ip;
 
     // Server-specific settings
     bool use_terminal_input = false;
@@ -114,7 +115,7 @@ public:
 private:
     ConfigurationManager() {}
     std::unordered_map<std::string, Configuration> configurations;
-    Configuration global_config;  // For compatibility with single-client code
+    Configuration global_config; // For compatibility with single-client code
     std::mutex config_mutex;
 };
 #endif // CONFIGURATION_H
