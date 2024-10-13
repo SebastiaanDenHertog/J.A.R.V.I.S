@@ -282,7 +282,7 @@ void start_server_network_manager(int server_port)
 {
     try
     {
-        serverNetworkManager = new NetworkManager(server_port, nullptr, NetworkManager::Protocol::TCP, nerModel.get(), classificationModel.get());
+        serverNetworkManager = new NetworkManager(server_port, NetworkManager::Protocol::TCP, nerModel.get(), classificationModel.get());
         std::thread networkThread(&NetworkManager::runServer, serverNetworkManager);
         networkThread.detach();
         DEBUG_PRINT("Server NetworkManager started on port " << server_port);
@@ -334,11 +334,11 @@ void initialize_models_and_task_processor()
 
 #ifdef CLIENT_BUILD
 // Function to start the client network manager
-void start_client_network_manager(const std::string &server_ip, int server_port)
+void start_client_network_manager(char &server_ip, int server_port)
 {
     try
     {
-        clientNetworkManager = new NetworkManager(server_port, server_ip.c_str(), NetworkManager::Protocol::TCP);
+        clientNetworkManager = new NetworkManager(server_port, server_ip, NetworkManager::Protocol::TCP);
         std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
         clientThread.detach();
         DEBUG_PRINT("Client NetworkManager started, connecting to " << server_ip << ":" << server_port);
@@ -354,7 +354,6 @@ void stop_client_network_manager()
 {
     if (clientNetworkManager)
     {
-        clientNetworkManager->disconnect(); // Assuming NetworkManager has a disconnect function
         delete clientNetworkManager;
         clientNetworkManager = nullptr;
         DEBUG_PRINT("Client NetworkManager stopped.");
@@ -407,6 +406,8 @@ int main(int argc, char *argv[])
 #ifdef CLIENT_BUILD
     if (initial_config.use_client)
     {
+        std::cout << initial_config.main_server_ip << std::endl;
+        std::cout << initial_config.main_server_port << std::endl;
         start_client_network_manager(initial_config.main_server_ip, initial_config.main_server_port);
         std::thread clientThread(run_client, initial_config);
         clientThread.detach();

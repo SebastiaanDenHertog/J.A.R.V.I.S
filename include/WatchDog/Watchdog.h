@@ -15,8 +15,10 @@
 #include "webServer.h"
 #include "HomeAssistantAPI.h"
 #include "Configuration.h"
+#ifdef SERVER_BUILD
 #include "TaskProcessor.h"      
 #include "InputHandler.h"
+#endif
 #ifdef CLIENT_BUILD
 #include "AirPlayServer.h"
 #endif

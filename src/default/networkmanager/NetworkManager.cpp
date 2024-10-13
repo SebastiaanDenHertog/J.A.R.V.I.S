@@ -15,7 +15,6 @@
 /**
  * @brief Constructor for NetworkManager.
  * @param port The port to listen on.
- * @param serverIp The IP address of the server.
  * @param protocol The communication protocol to use.
  * @param nerModel The NER model to use.
  * @param classificationModel The classification model to use.
@@ -23,11 +22,9 @@
  * @note The WhisperTranscriber setup is only available in the server build.
  */
 
-NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
-    : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
+NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
+    : port(port), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
-    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
-    std::cout << "Server Port: " << port << std::endl;
 
     // WhisperTranscriber setup
     WhisperTranscriber::Params transcriberParams;
@@ -38,7 +35,7 @@ NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, Mode
 
     if (protocol == TCP)
     {
-        if (serverIp == nullptr)
+        if (serverIp == "")
         {
             setupServerSocket();
             bindSocket();
@@ -65,12 +62,9 @@ NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, Mode
  * @note This constructor is only available in the default build or client build.
  */
 
-NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol)
+NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
 {
-    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
-    std::cout << "Server Port: " << port << std::endl;
-
     if (protocol == TCP)
     {
         if (serverIp == nullptr)
@@ -274,7 +268,7 @@ void NetworkManager::setupClientSocket()
 
 void NetworkManager::connectToServer()
 {
-    servAddr.sin_addr.s_addr = inet_addr(serverIp);
+    servAddr.sin_addr.s_addr = inet_addr(serverIp.data());
     servAddr.sin_family = AF_INET;
     servAddr.sin_port = htons(port);
     std::cout << "Client trying to connect to server at IP: " << serverIp << " on port: " << port << std::endl;

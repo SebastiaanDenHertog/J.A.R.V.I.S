@@ -138,9 +138,7 @@ if(BUILD_SERVER)
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
         include_directories(${OpenCV_INCLUDE_DIRS})
     endif()
-endif()
 
-if(BUILD_SERVER)
     find_package(Whisper)
 
     if(NOT Whisper_FOUND)

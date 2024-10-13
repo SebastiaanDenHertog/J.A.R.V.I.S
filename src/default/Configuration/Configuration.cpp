@@ -51,8 +51,11 @@ void Configuration::from_json(const nlohmann::json &j)
         use_client = j["use_client"];
     if (j.contains("main_server_port"))
         main_server_port = j["main_server_port"];
-    if (j.contains("client_server_ip"))
-        client_server_ip = j["client_server_ip"];
+    if (j.contains("main_server_ip") && !j["main_server_ip"].is_null()) {
+        main_server_ip = j["main_server_ip"];
+    } else {
+        main_server_ip = nullptr;
+    }
     if (j.contains("use_airplay"))
         use_airplay = j["use_airplay"];
     if (j.contains("use_bluetooth"))

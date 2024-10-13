@@ -14,7 +14,7 @@ extern std::unique_ptr<InputHandler> inputHandler;
  */
 
 Watchdog::Watchdog(Mode mode)
-    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false), homeAssistantRunning(false) {}
+    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false) {}
 
 /**
  * @brief Destructor for Watchdog.
@@ -66,16 +66,18 @@ void Watchdog::checkServices()
     {
         Configuration config = configManager.getConfiguration();
 
-        if (mode == Mode::SERVER)
-        {
-            // Monitor Web Server
-            logEvent("Checking services...");
+        logEvent("Checking services...");
             logEvent("Web server: " + std::to_string(config.use_web_server));
             if (config.use_web_server && !webServerRunning)
             {
                 logEvent("Web server is not running. Attempting to start.");
                 startService("webServer");
             }
+
+        if (mode == Mode::SERVER)
+        {
+            // Monitor Web Server
+            
 
             // Monitor Home Assistant
             if (config.use_home_assistant && !homeAssistantRunning)
@@ -170,6 +172,7 @@ void Watchdog::startService(const std::string &service)
         logEvent("AirPlay server started.");
     }
 #endif
+#ifdef SERVER_BUILD
     else if (service == "homeAssistant")
     {
         homeAssistantRunning = true;
@@ -196,6 +199,7 @@ void Watchdog::startService(const std::string &service)
             .detach();
         logEvent("Home Assistant API started.");
     }
+    #endif
 }
 
 /**
