@@ -66,16 +66,16 @@
 
     <div class="container">
         <h1>Client Configuration</h1>
-        <form id="config-form" method="post">
+        <form id="client-config-form" method="post">
             <!-- Server IP -->
             <label for="main_server_ip">Server IP Address</label>
             <input type="text" id="main_server_ip" name="main_server_ip" placeholder="Enter the server IP address"
-                required>
+                >
 
             <!-- Server Port -->
             <label for="main_server_port">Server Port</label>
             <input type="number" id="main_server_port" name="main_server_port" placeholder="Enter the server port"
-                required>
+                >
 
             <!-- Enable/Disable Bluetooth -->
             <label for="use_bluetooth">
@@ -95,7 +95,28 @@
     </div>
 
     <script>
-        document.getElementById('config-form').addEventListener('submit', async function (event) {
+        async function fetchClientConfig() {
+            try {
+                const response = await fetch('/api/client/config');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayClientConfig(data);
+                } else {
+                    console.error('Failed to fetch client configuration.');
+                }
+            } catch (error) {
+                console.error('Error fetching client configuration:', error);
+            }
+        }
+
+        function displayClientConfig(config) {
+            document.getElementById('main_server_ip').value = config.main_server_ip || '';
+            document.getElementById('main_server_port').value = config.main_server_port || '';
+            document.getElementById('use_bluetooth').checked = config.use_bluetooth || false;
+            document.getElementById('use_airplay').checked = config.use_airplay || false;
+        }
+
+        document.getElementById('client-config-form').addEventListener('submit', async function (event) {
             event.preventDefault();
 
             const configData = {
@@ -124,6 +145,9 @@
                 alert('Failed to save configuration: ' + error.message);
             }
         });
+
+        // Fetch and display the configuration when the page loads
+        document.addEventListener('DOMContentLoaded', fetchClientConfig);
     </script>
 
 </body>

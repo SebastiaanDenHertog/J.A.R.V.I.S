@@ -2,12 +2,17 @@
 
 extern NetworkManager *serverNetworkManager;
 
+extern NetworkManager *clientNetworkManager;
+
+
 #ifdef SERVER_BUILD
 extern std::unique_ptr<ModelRunner> nerModel;
 extern std::unique_ptr<ModelRunner> classificationModel;
 extern std::unique_ptr<TaskProcessor> taskProcessor;
 extern std::unique_ptr<InputHandler> inputHandler;
 #endif
+
+
 
 /**
  * @brief Constructor for Watchdog.
@@ -132,7 +137,11 @@ void Watchdog::startService(const std::string &service)
                 config.web_server_secure,
                 config.web_server_cert_path,
                 config.web_server_key_path,
+                #ifdef SERVER_BUILD
                 config.web_server_port,
+                #else
+                config.web_client_port,
+                #endif
                 config.threads,
                 config.use_server
             );
@@ -179,7 +188,7 @@ void Watchdog::startService(const std::string &service)
     else if (service == "client_server_connection")
     {
         client_server_connection = true;
-        clientNetworkManager = new NetworkManager(config.server_port, config.server_ip, NetworkManager::Protocol::TCP);
+        clientNetworkManager = new NetworkManager(config.main_server_port, config.main_server_ip, NetworkManager::Protocol::TCP);
         std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
         clientThread.detach();
     }

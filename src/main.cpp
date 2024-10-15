@@ -59,6 +59,8 @@ std::unique_ptr<ModelRunner> nerModel;
 std::unique_ptr<ModelRunner> classificationModel;
 std::unique_ptr<TaskProcessor> taskProcessor;
 std::unique_ptr<InputHandler> inputHandler;
+#else
+std::unique_ptr<NetworkManager> clientNetworkManager;
 #endif
 
 // Debug print macro
@@ -266,14 +268,6 @@ void run_client(const Configuration &config)
         std::cerr << "Client Exception: " << e.what() << std::endl;
     }
 }
-#endif
-
-#ifdef SERVER_BUILD
-NetworkManager *serverNetworkManager = nullptr; // For server-side communication
-#endif
-
-#ifdef CLIENT_BUILD
-NetworkManager *clientNetworkManager = nullptr; // For client-side communication
 #endif
 
 #ifdef SERVER_BUILD

@@ -21,6 +21,7 @@ struct Configuration
     // Common settings
     bool use_web_server = true;
     unsigned short web_server_port = 15881;
+    unsigned short web_client_port = 14009;
     bool web_server_secure = false;
     std::string web_server_cert_path;
     std::string web_server_key_path;

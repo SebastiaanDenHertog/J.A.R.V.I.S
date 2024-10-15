@@ -62,7 +62,7 @@ NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerMode
  * @note This constructor is only available in the default build or client build.
  */
 
-NetworkManager::NetworkManager(int port, char* serverIp, Protocol protocol)
+NetworkManager::NetworkManager(int port, const char* serverIp, Protocol protocol)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
 {
     if (protocol == TCP)

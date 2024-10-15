@@ -72,7 +72,7 @@ public:
 #if defined(BUILD_SERVER)
     NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
-    NetworkManager(int port, char* serverIp, Protocol protocol);
+    NetworkManager(int port, const char *serverIp, Protocol protocol);
 #endif
     ~NetworkManager();
 
