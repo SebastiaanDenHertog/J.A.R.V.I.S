@@ -59,6 +59,15 @@
         button:hover {
             background-color: #218838;
         }
+
+        .loading {
+            font-size: 0.9em;
+            color: #007BFF;
+        }
+
+        .error {
+            color: red;
+        }
     </style>
 </head>
 
@@ -66,16 +75,17 @@
 
     <div class="container">
         <h1>Client Configuration</h1>
+        <div id="client-loading" class="loading"></div>
         <form id="client-config-form" method="post">
             <!-- Server IP -->
             <label for="main_server_ip">Server IP Address</label>
             <input type="text" id="main_server_ip" name="main_server_ip" placeholder="Enter the server IP address"
-                >
+                required>
 
             <!-- Server Port -->
             <label for="main_server_port">Server Port</label>
             <input type="number" id="main_server_port" name="main_server_port" placeholder="Enter the server port"
-                >
+                required>
 
             <!-- Enable/Disable Bluetooth -->
             <label for="use_bluetooth">
@@ -96,16 +106,20 @@
 
     <script>
         async function fetchClientConfig() {
+            document.getElementById('client-loading').innerText = 'Loading configuration...';
             try {
                 const response = await fetch('/api/client/config');
                 if (response.ok) {
                     const data = await response.json();
                     displayClientConfig(data);
+                    document.getElementById('client-loading').innerText = '';
                 } else {
                     console.error('Failed to fetch client configuration.');
+                    document.getElementById('client-loading').innerText = 'Failed to load configuration.';
                 }
             } catch (error) {
                 console.error('Error fetching client configuration:', error);
+                document.getElementById('client-loading').innerText = 'Error loading configuration.';
             }
         }
 

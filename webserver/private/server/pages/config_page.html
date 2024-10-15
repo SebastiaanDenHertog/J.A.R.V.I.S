@@ -63,40 +63,49 @@
             cursor: not-allowed;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .loading {
+            font-size: 0.9em;
+            color: #007BFF;
         }
 
-        th,
-        td {
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-
-        th {
-            background: #007BFF;
-            color: #fff;
+        .error {
+            color: red;
         }
     </style>
     <script>
         async function fetchServerConfig() {
-            const response = await fetch('/api/server/config');
-            if (response.ok) {
-                const data = await response.json();
-                displayServerConfig(data);
-            } else {
-                console.error('Failed to fetch server configuration.');
+            document.getElementById('server-loading').innerText = 'Loading server configuration...';
+            try {
+                const response = await fetch('/api/server/config');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayServerConfig(data);
+                    document.getElementById('server-loading').innerText = '';
+                } else {
+                    console.error('Failed to fetch server configuration.');
+                    document.getElementById('server-loading').innerText = 'Failed to load server configuration.';
+                }
+            } catch (error) {
+                console.error('Error fetching server configuration:', error);
+                document.getElementById('server-loading').innerText = 'Error loading server configuration.';
             }
         }
 
         async function fetchClientConfigs() {
-            const response = await fetch('/api/clients');
-            if (response.ok) {
-                const data = await response.json();
-                displayClientConfigs(data);
-            } else {
-                console.error('Failed to fetch client configurations.');
+            document.getElementById('client-loading').innerText = 'Loading client configurations...';
+            try {
+                const response = await fetch('/api/clients');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayClientConfigs(data);
+                    document.getElementById('client-loading').innerText = '';
+                } else {
+                    console.error('Failed to fetch client configurations.');
+                    document.getElementById('client-loading').innerText = 'Failed to load client configurations.';
+                }
+            } catch (error) {
+                console.error('Error fetching client configurations:', error);
+                document.getElementById('client-loading').innerText = 'Error loading client configurations.';
             }
         }
 
@@ -127,17 +136,21 @@
                 updatedConfig[key] = input.value;
             });
 
-            const response = await fetch('/api/server/config/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedConfig)
-            });
+            try {
+                const response = await fetch('/api/server/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedConfig)
+                });
 
-            if (response.ok) {
-                alert('Server configuration updated successfully.');
-                fetchServerConfig();
-            } else {
-                alert('Failed to update server configuration.');
+                if (response.ok) {
+                    alert('Server configuration updated successfully.');
+                    fetchServerConfig();
+                } else {
+                    alert('Failed to update server configuration.');
+                }
+            } catch (error) {
+                alert('Failed to update server configuration: ' + error.message);
             }
         }
 
@@ -179,17 +192,21 @@
                 updatedConfig[key] = input.value;
             });
 
-            const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedConfig)
-            });
+            try {
+                const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedConfig)
+                });
 
-            if (response.ok) {
-                alert('Client configuration updated successfully.');
-                fetchClientConfigs();
-            } else {
-                alert('Failed to update client configuration.');
+                if (response.ok) {
+                    alert('Client configuration updated successfully.');
+                    fetchClientConfigs();
+                } else {
+                    alert('Failed to update client configuration.');
+                }
+            } catch (error) {
+                alert('Failed to update client configuration: ' + error.message);
             }
         }
 
@@ -211,17 +228,21 @@
                 use_client_server_connection: false
             };
 
-            const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(defaultConfig)
-            });
+            try {
+                const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(defaultConfig)
+                });
 
-            if (response.ok) {
-                alert('New client added successfully.');
-                fetchClientConfigs();
-            } else {
-                alert('Failed to add new client.');
+                if (response.ok) {
+                    alert('New client added successfully.');
+                    fetchClientConfigs();
+                } else {
+                    alert('Failed to add new client.');
+                }
+            } catch (error) {
+                alert('Failed to add new client: ' + error.message);
             }
         }
 
@@ -239,11 +260,13 @@
 
     <section>
         <h2>Server Configuration</h2>
+        <div id="server-loading" class="loading"></div>
         <form id="server-config-form"></form>
     </section>
 
     <section>
         <h2>Client Configurations</h2>
+        <div id="client-loading" class="loading"></div>
         <div id="client-configs-container"></div>
         <button onclick="addNewClient()">Add New Client</button>
     </section>
