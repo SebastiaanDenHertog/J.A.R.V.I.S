@@ -9,6 +9,9 @@
 #define WEBSERVER_H
 
 #include <httpserver.h>
+#include <httpserver/http_utils.h>
+#include <httpserver/create_webserver.h>
+#include <httpserver/details/http_endpoint.h>
 #include <string>
 #include <memory>
 #include "Configuration.h"

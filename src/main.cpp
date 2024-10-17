@@ -59,6 +59,7 @@ std::unique_ptr<ModelRunner> nerModel;
 std::unique_ptr<ModelRunner> classificationModel;
 std::unique_ptr<TaskProcessor> taskProcessor;
 std::unique_ptr<InputHandler> inputHandler;
+NetworkManager *serverNetworkManager = nullptr;
 #else
 std::unique_ptr<NetworkManager> clientNetworkManager;
 #endif

@@ -267,15 +267,13 @@ class GetClientConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        auto client_id_arg = req.get_arg("client_id");
+        auto client_id = std::string(req.get_arg("client_id"));
 
-        if (client_id_arg.values.empty())
+        // Check if there are no values for client_id
+        if (client_id.empty())
         {
             return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
         }
-
-        // Explicitly convert std::string_view to std::string
-        std::string client_id(client_id_arg.values[0].data(), client_id_arg.values[0].size());
 
         json client_config = ConfigurationManager::getInstance().getConfiguration(client_id).to_json();
 
@@ -291,24 +289,24 @@ public:
     {
         try
         {
-            auto client_id_arg = req.get_arg("client_id");
+            auto client_id = std::string(req.get_arg("client_id"));
 
-            if (client_id_arg.values.empty())
+            // Check if there are no values for client_id
+            if (client_id.empty())
             {
                 return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
             }
 
-            // Explicitly convert std::string_view to std::string
-            std::string client_id(client_id_arg.values[0].data(), client_id_arg.values[0].size());
-
+            // Parse the JSON body
             json j = json::parse(req.get_content());
 
+            // Get and update the configuration for the specified client ID
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration(client_id);
-
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(client_id, current_config);
             ConfigurationManager::getInstance().saveConfigurations("config.json");
 
+            // Return a success response
             json response_json = {
                 {"status", "success"},
                 {"message", "Server configuration updated and saved"}};
@@ -334,16 +332,12 @@ public:
     {
         try
         {
-            auto client_id_arg = req.get_arg("client_id");
+            auto client_id = std::string(req.get_arg("client_id"));
 
-            if (client_id_arg.values.empty())
+            if (client_id.empty())
             {
                 return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
             }
-
-            // Explicitly convert std::string_view to std::string
-            std::string client_id(client_id_arg.values[0].data(), client_id_arg.values[0].size());
-
             json j = json::parse(req.get_content());
 
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration(client_id);
