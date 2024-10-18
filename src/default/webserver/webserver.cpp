@@ -267,10 +267,10 @@ class GetClientConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        auto client_id = std::string(req.get_arg("client_id"));
+        auto client_id = req.get_arg("client_id");
 
         // Check if there are no values for client_id
-        if (client_id.empty())
+        if (client_id.get_flat_value().empty())
         {
             return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
         }
@@ -289,10 +289,10 @@ public:
     {
         try
         {
-            auto client_id = std::string(req.get_arg("client_id"));
+            auto client_id = req.get_arg("client_id");
 
             // Check if there are no values for client_id
-            if (client_id.empty())
+            if (client_id.get_flat_value().empty())
             {
                 return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
             }
@@ -332,9 +332,9 @@ public:
     {
         try
         {
-            auto client_id = std::string(req.get_arg("client_id"));
+            auto client_id = req.get_arg("client_id");
 
-            if (client_id.empty())
+            if (client_id.get_flat_value().empty())
             {
                 return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
             }

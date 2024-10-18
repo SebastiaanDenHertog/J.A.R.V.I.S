@@ -40,15 +40,11 @@ the cmake option `-DNO_X11_DEPS=ON`.
 
 1. `sudo apt-get install libopenblas-dev && sudo apt-get install libblas-dev`
 
-
-
-
 # How to run
 
 git submodule init
 git submodule update
 git submodule foreach git pull
-
 
 Linux: chmod +x build_project.sh
 ./build_project.sh
