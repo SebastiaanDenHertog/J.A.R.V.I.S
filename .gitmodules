@@ -26,3 +26,7 @@
 	path = lib/whisper.cpp
 	url = git@github.com:ggerganov/whisper.cpp.git
 	branch = master
+[submodule "lib/UxPlay"]
+	path = lib/UxPlay
+	url = git@github.com:SebastiaanDenHertog/UxPlay.git
+	branch = master
