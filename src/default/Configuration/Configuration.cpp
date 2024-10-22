@@ -28,6 +28,44 @@ nlohmann::json Configuration::to_json() const
     j["home_assistant_ip"] = home_assistant_ip;
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
+    // airplay
+    j["airplay_server_name"] = airplay_server_name;
+    j["airplay_audio_sync"] = airplay_audio_sync;
+    j["airplay_video_sync"] = airplay_video_sync;
+    j["airplay_audio_delay_alac"] = airplay_audio_delay_alac;
+    j["airplay_audio_delay_aac"] = airplay_audio_delay_aac;
+    j["airplay_relaunch_video"] = airplay_relaunch_video;
+    j["airplay_reset_loop"] = airplay_reset_loop;
+    j["airplay_open_connections"] = airplay_open_connections;
+    j["airplay_videosink"] = airplay_videosink;
+    j["airplay_use_video"] = airplay_use_video;
+    j["airplay_compression_type"] = airplay_compression_type;
+    j["airplay_audiosink"] = airplay_audiosink;
+    j["airplay_audiodelay"] = airplay_audiodelay;
+    j["airplay_use_audio"] = airplay_use_audio;
+    j["airplay_new_window_closing_behavior"] = airplay_new_window_closing_behavior;
+    j["airplay_close_window"] = airplay_close_window;
+    j["airplay_video_parser"] = airplay_video_parser;
+    j["airplay_video_decoder"] = airplay_video_decoder;
+    j["airplay_video_converter"] = airplay_video_converter;
+    j["airplay_show_client_FPS_data"] = airplay_show_client_FPS_data;
+    j["airplay_max_ntp_timeouts"] = airplay_max_ntp_timeouts;
+    j["airplay_dump_video"] = airplay_dump_video;
+    j["airplay_dump_audio"] = airplay_dump_audio;
+    j["airplay_audio_type"] = airplay_audio_type;
+    j["airplay_previous_audio_type"] = airplay_previous_audio_type;
+    j["airplay_fullscreen"] = airplay_fullscreen;
+    j["airplay_do_append_hostname"] = airplay_do_append_hostname;
+    j["airplay_use_random_hw_addr"] = airplay_use_random_hw_addr;
+    j["airplay_restrict_clients"] = airplay_restrict_clients;
+    j["airplay_setup_legacy_pairing"] = airplay_setup_legacy_pairing;
+    j["airplay_require_password"] = airplay_require_password;
+    j["airplay_pin"] = airplay_pin;
+    j["airplay_db_low"] = airplay_db_low;
+    j["airplay_db_high"] = airplay_db_high;
+    j["airplay_taper_volume"] = airplay_taper_volume;
+    j["airplay_h265_support"] = airplay_h265_support;
+    j["airplay_n_renderers"] = airplay_n_renderers;
     return j;
 }
 
@@ -77,6 +115,81 @@ void Configuration::from_json(const nlohmann::json &j)
         home_assistant_port = j["home_assistant_port"];
     if (j.contains("home_assistant_token"))
         home_assistant_token = j["home_assistant_token"];
+    // airplay
+    if (j.contains("airplay_server_name"))
+        airplay_server_name = j["airplay_server_name"];
+    if (j.contains("airplay_audio_sync"))
+        airplay_audio_sync = j["airplay_audio_sync"];
+    if (j.contains("airplay_video_sync"))
+        airplay_video_sync = j["airplay_video_sync"];
+    if (j.contains("airplay_audio_delay_alac"))
+        airplay_audio_delay_alac = j["airplay_audio_delay_alac"];
+    if (j.contains("airplay_audio_delay_aac"))
+        airplay_audio_delay_aac = j["airplay_audio_delay_aac"];
+    if (j.contains("airplay_relaunch_video"))
+        airplay_relaunch_video = j["airplay_relaunch_video"];
+    if (j.contains("airplay_reset_loop"))
+        airplay_reset_loop = j["airplay_reset_loop"];
+    if (j.contains("airplay_open_connections"))
+        airplay_open_connections = j["airplay_open_connections"];
+    if (j.contains("airplay_videosink"))
+        airplay_videosink = j["airplay_videosink"];
+    if (j.contains("airplay_use_video"))
+        airplay_use_video = j["airplay_use_video"];
+    if (j.contains("airplay_compression_type"))
+        airplay_compression_type = j["airplay_compression_type"];
+    if (j.contains("airplay_audiosink"))
+        airplay_audiosink = j["airplay_audiosink"];
+    if (j.contains("airplay_audiodelay"))
+        airplay_audiodelay = j["airplay_audiodelay"];
+    if (j.contains("airplay_use_audio"))
+        airplay_use_audio = j["airplay_use_audio"];
+    if (j.contains("airplay_new_window_closing_behavior"))
+        airplay_new_window_closing_behavior = j["airplay_new_window_closing_behavior"];
+    if (j.contains("airplay_close_window"))
+        airplay_close_window = j["airplay_close_window"];
+    if (j.contains("airplay_video_parser"))
+        airplay_video_parser = j["airplay_video_parser"];
+    if (j.contains("airplay_video_decoder"))
+        airplay_video_decoder = j["airplay_video_decoder"];
+    if (j.contains("airplay_video_converter"))
+        airplay_video_converter = j["airplay_video_converter"];
+    if (j.contains("airplay_show_client_FPS_data"))
+        airplay_show_client_FPS_data = j["airplay_show_client_FPS_data"];
+    if (j.contains("airplay_max_ntp_timeouts"))
+        airplay_max_ntp_timeouts = j["airplay_max_ntp_timeouts"];
+    if (j.contains("airplay_dump_video"))
+        airplay_dump_video = j["airplay_dump_video"];
+    if (j.contains("airplay_dump_audio"))
+        airplay_dump_audio = j["airplay_dump_audio"];
+    if (j.contains("airplay_audio_type"))
+        airplay_audio_type = j["airplay_audio_type"];
+    if (j.contains("airplay_previous_audio_type"))
+        airplay_previous_audio_type = j["airplay_previous_audio_type"];
+    if (j.contains("airplay_fullscreen"))
+        airplay_fullscreen = j["airplay_fullscreen"];
+    if (j.contains("airplay_do_append_hostname"))
+        airplay_do_append_hostname = j["airplay_do_append_hostname"];
+    if (j.contains("airplay_use_random_hw_addr"))
+        airplay_use_random_hw_addr = j["airplay_use_random_hw_addr"];
+    if (j.contains("airplay_restrict_clients"))
+        airplay_restrict_clients = j["airplay_restrict_clients"];
+    if (j.contains("airplay_setup_legacy_pairing"))
+        airplay_setup_legacy_pairing = j["airplay_setup_legacy_pairing"];
+    if (j.contains("airplay_require_password"))
+        airplay_require_password = j["airplay_require_password"];
+    if (j.contains("airplay_pin"))
+        airplay_pin = j["airplay_pin"];
+    if (j.contains("airplay_db_low"))
+        airplay_db_low = j["airplay_db_low"];
+    if (j.contains("airplay_db_high"))
+        airplay_db_high = j["airplay_db_high"];
+    if (j.contains("airplay_taper_volume"))
+        airplay_taper_volume = j["airplay_taper_volume"];
+    if (j.contains("airplay_h265_support"))
+        airplay_h265_support = j["airplay_h265_support"];
+    if (j.contains("airplay_n_renderers"))
+        airplay_n_renderers = j["airplay_n_renderers"];
 }
 /**
  *

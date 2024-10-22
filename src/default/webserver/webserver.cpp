@@ -47,6 +47,45 @@ public:
         client_config["home_assistant_token"] = config.home_assistant_token;
         client_config["web_client_port"] = config.web_client_port;
 
+        // Add AirPlay-related settings
+        client_config["airplay_server_name"] = config.airplay_server_name;
+        client_config["airplay_audio_sync"] = config.airplay_audio_sync;
+        client_config["airplay_video_sync"] = config.airplay_video_sync;
+        client_config["airplay_audio_delay_alac"] = config.airplay_audio_delay_alac;
+        client_config["airplay_audio_delay_aac"] = config.airplay_audio_delay_aac;
+        client_config["airplay_relaunch_video"] = config.airplay_relaunch_video;
+        client_config["airplay_reset_loop"] = config.airplay_reset_loop;
+        client_config["airplay_open_connections"] = config.airplay_open_connections;
+        client_config["airplay_videosink"] = config.airplay_videosink;
+        client_config["airplay_use_video"] = config.airplay_use_video;
+        client_config["airplay_compression_type"] = config.airplay_compression_type;
+        client_config["airplay_audiosink"] = config.airplay_audiosink;
+        client_config["airplay_audiodelay"] = config.airplay_audiodelay;
+        client_config["airplay_use_audio"] = config.airplay_use_audio;
+        client_config["airplay_new_window_closing_behavior"] = config.airplay_new_window_closing_behavior;
+        client_config["airplay_close_window"] = config.airplay_close_window;
+        client_config["airplay_video_parser"] = config.airplay_video_parser;
+        client_config["airplay_video_decoder"] = config.airplay_video_decoder;
+        client_config["airplay_video_converter"] = config.airplay_video_converter;
+        client_config["airplay_show_client_FPS_data"] = config.airplay_show_client_FPS_data;
+        client_config["airplay_max_ntp_timeouts"] = config.airplay_max_ntp_timeouts;
+        client_config["airplay_dump_video"] = config.airplay_dump_video;
+        client_config["airplay_dump_audio"] = config.airplay_dump_audio;
+        client_config["airplay_audio_type"] = config.airplay_audio_type;
+        client_config["airplay_previous_audio_type"] = config.airplay_previous_audio_type;
+        client_config["airplay_fullscreen"] = config.airplay_fullscreen;
+        client_config["airplay_do_append_hostname"] = config.airplay_do_append_hostname;
+        client_config["airplay_use_random_hw_addr"] = config.airplay_use_random_hw_addr;
+        client_config["airplay_restrict_clients"] = config.airplay_restrict_clients;
+        client_config["airplay_setup_legacy_pairing"] = config.airplay_setup_legacy_pairing;
+        client_config["airplay_require_password"] = config.airplay_require_password;
+        client_config["airplay_pin"] = config.airplay_pin;
+        client_config["airplay_db_low"] = config.airplay_db_low;
+        client_config["airplay_db_high"] = config.airplay_db_high;
+        client_config["airplay_taper_volume"] = config.airplay_taper_volume;
+        client_config["airplay_h265_support"] = config.airplay_h265_support;
+        client_config["airplay_n_renderers"] = config.airplay_n_renderers;
+
         json response_json;
         response_json["server_config"] = server_config;
         response_json["client_config"] = client_config;
@@ -101,7 +140,82 @@ public:
                 {"home_assistant_token", [&](const json &val)
                  { current_config.home_assistant_token = val.get<std::string>(); }},
                 {"web_client_port", [&](const json &val)
-                 { current_config.web_client_port = val.get<uint16_t>(); }}};
+                 { current_config.web_client_port = val.get<uint16_t>(); }},
+                // Add mappings for AirPlay-related settings
+                {"airplay_server_name", [&](const json &val)
+                 { current_config.airplay_server_name = val.get<std::string>(); }},
+                {"airplay_audio_sync", [&](const json &val)
+                 { current_config.airplay_audio_sync = val.get<bool>(); }},
+                {"airplay_video_sync", [&](const json &val)
+                 { current_config.airplay_video_sync = val.get<bool>(); }},
+                {"airplay_audio_delay_alac", [&](const json &val)
+                 { current_config.airplay_audio_delay_alac = val.get<int64_t>(); }},
+                {"airplay_audio_delay_aac", [&](const json &val)
+                 { current_config.airplay_audio_delay_aac = val.get<int64_t>(); }},
+                {"airplay_relaunch_video", [&](const json &val)
+                 { current_config.airplay_relaunch_video = val.get<bool>(); }},
+                {"airplay_reset_loop", [&](const json &val)
+                 { current_config.airplay_reset_loop = val.get<bool>(); }},
+                {"airplay_open_connections", [&](const json &val)
+                 { current_config.airplay_open_connections = val.get<unsigned int>(); }},
+                {"airplay_videosink", [&](const json &val)
+                 { current_config.airplay_videosink = val.get<std::string>(); }},
+                {"airplay_use_video", [&](const json &val)
+                 { current_config.airplay_use_video = val.get<bool>(); }},
+                {"airplay_compression_type", [&](const json &val)
+                 { current_config.airplay_compression_type = val.get<unsigned char>(); }},
+                {"airplay_audiosink", [&](const json &val)
+                 { current_config.airplay_audiosink = val.get<std::string>(); }},
+                {"airplay_audiodelay", [&](const json &val)
+                 { current_config.airplay_audiodelay = val.get<int>(); }},
+                {"airplay_use_audio", [&](const json &val)
+                 { current_config.airplay_use_audio = val.get<bool>(); }},
+                {"airplay_new_window_closing_behavior", [&](const json &val)
+                 { current_config.airplay_new_window_closing_behavior = val.get<bool>(); }},
+                {"airplay_close_window", [&](const json &val)
+                 { current_config.airplay_close_window = val.get<bool>(); }},
+                {"airplay_video_parser", [&](const json &val)
+                 { current_config.airplay_video_parser = val.get<std::string>(); }},
+                {"airplay_video_decoder", [&](const json &val)
+                 { current_config.airplay_video_decoder = val.get<std::string>(); }},
+                {"airplay_video_converter", [&](const json &val)
+                 { current_config.airplay_video_converter = val.get<std::string>(); }},
+                {"airplay_show_client_FPS_data", [&](const json &val)
+                 { current_config.airplay_show_client_FPS_data = val.get<bool>(); }},
+                {"airplay_max_ntp_timeouts", [&](const json &val)
+                 { current_config.airplay_max_ntp_timeouts = val.get<unsigned int>(); }},
+                {"airplay_dump_video", [&](const json &val)
+                 { current_config.airplay_dump_video = val.get<bool>(); }},
+                {"airplay_dump_audio", [&](const json &val)
+                 { current_config.airplay_dump_audio = val.get<bool>(); }},
+                {"airplay_audio_type", [&](const json &val)
+                 { current_config.airplay_audio_type = val.get<unsigned char>(); }},
+                {"airplay_previous_audio_type", [&](const json &val)
+                 { current_config.airplay_previous_audio_type = val.get<unsigned char>(); }},
+                {"airplay_fullscreen", [&](const json &val)
+                 { current_config.airplay_fullscreen = val.get<bool>(); }},
+                {"airplay_do_append_hostname", [&](const json &val)
+                 { current_config.airplay_do_append_hostname = val.get<bool>(); }},
+                {"airplay_use_random_hw_addr", [&](const json &val)
+                 { current_config.airplay_use_random_hw_addr = val.get<bool>(); }},
+                {"airplay_restrict_clients", [&](const json &val)
+                 { current_config.airplay_restrict_clients = val.get<bool>(); }},
+                {"airplay_setup_legacy_pairing", [&](const json &val)
+                 { current_config.airplay_setup_legacy_pairing = val.get<bool>(); }},
+                {"airplay_require_password", [&](const json &val)
+                 { current_config.airplay_require_password = val.get<bool>(); }},
+                {"airplay_pin", [&](const json &val)
+                 { current_config.airplay_pin = val.get<unsigned short>(); }},
+                {"airplay_db_low", [&](const json &val)
+                 { current_config.airplay_db_low = val.get<double>(); }},
+                {"airplay_db_high", [&](const json &val)
+                 { current_config.airplay_db_high = val.get<double>(); }},
+                {"airplay_taper_volume", [&](const json &val)
+                 { current_config.airplay_taper_volume = val.get<bool>(); }},
+                {"airplay_h265_support", [&](const json &val)
+                 { current_config.airplay_h265_support = val.get<bool>(); }},
+                {"airplay_n_renderers", [&](const json &val)
+                 { current_config.airplay_n_renderers = val.get<int>(); }}};
 
             // Apply the mappings
             for (const auto &[key, updateFunc] : server_mappings)
