@@ -47,6 +47,45 @@ struct Configuration
     std::string home_assistant_token;
     int home_assistant_port = 0;
 
+    // AirPlay settings
+    std::string airplay_server_name;
+    bool airplay_audio_sync;
+    bool airplay_video_sync;
+    int64_t airplay_audio_delay_alac;
+    int64_t airplay_audio_delay_aac;
+    bool airplay_relaunch_video;
+    bool airplay_reset_loop;
+    unsigned int airplay_open_connections;
+    std::string airplay_videosink;
+    bool airplay_use_video;
+    unsigned char airplay_compression_type;
+    std::string airplay_audiosink;
+    int airplay_audiodelay;
+    bool airplay_use_audio;
+    bool airplay_new_window_closing_behavior;
+    bool airplay_close_window;
+    std::string airplay_video_parser;
+    std::string airplay_video_decoder;
+    std::string airplay_video_converter;
+    bool airplay_show_client_FPS_data;
+    unsigned int airplay_max_ntp_timeouts;
+    bool airplay_dump_video;
+    bool airplay_dump_audio;
+    unsigned char airplay_audio_type;
+    unsigned char airplay_previous_audio_type;
+    bool airplay_fullscreen;
+    bool airplay_do_append_hostname;
+    bool airplay_use_random_hw_addr;
+    bool airplay_restrict_clients;
+    bool airplay_setup_legacy_pairing;
+    bool airplay_require_password;
+    unsigned short airplay_pin;
+    double airplay_db_low;
+    double airplay_db_high;
+    bool airplay_taper_volume;
+    bool airplay_h265_support;
+    int airplay_n_renderers;
+
 #ifdef CLIENT_BUILD
     bool use_client = true;
 #else
