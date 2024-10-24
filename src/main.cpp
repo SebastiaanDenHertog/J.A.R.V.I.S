@@ -342,19 +342,64 @@ void start_terminal_input()
 }
 #endif
 
+bool fileExists(const std::string &filename)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Configuration file not found: " << filename << ". Using default settings." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void createDefaultConfig(const std::string &filename)
+{
+    // Create a default configuration
+    Configuration default_config;
+
+    // Set up default values
+    default_config.use_server = false; // Assuming default is client mode
+    default_config.main_server_port = 15880;
+    default_config.use_bluetooth = false;
+    default_config.use_airplay = false;
+
+    // Get the ConfigurationManager instance
+    ConfigurationManager &configManager = ConfigurationManager::getInstance();
+
+    // Temporarily release the lock before saving configurations
+    configManager.updateConfiguration(default_config);
+
+    // Save the configuration without locking again
+    configManager.saveConfiguration(filename);
+
+    std::cout << "Default configuration created at " << filename << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
     // Register signal handlers for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
-
-    // Initialize Configuration Manager with default or loaded config
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
-    configManager.loadConfiguration("config.json"); // Load from file if exists
+    // Initialize Configuration Manager with default or loaded config
+    std::string configFilePath = configManager.getConfiguration().configFilePath;
+
+    // Check if the config file exists
+    if (!fileExists(configFilePath))
+    {
+        // Create a default configuration file if it doesn't exist
+        createDefaultConfig(configFilePath);
+    }
+
+    // Load configuration from file
+    configManager.loadConfiguration(configFilePath);
     Configuration initial_config = configManager.getConfiguration();
 
-    // Determine mode and initialize Watchdog
-    Mode currentMode = initial_config.use_server ? Mode::SERVER : Mode::CLIENT;
+    // Determine mode (Server or Client) based on the loaded configuration
+    Mode currentMode = (initial_config.get_mode_string() == "SERVER") ? Mode::SERVER : Mode::CLIENT;
+
+    // Initialize Watchdog based on the mode
     Watchdog watchdog(currentMode);
 
 // Start the appropriate NetworkManager and models based on the mode

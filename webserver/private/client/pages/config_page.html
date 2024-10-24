@@ -68,24 +68,39 @@
         .error {
             color: red;
         }
+
+        /* Additional styles for AirPlay options */
+        .airplay-options {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .airplay-options label {
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
 <body>
 
     <div class="container">
+
         <h1>Client Configuration</h1>
+        <!-- Add this inside the container div, near the top -->
+        <div id="config-saved-message"
+            style="display:none; width: 100%; background-color: green; color: white; text-align: center; padding: 10px; margin-bottom: 20px;">
+            Config Saved
+        </div>
+
         <div id="client-loading" class="loading"></div>
         <form id="client-config-form" method="post">
             <!-- Server IP -->
             <label for="main_server_ip">Server IP Address</label>
-            <input type="text" id="main_server_ip" name="main_server_ip" placeholder="Enter the server IP address"
-                required>
+            <input type="text" id="main_server_ip" name="main_server_ip" placeholder="Enter the server IP address">
 
             <!-- Server Port -->
             <label for="main_server_port">Server Port</label>
-            <input type="number" id="main_server_port" name="main_server_port" placeholder="Enter the server port"
-                required>
+            <input type="number" id="main_server_port" name="main_server_port" placeholder="Enter the server port">
 
             <!-- Enable/Disable Bluetooth -->
             <label for="use_bluetooth">
@@ -98,6 +113,134 @@
                 <input type="checkbox" id="use_airplay" name="use_airplay">
                 Enable AirPlay
             </label>
+
+            <!-- AirPlay Settings (hidden initially) -->
+            <div id="airplay-settings" class="airplay-options">
+                <h3>AirPlay Settings</h3>
+
+                <label for="airplay_server_name">AirPlay Server Name</label>
+                <input type="text" id="airplay_server_name" name="airplay_server_name"
+                    placeholder="Enter AirPlay server name">
+
+                <label for="airplay_audio_sync">Enable Audio Sync</label>
+                <input type="checkbox" id="airplay_audio_sync" name="airplay_audio_sync">
+
+                <label for="airplay_video_sync">Enable Video Sync</label>
+                <input type="checkbox" id="airplay_video_sync" name="airplay_video_sync">
+
+                <label for="airplay_audio_delay_alac">Audio Delay ALAC</label>
+                <input type="number" id="airplay_audio_delay_alac" name="airplay_audio_delay_alac"
+                    placeholder="Enter delay in ms">
+
+                <label for="airplay_audio_delay_aac">Audio Delay AAC</label>
+                <input type="number" id="airplay_audio_delay_aac" name="airplay_audio_delay_aac"
+                    placeholder="Enter delay in ms">
+
+                <label for="airplay_relaunch_video">Relaunch Video</label>
+                <input type="checkbox" id="airplay_relaunch_video" name="airplay_relaunch_video">
+
+                <label for="airplay_reset_loop">Reset Loop</label>
+                <input type="checkbox" id="airplay_reset_loop" name="airplay_reset_loop">
+
+                <label for="airplay_open_connections">Open Connections</label>
+                <input type="number" id="airplay_open_connections" name="airplay_open_connections"
+                    placeholder="Enter number of connections">
+
+                <label for="airplay_videosink">Video Sink</label>
+                <input type="text" id="airplay_videosink" name="airplay_videosink" placeholder="Enter video sink">
+
+                <label for="airplay_use_video">Use Video</label>
+                <input type="checkbox" id="airplay_use_video" name="airplay_use_video">
+
+                <label for="airplay_compression_type">Compression Type</label>
+                <input type="number" id="airplay_compression_type" name="airplay_compression_type"
+                    placeholder="Enter compression type">
+
+                <label for="airplay_audiosink">Audio Sink</label>
+                <input type="text" id="airplay_audiosink" name="airplay_audiosink" placeholder="Enter audio sink">
+
+                <label for="airplay_audiodelay">Audio Delay</label>
+                <input type="number" id="airplay_audiodelay" name="airplay_audiodelay" placeholder="Enter audio delay">
+
+                <label for="airplay_use_audio">Use Audio</label>
+                <input type="checkbox" id="airplay_use_audio" name="airplay_use_audio">
+
+                <label for="airplay_new_window_closing_behavior">New Window Closing Behavior</label>
+                <input type="checkbox" id="airplay_new_window_closing_behavior"
+                    name="airplay_new_window_closing_behavior">
+
+                <label for="airplay_close_window">Close Window</label>
+                <input type="checkbox" id="airplay_close_window" name="airplay_close_window">
+
+                <label for="airplay_video_parser">Video Parser</label>
+                <input type="text" id="airplay_video_parser" name="airplay_video_parser"
+                    placeholder="Enter video parser">
+
+                <label for="airplay_video_decoder">Video Decoder</label>
+                <input type="text" id="airplay_video_decoder" name="airplay_video_decoder"
+                    placeholder="Enter video decoder">
+
+                <label for="airplay_video_converter">Video Converter</label>
+                <input type="text" id="airplay_video_converter" name="airplay_video_converter"
+                    placeholder="Enter video converter">
+
+                <label for="airplay_show_client_FPS_data">Show Client FPS Data</label>
+                <input type="checkbox" id="airplay_show_client_FPS_data" name="airplay_show_client_FPS_data">
+
+                <label for="airplay_max_ntp_timeouts">Max NTP Timeouts</label>
+                <input type="number" id="airplay_max_ntp_timeouts" name="airplay_max_ntp_timeouts"
+                    placeholder="Enter max NTP timeouts">
+
+                <label for="airplay_dump_video">Dump Video</label>
+                <input type="checkbox" id="airplay_dump_video" name="airplay_dump_video">
+
+                <label for="airplay_dump_audio">Dump Audio</label>
+                <input type="checkbox" id="airplay_dump_audio" name="airplay_dump_audio">
+
+                <label for="airplay_audio_type">Audio Type</label>
+                <input type="number" id="airplay_audio_type" name="airplay_audio_type" placeholder="Enter audio type">
+
+                <label for="airplay_previous_audio_type">Previous Audio Type</label>
+                <input type="number" id="airplay_previous_audio_type" name="airplay_previous_audio_type"
+                    placeholder="Enter previous audio type">
+
+                <label for="airplay_fullscreen">Fullscreen</label>
+                <input type="checkbox" id="airplay_fullscreen" name="airplay_fullscreen">
+
+                <label for="airplay_do_append_hostname">Append Hostname</label>
+                <input type="checkbox" id="airplay_do_append_hostname" name="airplay_do_append_hostname">
+
+                <label for="airplay_use_random_hw_addr">Use Random HW Addr</label>
+                <input type="checkbox" id="airplay_use_random_hw_addr" name="airplay_use_random_hw_addr">
+
+                <label for="airplay_restrict_clients">Restrict Clients</label>
+                <input type="checkbox" id="airplay_restrict_clients" name="airplay_restrict_clients">
+
+                <label for="airplay_setup_legacy_pairing">Setup Legacy Pairing</label>
+                <input type="checkbox" id="airplay_setup_legacy_pairing" name="airplay_setup_legacy_pairing">
+
+                <label for="airplay_require_password">Require Password</label>
+                <input type="checkbox" id="airplay_require_password" name="airplay_require_password">
+
+                <label for="airplay_pin">AirPlay PIN</label>
+                <input type="number" id="airplay_pin" name="airplay_pin" placeholder="Enter AirPlay PIN">
+
+                <label for="airplay_db_low">DB Low</label>
+                <input type="number" id="airplay_db_low" name="airplay_db_low" placeholder="Enter DB low value">
+
+                <label for="airplay_db_high">DB High</label>
+                <input type="number" id="airplay_db_high" name="airplay_db_high" placeholder="Enter DB high value">
+
+                <label for="airplay_taper_volume">Taper Volume</label>
+                <input type="checkbox" id="airplay_taper_volume" name="airplay_taper_volume">
+
+                <label for="airplay_h265_support">H.265 Support</label>
+                <input type="checkbox" id="airplay_h265_support" name="airplay_h265_support">
+
+                <label for="airplay_n_renderers">Number of Renderers</label>
+                <input type="number" id="airplay_n_renderers" name="airplay_n_renderers"
+                    placeholder="Enter number of renderers">
+            </div>
 
             <!-- Submit Button -->
             <button type="submit">Save Configuration</button>
@@ -128,16 +271,113 @@
             document.getElementById('main_server_port').value = config.main_server_port || '';
             document.getElementById('use_bluetooth').checked = config.use_bluetooth || false;
             document.getElementById('use_airplay').checked = config.use_airplay || false;
+
+            if (config.use_airplay) {
+                document.getElementById('airplay-settings').style.display = 'block';
+                document.getElementById('airplay_server_name').value = config.airplay_server_name || '';
+                document.getElementById('airplay_audio_sync').checked = config.airplay_audio_sync || false;
+                document.getElementById('airplay_video_sync').checked = config.airplay_video_sync || false;
+                document.getElementById('airplay_audio_delay_alac').value = config.airplay_audio_delay_alac || '';
+                document.getElementById('airplay_audio_delay_aac').value = config.airplay_audio_delay_aac || '';
+                document.getElementById('airplay_relaunch_video').checked = config.airplay_relaunch_video || false;
+                document.getElementById('airplay_reset_loop').checked = config.airplay_reset_loop || false;
+                document.getElementById('airplay_open_connections').value = config.airplay_open_connections || '';
+                document.getElementById('airplay_videosink').value = config.airplay_videosink || '';
+                document.getElementById('airplay_use_video').checked = config.airplay_use_video || false;
+                document.getElementById('airplay_compression_type').value = config.airplay_compression_type || '';
+                document.getElementById('airplay_audiosink').value = config.airplay_audiosink || '';
+                document.getElementById('airplay_audiodelay').value = config.airplay_audiodelay || '';
+                document.getElementById('airplay_use_audio').checked = config.airplay_use_audio || false;
+                document.getElementById('airplay_new_window_closing_behavior').checked = config.airplay_new_window_closing_behavior || false;
+                document.getElementById('airplay_close_window').checked = config.airplay_close_window || false;
+                document.getElementById('airplay_video_parser').value = config.airplay_video_parser || '';
+                document.getElementById('airplay_video_decoder').value = config.airplay_video_decoder || '';
+                document.getElementById('airplay_video_converter').value = config.airplay_video_converter || '';
+                document.getElementById('airplay_show_client_FPS_data').checked = config.airplay_show_client_FPS_data || false;
+                document.getElementById('airplay_max_ntp_timeouts').value = config.airplay_max_ntp_timeouts || '';
+                document.getElementById('airplay_dump_video').checked = config.airplay_dump_video || false;
+                document.getElementById('airplay_dump_audio').checked = config.airplay_dump_audio || false;
+                document.getElementById('airplay_audio_type').value = config.airplay_audio_type || '';
+                document.getElementById('airplay_previous_audio_type').value = config.airplay_previous_audio_type || '';
+                document.getElementById('airplay_fullscreen').checked = config.airplay_fullscreen || false;
+                document.getElementById('airplay_do_append_hostname').checked = config.airplay_do_append_hostname || false;
+                document.getElementById('airplay_use_random_hw_addr').checked = config.airplay_use_random_hw_addr || false;
+                document.getElementById('airplay_restrict_clients').checked = config.airplay_restrict_clients || false;
+                document.getElementById('airplay_setup_legacy_pairing').checked = config.airplay_setup_legacy_pairing || false;
+                document.getElementById('airplay_require_password').checked = config.airplay_require_password || false;
+                document.getElementById('airplay_pin').value = config.airplay_pin || '';
+                document.getElementById('airplay_db_low').value = config.airplay_db_low || '';
+                document.getElementById('airplay_db_high').value = config.airplay_db_high || '';
+                document.getElementById('airplay_taper_volume').checked = config.airplay_taper_volume || false;
+                document.getElementById('airplay_h265_support').checked = config.airplay_h265_support || false;
+                document.getElementById('airplay_n_renderers').value = config.airplay_n_renderers || '';
+            }
         }
+
+        document.getElementById('use_airplay').addEventListener('change', function () {
+            if (this.checked) {
+                document.getElementById('airplay-settings').style.display = 'block';
+            } else {
+                document.getElementById('airplay-settings').style.display = 'none';
+            }
+        });
 
         document.getElementById('client-config-form').addEventListener('submit', async function (event) {
             event.preventDefault();
 
+            // Helper function to safely get a numeric value or default to 0
+            const getNumberOrDefault = (id, defaultValue = 0) => {
+                const value = parseInt(document.getElementById(id).value);
+                return isNaN(value) ? defaultValue : value;
+            };
+
+            const getFloatOrDefault = (id, defaultValue = 0.0) => {
+                const value = parseFloat(document.getElementById(id).value);
+                return isNaN(value) ? defaultValue : value;
+            };
+
             const configData = {
                 main_server_ip: document.getElementById('main_server_ip').value,
-                main_server_port: parseInt(document.getElementById('main_server_port').value),
+                main_server_port: getNumberOrDefault('main_server_port'),
                 use_bluetooth: document.getElementById('use_bluetooth').checked,
-                use_airplay: document.getElementById('use_airplay').checked
+                use_airplay: document.getElementById('use_airplay').checked,
+                airplay_server_name: document.getElementById('airplay_server_name').value,
+                airplay_audio_sync: document.getElementById('airplay_audio_sync').checked,
+                airplay_video_sync: document.getElementById('airplay_video_sync').checked,
+                airplay_audio_delay_alac: getNumberOrDefault('airplay_audio_delay_alac'),
+                airplay_audio_delay_aac: getNumberOrDefault('airplay_audio_delay_aac'),
+                airplay_relaunch_video: document.getElementById('airplay_relaunch_video').checked,
+                airplay_reset_loop: document.getElementById('airplay_reset_loop').checked,
+                airplay_open_connections: getNumberOrDefault('airplay_open_connections'),
+                airplay_videosink: document.getElementById('airplay_videosink').value,
+                airplay_use_video: document.getElementById('airplay_use_video').checked,
+                airplay_compression_type: getNumberOrDefault('airplay_compression_type'),
+                airplay_audiosink: document.getElementById('airplay_audiosink').value,
+                airplay_audiodelay: getNumberOrDefault('airplay_audiodelay'),
+                airplay_use_audio: document.getElementById('airplay_use_audio').checked,
+                airplay_new_window_closing_behavior: document.getElementById('airplay_new_window_closing_behavior').checked,
+                airplay_close_window: document.getElementById('airplay_close_window').checked,
+                airplay_video_parser: document.getElementById('airplay_video_parser').value,
+                airplay_video_decoder: document.getElementById('airplay_video_decoder').value,
+                airplay_video_converter: document.getElementById('airplay_video_converter').value,
+                airplay_show_client_FPS_data: document.getElementById('airplay_show_client_FPS_data').checked,
+                airplay_max_ntp_timeouts: getNumberOrDefault('airplay_max_ntp_timeouts'),
+                airplay_dump_video: document.getElementById('airplay_dump_video').checked,
+                airplay_dump_audio: document.getElementById('airplay_dump_audio').checked,
+                airplay_audio_type: getNumberOrDefault('airplay_audio_type'),
+                airplay_previous_audio_type: getNumberOrDefault('airplay_previous_audio_type'),
+                airplay_fullscreen: document.getElementById('airplay_fullscreen').checked,
+                airplay_do_append_hostname: document.getElementById('airplay_do_append_hostname').checked,
+                airplay_use_random_hw_addr: document.getElementById('airplay_use_random_hw_addr').checked,
+                airplay_restrict_clients: document.getElementById('airplay_restrict_clients').checked,
+                airplay_setup_legacy_pairing: document.getElementById('airplay_setup_legacy_pairing').checked,
+                airplay_require_password: document.getElementById('airplay_require_password').checked,
+                airplay_pin: getNumberOrDefault('airplay_pin'),
+                airplay_db_low: getFloatOrDefault('airplay_db_low'),
+                airplay_db_high: getFloatOrDefault('airplay_db_high'),
+                airplay_taper_volume: document.getElementById('airplay_taper_volume').checked,
+                airplay_h265_support: document.getElementById('airplay_h265_support').checked,
+                airplay_n_renderers: getNumberOrDefault('airplay_n_renderers')
             };
 
             try {
@@ -151,7 +391,14 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    alert('Configuration saved successfully!');
+                    // Show the green square with the "Config Saved" message
+                    const messageDiv = document.getElementById('config-saved-message');
+                    messageDiv.style.display = 'block';
+
+                    // Hide the message after 3 seconds
+                    setTimeout(() => {
+                        messageDiv.style.display = 'none';
+                    }, 3000);
                 } else {
                     alert('Error saving configuration: ' + result.message);
                 }

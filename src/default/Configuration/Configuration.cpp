@@ -201,13 +201,32 @@ ConfigurationManager &ConfigurationManager::getInstance()
     return instance;
 }
 
+std::string generateTemporaryClientID()
+{
+    // Generate a random UUID or use MAC address
+    return "TEMP-" + std::to_string(rand());
+}
+
 /**
  *
  */
 Configuration ConfigurationManager::getConfiguration(const std::string &client_id)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
-    return configurations[client_id];
+    std::cout << "Lock acquired in loadConfigurations" << std::endl;
+    if (client_id.empty())
+    {
+        if (configurations.find("temporary") == configurations.end())
+        {
+            Configuration temp_config;
+            temp_config.client_id = generateTemporaryClientID(); // Assign temporary ID
+            configurations["temporary"] = temp_config;
+        }
+        std::cout << "Lock released in loadConfigurations" << std::endl;
+        return configurations["temporary"];
+    }
+    std::cout << "Lock released in loadConfigurations" << std::endl;
+    return configurations[client_id]; // Return the client-specific configuration
 }
 
 /**
@@ -255,11 +274,11 @@ nlohmann::json ConfigurationManager::getAllConfigurations()
 /**
  *
  */
-// Save all client configurations to a JSON file
 void ConfigurationManager::saveConfigurations(const std::string &filepath)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
     nlohmann::json j = getAllConfigurations();
+
     std::ofstream file(filepath);
     if (!file.is_open())
     {
@@ -270,11 +289,14 @@ void ConfigurationManager::saveConfigurations(const std::string &filepath)
     std::cout << "Configurations saved to " << filepath << std::endl;
 }
 
-// Save the global configuration to a JSON file
+/**
+ *
+ */
 void ConfigurationManager::saveConfiguration(const std::string &filepath)
 {
     std::lock_guard<std::mutex> lock(config_mutex);
     nlohmann::json j = global_config.to_json();
+
     std::ofstream file(filepath);
     if (!file.is_open())
     {
@@ -284,6 +306,7 @@ void ConfigurationManager::saveConfiguration(const std::string &filepath)
     file << j.dump(4);
     std::cout << "Configuration saved to " << filepath << std::endl;
 }
+
 /**
  *
  */

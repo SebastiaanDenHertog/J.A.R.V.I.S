@@ -11,8 +11,7 @@
 enum class AppMode
 {
     CLIENT,
-    SERVER,
-    NONE
+    SERVER
 };
 
 // Structure to hold configuration settings
@@ -27,8 +26,10 @@ struct Configuration
     std::string web_server_key_path;
     bool use_bluetooth = false;
     int threads = 10;
+    std::string configFilePath = "/config.json";
 
     // Client-specific settings
+    std::string client_id;
     unsigned short main_server_port = 15880;
     std::string client_server_ip;
     bool use_airplay = false;
