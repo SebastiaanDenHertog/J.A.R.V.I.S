@@ -193,7 +193,7 @@
             });
 
             try {
-                const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                const response = await fetch(`/api/clientconfig/update?client_id=${clientId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updatedConfig)

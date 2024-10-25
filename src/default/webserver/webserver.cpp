@@ -355,6 +355,7 @@ class ListClientsResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
+        try{
         // Get all client configurations as a JSON object
         json all_configs = ConfigurationManager::getInstance().getAllConfigurations();
 
@@ -363,6 +364,14 @@ public:
 
         // Return the response with a 200 OK status and JSON content type
         return std::make_shared<httpserver::string_response>(response_body, 200, "application/json");
+        }
+        catch (const std::exception &e)
+        {
+            json error_json = {
+                {"status", "error"},
+                {"message", e.what()}};
+            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+        }
     }
 };
 
@@ -371,8 +380,19 @@ class GetServerConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
+        try{
+            
         json server_config = ConfigurationManager::getInstance().getConfiguration().to_json();
         return std::make_shared<httpserver::string_response>(server_config.dump(4), 200, "application/json");
+
+        }
+        catch (const std::exception &e)
+        {
+            json error_json = {
+                {"status", "error"},
+                {"message", e.what()}};
+            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+        }
     }
 };
 
@@ -384,6 +404,7 @@ class GetClientConfigResourceOnlyServer : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
+        try{
         auto client_id = req.get_arg("client_id");
 
         // Check if there are no values for client_id
@@ -395,6 +416,14 @@ public:
         json client_config = ConfigurationManager::getInstance().getConfiguration(client_id).to_json();
 
         return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
+        }
+        catch (const std::exception &e)
+        {
+            json error_json = {
+                {"status", "error"},
+                {"message", e.what()}};
+            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+        }
     }
 };
 
@@ -406,10 +435,18 @@ class GetClientConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-
+        try{
         json client_config = ConfigurationManager::getInstance().getConfiguration().to_json();
 
         return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
+        }
+        catch (const std::exception &e)
+        {
+            json error_json = {
+                {"status", "error"},
+                {"message", e.what()}};
+            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+        }
     }
 };
 
@@ -553,12 +590,11 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         }
 
         httpserver::webserver ws = httpserver::webserver(ws_builder);
-
-#ifdef SERVER_BUILD
         auto homePage = std::make_unique<HomePageServerResource>();
         ws.register_resource("/", homePage.get(), true);
         auto configPage = std::make_unique<ConfigPageResourceServer>();
         ws.register_resource("/config", configPage.get(), true);
+#ifdef SERVER_BUILD
 
         auto getServerConfig = std::make_unique<GetServerConfigResource>();
         ws.register_resource("/api/server/config", getServerConfig.get(), true);
@@ -567,19 +603,15 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         auto listClients = std::make_unique<ListClientsResource>();
         ws.register_resource("/api/server/get_clients", listClients.get(), true);
 #else
-        auto homePage = std::make_unique<HomePageClientResource>();
-        ws.register_resource("/", homePage.get(), true);
-        auto configPage = std::make_unique<ConfigPageResourceClient>();
-        ws.register_resource("/config", configPage.get(), true);
 
         auto getClientConfig = std::make_unique<GetClientConfigResource>();
         ws.register_resource("/api/client/config", getClientConfig.get(), true);
         auto updateClientConfig = std::make_unique<UpdateClientConfigResource>();
         ws.register_resource("/api/client/config/update", updateClientConfig.get(), true);
         auto getClientConfigOnlyServer = std::make_unique<GetClientConfigResourceOnlyServer>();
-        ws.register_resource("/api/client/config", getClientConfigOnlyServer.get(), true);
+        ws.register_resource("/api/client/clientconfig", getClientConfigOnlyServer.get(), true);
         auto updateClientConfigOnlyServer = std::make_unique<UpdateClientConfigResourceOnlyServer>();
-        ws.register_resource("/api/client/config/update", updateClientConfigOnlyServer.get(), true);
+        ws.register_resource("/api/client/clientconfig/update", updateClientConfigOnlyServer.get(), true);
 
 #endif
         ws.start(false);
