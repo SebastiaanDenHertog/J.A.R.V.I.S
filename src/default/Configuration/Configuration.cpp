@@ -10,7 +10,7 @@
 nlohmann::json Configuration::to_json() const
 {
     nlohmann::json j;
-    #ifdef SERVER_BUILD
+#ifdef SERVER_BUILD
     j["use_web_server"] = use_web_server;
     j["web_server_port"] = web_server_port;
     j["web_server_secure"] = web_server_secure;
@@ -24,11 +24,13 @@ nlohmann::json Configuration::to_json() const
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
     j["use_client_server_connection"] = use_client_server_connection;
+    j["config_file_path"] = config_file_path;
 #endif
-    //client
-    #ifdef CLIENT_BUILD
+// client
+#ifdef CLIENT_BUILD
     j["client_server_ip"] = client_server_ip;
     j["use_client_server_connection"] = use_client_server_connection;
+    j["config_file_path"] = config_file_path;
     // airplay
     j["use_airplay"] = use_airplay;
     j["airplay_server_name"] = airplay_server_name;
@@ -68,7 +70,7 @@ nlohmann::json Configuration::to_json() const
     j["airplay_taper_volume"] = airplay_taper_volume;
     j["airplay_h265_support"] = airplay_h265_support;
     j["airplay_n_renderers"] = airplay_n_renderers;
-    #endif
+#endif
     return j;
 }
 
@@ -94,13 +96,13 @@ void Configuration::from_json(const nlohmann::json &j)
         threads = j["threads"];
     if (j.contains("main_server_port"))
         main_server_port = j["main_server_port"];
+    if (j.contains("config_file_path"))
+        config_file_path = j["config_file_path"];
 #endif
 #ifdef CLIENT_BUILD
     if (j.contains("main_server_ip") && !j["main_server_ip"].is_null())
     {
         std::string main_server_ip_str = j["main_server_ip"].get<std::string>();
-
-        // If you need a C-style string (char*), use .c_str()
         main_server_ip = main_server_ip_str.c_str();
     }
     else

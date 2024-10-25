@@ -252,7 +252,7 @@ public:
 #endif
 
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
+            ConfigurationManager::getInstance().saveConfiguration(current_config.config_file_path);
 
             json response_json = {
                 {"status", "success"},
@@ -608,7 +608,7 @@ public:
 #endif
 
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
+            ConfigurationManager::getInstance().saveConfiguration(current_config.config_file_path);
 
             json response_json = {
                 {"status", "success"},
@@ -647,7 +647,7 @@ public:
 
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(client_id, current_config);
-            ConfigurationManager::getInstance().saveConfigurations(current_config.configFilePath);
+            ConfigurationManager::getInstance().saveConfigurations(current_config.config_file_path);
 
             json response_json = {
                 {"status", "success"},
@@ -682,7 +682,7 @@ public:
 
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfigurations(current_config.configFilePath);
+            ConfigurationManager::getInstance().saveConfigurations(current_config.config_file_path);
 
             json response_json = {
                 {"status", "success"},

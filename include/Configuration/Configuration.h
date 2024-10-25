@@ -26,7 +26,7 @@ struct Configuration
     std::string web_server_key_path;
     bool use_bluetooth = false;
     int threads = 10;
-    std::string configFilePath = "/var/fastnas/sebastiaan/products/J.A.R.V.I.S/config.json";
+    std::string config_file_path = "/var/fastnas/sebastiaan/products/J.A.R.V.I.S/config.json";
     bool bluetooth_available = false;
     unsigned short main_server_port = 15880;
 #ifdef SERVER_BUILD
