@@ -4,15 +4,12 @@ extern NetworkManager *serverNetworkManager;
 
 extern NetworkManager *clientNetworkManager;
 
-
 #ifdef SERVER_BUILD
 extern std::unique_ptr<ModelRunner> nerModel;
 extern std::unique_ptr<ModelRunner> classificationModel;
 extern std::unique_ptr<TaskProcessor> taskProcessor;
 extern std::unique_ptr<InputHandler> inputHandler;
 #endif
-
-
 
 /**
  * @brief Constructor for Watchdog.
@@ -79,38 +76,36 @@ void Watchdog::checkServices()
             startService("webServer");
         }
 
-        if (mode == Mode::SERVER)
-        {
-            // Monitor Web Server
+#ifdef SERVER_BUILD
+        // Monitor Web Server
 
-            // Monitor Home Assistant
-            if (config.use_home_assistant && !homeAssistantRunning)
-            { // Assuming use_server controls Home Assistant
-                logEvent("Home Assistant API is not running. Attempting to start.");
-                startService("homeAssistant");
-            }
+        // Monitor Home Assistant
+        if (config.use_home_assistant && !homeAssistantRunning)
+        { // Assuming use_server controls Home Assistant
+            logEvent("Home Assistant API is not running. Attempting to start.");
+            startService("homeAssistant");
         }
-        else if (mode == Mode::CLIENT)
-        {
-            // Monitor Bluetooth
-            if (config.use_bluetooth && !bluetoothRunning)
-            {
-                logEvent("Bluetooth is not running. Attempting to start.");
-                startService("bluetooth");
-            }
+#else
 
-            // Monitor AirPlay
-            if (config.use_airplay && !airPlayRunning)
-            {
-                logEvent("AirPlay is not running. Attempting to start.");
-                startService("airplay");
-            }
-            if (config.use_client_server_connection && !client_server_connection)
-            {
-                logEvent("Client server connection is not running. Attempting to start.");
-                startService("client_server_connection");
-            }
+        // Monitor Bluetooth
+        if (config.use_bluetooth && !bluetoothRunning)
+        {
+            logEvent("Bluetooth is not running. Attempting to start.");
+            startService("bluetooth");
         }
+
+        // Monitor AirPlay
+        if (config.use_airplay && !airPlayRunning)
+        {
+            logEvent("AirPlay is not running. Attempting to start.");
+            startService("airplay");
+        }
+        if (config.use_client_server_connection && !client_server_connection)
+        {
+            logEvent("Client server connection is not running. Attempting to start.");
+            startService("client_server_connection");
+        }
+#endif
 
         // Sleep for a while before the next check
         std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -137,11 +132,11 @@ void Watchdog::startService(const std::string &service)
                 config.web_server_secure,
                 config.web_server_cert_path,
                 config.web_server_key_path,
-                #ifdef SERVER_BUILD
+#ifdef SERVER_BUILD
                 config.web_server_port,
-                #else
+#else
                 config.web_client_port,
-                #endif
+#endif
                 config.threads,
                 config.use_server
             );

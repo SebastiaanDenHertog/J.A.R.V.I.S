@@ -42,3 +42,4 @@
 /classes
 .vscode/settings.json
 web_service_*.log
+config.json

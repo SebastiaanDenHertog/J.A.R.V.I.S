@@ -268,7 +268,7 @@
 
         function displayClientConfig(config) {
             document.getElementById('main_server_ip').value = config.main_server_ip || '';
-            document.getElementById('main_server_port').value = config.main_server_port || '';
+            document.getElementById('main_server_port').value = parseInt(config.main_server_port) || 0;
             document.getElementById('use_bluetooth').checked = config.use_bluetooth || false;
             document.getElementById('use_airplay').checked = config.use_airplay || false;
 
@@ -277,49 +277,34 @@
                 document.getElementById('airplay_server_name').value = config.airplay_server_name || '';
                 document.getElementById('airplay_audio_sync').checked = config.airplay_audio_sync || false;
                 document.getElementById('airplay_video_sync').checked = config.airplay_video_sync || false;
-                document.getElementById('airplay_audio_delay_alac').value = config.airplay_audio_delay_alac || '';
-                document.getElementById('airplay_audio_delay_aac').value = config.airplay_audio_delay_aac || '';
+                document.getElementById('airplay_audio_delay_alac').value = parseInt(config.airplay_audio_delay_alac) || 0;
+                document.getElementById('airplay_audio_delay_aac').value = parseInt(config.airplay_audio_delay_aac) || 0;
                 document.getElementById('airplay_relaunch_video').checked = config.airplay_relaunch_video || false;
                 document.getElementById('airplay_reset_loop').checked = config.airplay_reset_loop || false;
-                document.getElementById('airplay_open_connections').value = config.airplay_open_connections || '';
+                document.getElementById('airplay_open_connections').value = parseInt(config.airplay_open_connections) || 0;
                 document.getElementById('airplay_videosink').value = config.airplay_videosink || '';
                 document.getElementById('airplay_use_video').checked = config.airplay_use_video || false;
-                document.getElementById('airplay_compression_type').value = config.airplay_compression_type || '';
+                document.getElementById('airplay_compression_type').value = parseInt(config.airplay_compression_type) || 0;
                 document.getElementById('airplay_audiosink').value = config.airplay_audiosink || '';
-                document.getElementById('airplay_audiodelay').value = config.airplay_audiodelay || '';
+                document.getElementById('airplay_audiodelay').value = parseInt(config.airplay_audiodelay) || 0;
                 document.getElementById('airplay_use_audio').checked = config.airplay_use_audio || false;
-                document.getElementById('airplay_new_window_closing_behavior').checked = config.airplay_new_window_closing_behavior || false;
-                document.getElementById('airplay_close_window').checked = config.airplay_close_window || false;
-                document.getElementById('airplay_video_parser').value = config.airplay_video_parser || '';
-                document.getElementById('airplay_video_decoder').value = config.airplay_video_decoder || '';
-                document.getElementById('airplay_video_converter').value = config.airplay_video_converter || '';
-                document.getElementById('airplay_show_client_FPS_data').checked = config.airplay_show_client_FPS_data || false;
-                document.getElementById('airplay_max_ntp_timeouts').value = config.airplay_max_ntp_timeouts || '';
+                document.getElementById('airplay_max_ntp_timeouts').value = parseInt(config.airplay_max_ntp_timeouts) || 0;
                 document.getElementById('airplay_dump_video').checked = config.airplay_dump_video || false;
                 document.getElementById('airplay_dump_audio').checked = config.airplay_dump_audio || false;
-                document.getElementById('airplay_audio_type').value = config.airplay_audio_type || '';
-                document.getElementById('airplay_previous_audio_type').value = config.airplay_previous_audio_type || '';
+                document.getElementById('airplay_audio_type').value = parseInt(config.airplay_audio_type) || 0;
+                document.getElementById('airplay_previous_audio_type').value = parseInt(config.airplay_previous_audio_type) || 0;
                 document.getElementById('airplay_fullscreen').checked = config.airplay_fullscreen || false;
                 document.getElementById('airplay_do_append_hostname').checked = config.airplay_do_append_hostname || false;
                 document.getElementById('airplay_use_random_hw_addr').checked = config.airplay_use_random_hw_addr || false;
                 document.getElementById('airplay_restrict_clients').checked = config.airplay_restrict_clients || false;
-                document.getElementById('airplay_setup_legacy_pairing').checked = config.airplay_setup_legacy_pairing || false;
-                document.getElementById('airplay_require_password').checked = config.airplay_require_password || false;
-                document.getElementById('airplay_pin').value = config.airplay_pin || '';
-                document.getElementById('airplay_db_low').value = config.airplay_db_low || '';
-                document.getElementById('airplay_db_high').value = config.airplay_db_high || '';
-                document.getElementById('airplay_taper_volume').checked = config.airplay_taper_volume || false;
-                document.getElementById('airplay_h265_support').checked = config.airplay_h265_support || false;
-                document.getElementById('airplay_n_renderers').value = config.airplay_n_renderers || '';
+                document.getElementById('airplay_pin').value = parseInt(config.airplay_pin) || 0;
+                document.getElementById('airplay_db_low').value = parseFloat(config.airplay_db_low) || 0.0;
+                document.getElementById('airplay_db_high').value = parseFloat(config.airplay_db_high) || 0.0;
             }
         }
 
         document.getElementById('use_airplay').addEventListener('change', function () {
-            if (this.checked) {
-                document.getElementById('airplay-settings').style.display = 'block';
-            } else {
-                document.getElementById('airplay-settings').style.display = 'none';
-            }
+            document.getElementById('airplay-settings').style.display = this.checked ? 'block' : 'none';
         });
 
         document.getElementById('client-config-form').addEventListener('submit', async function (event) {
@@ -380,15 +365,13 @@
                 airplay_n_renderers: getNumberOrDefault('airplay_n_renderers')
             };
 
+
             try {
                 const response = await fetch('/api/client/config/update', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(configData)
                 });
-
                 const result = await response.json();
                 if (response.ok) {
                     // Show the green square with the "Config Saved" message

@@ -10,25 +10,27 @@
 nlohmann::json Configuration::to_json() const
 {
     nlohmann::json j;
+    #ifdef SERVER_BUILD
     j["use_web_server"] = use_web_server;
     j["web_server_port"] = web_server_port;
     j["web_server_secure"] = web_server_secure;
     j["web_server_cert_path"] = web_server_cert_path;
     j["web_server_key_path"] = web_server_key_path;
     j["threads"] = threads;
-    j["use_server"] = use_server;
-    j["use_client"] = use_client;
     j["main_server_port"] = main_server_port;
-    j["client_server_ip"] = client_server_ip;
     j["web_client_port"] = web_client_port;
-    j["use_airplay"] = use_airplay;
-    j["use_client_server_connection"] = use_client_server_connection;
     j["use_bluetooth"] = use_bluetooth;
-    j["use_server"] = use_server;
     j["home_assistant_ip"] = home_assistant_ip;
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
+    j["use_client_server_connection"] = use_client_server_connection;
+#endif
+    //client
+    #ifdef CLIENT_BUILD
+    j["client_server_ip"] = client_server_ip;
+    j["use_client_server_connection"] = use_client_server_connection;
     // airplay
+    j["use_airplay"] = use_airplay;
     j["airplay_server_name"] = airplay_server_name;
     j["airplay_audio_sync"] = airplay_audio_sync;
     j["airplay_video_sync"] = airplay_video_sync;
@@ -66,6 +68,7 @@ nlohmann::json Configuration::to_json() const
     j["airplay_taper_volume"] = airplay_taper_volume;
     j["airplay_h265_support"] = airplay_h265_support;
     j["airplay_n_renderers"] = airplay_n_renderers;
+    #endif
     return j;
 }
 
@@ -76,6 +79,7 @@ nlohmann::json Configuration::to_json() const
 
 void Configuration::from_json(const nlohmann::json &j)
 {
+#ifdef SERVER_BUILD
     if (j.contains("use_web_server"))
         use_web_server = j["use_web_server"];
     if (j.contains("web_server_port"))
@@ -90,6 +94,8 @@ void Configuration::from_json(const nlohmann::json &j)
         threads = j["threads"];
     if (j.contains("main_server_port"))
         main_server_port = j["main_server_port"];
+#endif
+#ifdef CLIENT_BUILD
     if (j.contains("main_server_ip") && !j["main_server_ip"].is_null())
     {
         std::string main_server_ip_str = j["main_server_ip"].get<std::string>();
@@ -190,6 +196,7 @@ void Configuration::from_json(const nlohmann::json &j)
         airplay_h265_support = j["airplay_h265_support"];
     if (j.contains("airplay_n_renderers"))
         airplay_n_renderers = j["airplay_n_renderers"];
+#endif
 }
 /**
  *

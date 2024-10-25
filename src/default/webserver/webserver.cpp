@@ -28,26 +28,32 @@ public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        json response_json;
+#ifdef SERVER_BUILD
         json server_config;
         server_config["web_server_port"] = config.web_server_port;
         server_config["web_server_secure"] = config.web_server_secure;
         server_config["web_server_cert_path"] = config.web_server_cert_path;
         server_config["web_server_key_path"] = config.web_server_key_path;
         server_config["threads"] = config.threads;
+        server_config["use_home_assistant"] = config.use_home_assistant;
+        server_config["home_assistant_ip"] = config.home_assistant_ip;
+        server_config["home_assistant_port"] = config.home_assistant_port;
+        server_config["home_assistant_token"] = config.home_assistant_token;
         server_config["main_server_port"] = config.main_server_port;
-
+        server_config["use_client_server_connection"] = config.use_client_server_connection;
+        server_config["use_bluetooth"] = config.use_bluetooth;
+        response_json["server_config"] = server_config;
+#endif
+#ifdef CLIENT_BUILD
         json client_config;
+        client_config["use_bluetooth"] = config.use_bluetooth;
         client_config["client_id"] = config.client_id;
         client_config["client_server_ip"] = config.client_server_ip;
         client_config["use_airplay"] = config.use_airplay;
-        client_config["use_bluetooth"] = config.use_bluetooth;
         client_config["use_client_server_connection"] = config.use_client_server_connection;
-        client_config["use_home_assistant"] = config.use_home_assistant;
-        client_config["home_assistant_ip"] = config.home_assistant_ip;
-        client_config["home_assistant_port"] = config.home_assistant_port;
-        client_config["home_assistant_token"] = config.home_assistant_token;
         client_config["web_client_port"] = config.web_client_port;
-
+        client_config["main_server_port"] = config.main_server_port;
         // Add AirPlay-related settings
         client_config["airplay_server_name"] = config.airplay_server_name;
         client_config["airplay_audio_sync"] = config.airplay_audio_sync;
@@ -86,11 +92,8 @@ public:
         client_config["airplay_taper_volume"] = config.airplay_taper_volume;
         client_config["airplay_h265_support"] = config.airplay_h265_support;
         client_config["airplay_n_renderers"] = config.airplay_n_renderers;
-
-        json response_json;
-        response_json["server_config"] = server_config;
         response_json["client_config"] = client_config;
-
+#endif
         std::string response_body = response_json.dump(4);
         return std::make_shared<httpserver::string_response>(response_body, 200, "application/json");
     }
@@ -108,6 +111,7 @@ public:
         {
             json j = json::parse(req.get_content());
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration();
+#ifdef SERVER_BUILD
 
             std::vector<std::pair<std::string, std::function<void(const json &)>>> server_mappings = {
                 {"web_server_port", [&](const json &val)
@@ -121,8 +125,31 @@ public:
                 {"threads", [&](const json &val)
                  { current_config.threads = val.get<int>(); }},
                 {"main_server_port", [&](const json &val)
-                 { current_config.main_server_port = val.get<uint16_t>(); }}};
+                 { current_config.main_server_port = val.get<uint16_t>(); }},
+                {"use_home_assistant", [&](const json &val)
+                 { current_config.use_home_assistant = val.get<bool>(); }},
+                {"home_assistant_ip", [&](const json &val)
+                 { current_config.home_assistant_ip = val.get<std::string>(); }},
+                {"home_assistant_port", [&](const json &val)
+                 { current_config.home_assistant_port = val.get<uint16_t>(); }},
+                {"home_assistant_token", [&](const json &val)
+                 { current_config.home_assistant_token = val.get<std::string>(); }},
+                { "use_bluetooth",
+                  [&](const json &val)
+                  { current_config.use_bluetooth = val.get<bool>(); } }
 
+            };
+
+            // Apply the mappings
+            for (const auto &[key, updateFunc] : server_mappings)
+            {
+                if (j.contains(key))
+                {
+                    updateFunc(j[key]);
+                }
+            }
+#endif
+#ifdef CLIENT_BUILD
             std::vector<std::pair<std::string, std::function<void(const json &)>>> client_mappings = {
                 {"client_id", [&](const json &val)
                  { current_config.client_id = val.get<std::string>(); }},
@@ -134,16 +161,10 @@ public:
                  { current_config.use_bluetooth = val.get<bool>(); }},
                 {"use_client_server_connection", [&](const json &val)
                  { current_config.use_client_server_connection = val.get<bool>(); }},
-                {"use_home_assistant", [&](const json &val)
-                 { current_config.use_home_assistant = val.get<bool>(); }},
-                {"home_assistant_ip", [&](const json &val)
-                 { current_config.home_assistant_ip = val.get<std::string>(); }},
-                {"home_assistant_port", [&](const json &val)
-                 { current_config.home_assistant_port = val.get<uint16_t>(); }},
-                {"home_assistant_token", [&](const json &val)
-                 { current_config.home_assistant_token = val.get<std::string>(); }},
                 {"web_client_port", [&](const json &val)
                  { current_config.web_client_port = val.get<uint16_t>(); }},
+                {"main_server_port", [&](const json &val)
+                 { current_config.main_server_port = val.get<uint16_t>(); }},
                 // Add mappings for AirPlay-related settings
                 {"airplay_server_name", [&](const json &val)
                  { current_config.airplay_server_name = val.get<std::string>(); }},
@@ -217,17 +238,9 @@ public:
                  { current_config.airplay_taper_volume = val.get<bool>(); }},
                 {"airplay_h265_support", [&](const json &val)
                  { current_config.airplay_h265_support = val.get<bool>(); }},
-                {"airplay_n_renderers", [&](const json &val)
-                 { current_config.airplay_n_renderers = val.get<int>(); }}};
-
-            // Apply the mappings
-            for (const auto &[key, updateFunc] : server_mappings)
-            {
-                if (j.contains(key))
-                {
-                    updateFunc(j[key]);
-                }
-            }
+                { "airplay_n_renderers",
+                  [&](const json &val)
+                  { current_config.airplay_n_renderers = val.get<int>(); } }};
 
             for (const auto &[key, updateFunc] : client_mappings)
             {
@@ -236,9 +249,10 @@ public:
                     updateFunc(j[key]);
                 }
             }
+#endif
 
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfiguration("/config.json");
+            ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
 
             json response_json = {
                 {"status", "success"},
@@ -355,21 +369,23 @@ class ListClientsResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        try{
-        // Get all client configurations as a JSON object
-        json all_configs = ConfigurationManager::getInstance().getAllConfigurations();
+        try
+        {
+            // Get all client configurations as a JSON object
+            json all_configs = ConfigurationManager::getInstance().getAllConfigurations();
 
-        // Convert the JSON object to a formatted string
-        std::string response_body = all_configs.dump(4);
+            // Convert the JSON object to a formatted string
+            std::string response_body = all_configs.dump(4);
 
-        // Return the response with a 200 OK status and JSON content type
-        return std::make_shared<httpserver::string_response>(response_body, 200, "application/json");
+            // Return the response with a 200 OK status and JSON content type
+            return std::make_shared<httpserver::string_response>(response_body, 200, "application/json");
         }
         catch (const std::exception &e)
         {
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -380,17 +396,18 @@ class GetServerConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        try{
-            
-        json server_config = ConfigurationManager::getInstance().getConfiguration().to_json();
-        return std::make_shared<httpserver::string_response>(server_config.dump(4), 200, "application/json");
+        try
+        {
 
+            json server_config = ConfigurationManager::getInstance().getConfiguration().to_json();
+            return std::make_shared<httpserver::string_response>(server_config.dump(4), 200, "application/json");
         }
         catch (const std::exception &e)
         {
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -404,24 +421,26 @@ class GetClientConfigResourceOnlyServer : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        try{
-        auto client_id = req.get_arg("client_id");
-
-        // Check if there are no values for client_id
-        if (client_id.get_flat_value().empty())
+        try
         {
-            return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
-        }
+            auto client_id = req.get_arg("client_id");
 
-        json client_config = ConfigurationManager::getInstance().getConfiguration(client_id).to_json();
+            // Check if there are no values for client_id
+            if (client_id.get_flat_value().empty())
+            {
+                return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
+            }
 
-        return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
+            json client_config = ConfigurationManager::getInstance().getConfiguration(client_id).to_json();
+
+            return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
         }
         catch (const std::exception &e)
         {
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -435,16 +454,18 @@ class GetClientConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        try{
-        json client_config = ConfigurationManager::getInstance().getConfiguration().to_json();
+        try
+        {
+            json client_config = ConfigurationManager::getInstance().getConfiguration().to_json();
 
-        return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
+            return std::make_shared<httpserver::string_response>(client_config.dump(4), 200, "application/json");
         }
         catch (const std::exception &e)
         {
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -456,29 +477,142 @@ class UpdateServerConfigResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req) override
     {
+        Configuration current_config = ConfigurationManager::getInstance().getConfiguration();
         try
         {
-            auto client_id = req.get_arg("client_id");
-
-            // Check if there are no values for client_id
-            if (client_id.get_flat_value().empty())
-            {
-                return std::make_shared<httpserver::string_response>("Client ID is required.", 400, "application/json");
-            }
-
-            // Parse the JSON body
             json j = json::parse(req.get_content());
 
-            // Get and update the configuration for the specified client ID
-            Configuration current_config = ConfigurationManager::getInstance().getConfiguration(client_id);
-            current_config.from_json(j);
-            ConfigurationManager::getInstance().updateConfiguration(client_id, current_config);
-            ConfigurationManager::getInstance().saveConfigurations("/config.json");
+            // Check for boolean values with type validation
+            if (j.contains("use_web_server") && j["use_web_server"].is_boolean())
+                current_config.use_web_server = j["use_web_server"].get<bool>();
+            if (j.contains("web_server_secure") && j["web_server_secure"].is_boolean())
+                current_config.web_server_secure = j["web_server_secure"].get<bool>();
+            if (j.contains("use_bluetooth") && j["use_bluetooth"].is_boolean())
+                current_config.use_bluetooth = j["use_bluetooth"].get<bool>();
 
-            // Return a success response
+            // Check for integer values with type validation
+            if (j.contains("web_server_port") && j["web_server_port"].is_number_unsigned())
+                current_config.web_server_port = j["web_server_port"].get<unsigned short>();
+            if (j.contains("threads") && j["threads"].is_number_integer())
+                current_config.threads = j["threads"].get<int>();
+
+#ifdef SERVER_BUILD
+            if (j.contains("use_terminal_input") && j["use_terminal_input"].is_boolean())
+                current_config.use_terminal_input = j["use_terminal_input"].get<bool>();
+            if (j.contains("use_home_assistant") && j["use_home_assistant"].is_boolean())
+                current_config.use_home_assistant = j["use_home_assistant"].get<bool>();
+            if (j.contains("home_assistant_ip") && j["home_assistant_ip"].is_string())
+                current_config.home_assistant_ip = j["home_assistant_ip"].get<std::string>();
+            if (j.contains("home_assistant_token") && j["home_assistant_token"].is_string())
+                current_config.home_assistant_token = j["home_assistant_token"].get<std::string>();
+            if (j.contains("home_assistant_port") && j["home_assistant_port"].is_number_integer())
+                current_config.home_assistant_port = j["home_assistant_port"].get<int>();
+            if (j.contains("use_client_server_connection") && j["use_client_server_connection"].is_boolean())
+                current_config.use_client_server_connection = j["use_client_server_connection"].get<bool>();
+            if (j.contains("client_id") && j["client_id"].is_string())
+                current_config.client_id = j["client_id"].get<std::string>();
+
+#endif
+
+#ifdef CLIENT_BUILD
+            if (j.contains("use_bluetooth") && j["use_bluetooth"].is_boolean())
+                current_config.use_bluetooth = j["use_bluetooth"].get<bool>();
+            if (j.contains("client_id") && j["client_id"].is_string())
+                current_config.client_id = j["client_id"].get<std::string>();
+            if (j.contains("client_server_ip") && j["client_server_ip"].is_string())
+                current_config.client_server_ip = j["client_server_ip"].get<std::string>();
+            if (j.contains("use_airplay") && j["use_airplay"].is_boolean())
+                current_config.use_airplay = j["use_airplay"].get<bool>();
+            if (j.contains("use_client_server_connection") && j["use_client_server_connection"].is_boolean())
+                current_config.use_client_server_connection = j["use_client_server_connection"].get<bool>();
+            if (j.contains("web_client_port") && j["web_client_port"].is_number_unsigned())
+                current_config.web_client_port = j["web_client_port"].get<unsigned short>();
+            if (j.contains("main_server_port") && j["main_server_port"].is_number_unsigned())
+                current_config.main_server_port = j["main_server_port"].get<unsigned short>();
+
+            // AirPlay-related settings
+            if (j.contains("airplay_server_name") && j["airplay_server_name"].is_string())
+                current_config.airplay_server_name = j["airplay_server_name"].get<std::string>();
+            if (j.contains("airplay_audio_sync") && j["airplay_audio_sync"].is_boolean())
+                current_config.airplay_audio_sync = j["airplay_audio_sync"].get<bool>();
+            if (j.contains("airplay_video_sync") && j["airplay_video_sync"].is_boolean())
+                current_config.airplay_video_sync = j["airplay_video_sync"].get<bool>();
+            if (j.contains("airplay_audio_delay_alac") && j["airplay_audio_delay_alac"].is_number_integer())
+                current_config.airplay_audio_delay_alac = j["airplay_audio_delay_alac"].get<int64_t>();
+            if (j.contains("airplay_audio_delay_aac") && j["airplay_audio_delay_aac"].is_number_integer())
+                current_config.airplay_audio_delay_aac = j["airplay_audio_delay_aac"].get<int64_t>();
+            if (j.contains("airplay_relaunch_video") && j["airplay_relaunch_video"].is_boolean())
+                current_config.airplay_relaunch_video = j["airplay_relaunch_video"].get<bool>();
+            if (j.contains("airplay_reset_loop") && j["airplay_reset_loop"].is_boolean())
+                current_config.airplay_reset_loop = j["airplay_reset_loop"].get<bool>();
+            if (j.contains("airplay_open_connections") && j["airplay_open_connections"].is_number_unsigned())
+                current_config.airplay_open_connections = j["airplay_open_connections"].get<unsigned int>();
+            if (j.contains("airplay_videosink") && j["airplay_videosink"].is_string())
+                current_config.airplay_videosink = j["airplay_videosink"].get<std::string>();
+            if (j.contains("airplay_use_video") && j["airplay_use_video"].is_boolean())
+                current_config.airplay_use_video = j["airplay_use_video"].get<bool>();
+            if (j.contains("airplay_compression_type") && j["airplay_compression_type"].is_number_unsigned())
+                current_config.airplay_compression_type = j["airplay_compression_type"].get<unsigned char>();
+            if (j.contains("airplay_audiosink") && j["airplay_audiosink"].is_string())
+                current_config.airplay_audiosink = j["airplay_audiosink"].get<std::string>();
+            if (j.contains("airplay_audiodelay") && j["airplay_audiodelay"].is_number_integer())
+                current_config.airplay_audiodelay = j["airplay_audiodelay"].get<int>();
+            if (j.contains("airplay_use_audio") && j["airplay_use_audio"].is_boolean())
+                current_config.airplay_use_audio = j["airplay_use_audio"].get<bool>();
+            if (j.contains("airplay_new_window_closing_behavior") && j["airplay_new_window_closing_behavior"].is_boolean())
+                current_config.airplay_new_window_closing_behavior = j["airplay_new_window_closing_behavior"].get<bool>();
+            if (j.contains("airplay_close_window") && j["airplay_close_window"].is_boolean())
+                current_config.airplay_close_window = j["airplay_close_window"].get<bool>();
+            if (j.contains("airplay_video_parser") && j["airplay_video_parser"].is_string())
+                current_config.airplay_video_parser = j["airplay_video_parser"].get<std::string>();
+            if (j.contains("airplay_video_decoder") && j["airplay_video_decoder"].is_string())
+                current_config.airplay_video_decoder = j["airplay_video_decoder"].get<std::string>();
+            if (j.contains("airplay_video_converter") && j["airplay_video_converter"].is_string())
+                current_config.airplay_video_converter = j["airplay_video_converter"].get<std::string>();
+            if (j.contains("airplay_show_client_FPS_data") && j["airplay_show_client_FPS_data"].is_boolean())
+                current_config.airplay_show_client_FPS_data = j["airplay_show_client_FPS_data"].get<bool>();
+            if (j.contains("airplay_max_ntp_timeouts") && j["airplay_max_ntp_timeouts"].is_number_unsigned())
+                current_config.airplay_max_ntp_timeouts = j["airplay_max_ntp_timeouts"].get<unsigned int>();
+            if (j.contains("airplay_dump_video") && j["airplay_dump_video"].is_boolean())
+                current_config.airplay_dump_video = j["airplay_dump_video"].get<bool>();
+            if (j.contains("airplay_dump_audio") && j["airplay_dump_audio"].is_boolean())
+                current_config.airplay_dump_audio = j["airplay_dump_audio"].get<bool>();
+            if (j.contains("airplay_audio_type") && j["airplay_audio_type"].is_number_unsigned())
+                current_config.airplay_audio_type = j["airplay_audio_type"].get<unsigned char>();
+            if (j.contains("airplay_previous_audio_type") && j["airplay_previous_audio_type"].is_number_unsigned())
+                current_config.airplay_previous_audio_type = j["airplay_previous_audio_type"].get<unsigned char>();
+            if (j.contains("airplay_fullscreen") && j["airplay_fullscreen"].is_boolean())
+                current_config.airplay_fullscreen = j["airplay_fullscreen"].get<bool>();
+            if (j.contains("airplay_do_append_hostname") && j["airplay_do_append_hostname"].is_boolean())
+                current_config.airplay_do_append_hostname = j["airplay_do_append_hostname"].get<bool>();
+            if (j.contains("airplay_use_random_hw_addr") && j["airplay_use_random_hw_addr"].is_boolean())
+                current_config.airplay_use_random_hw_addr = j["airplay_use_random_hw_addr"].get<bool>();
+            if (j.contains("airplay_restrict_clients") && j["airplay_restrict_clients"].is_boolean())
+                current_config.airplay_restrict_clients = j["airplay_restrict_clients"].get<bool>();
+            if (j.contains("airplay_setup_legacy_pairing") && j["airplay_setup_legacy_pairing"].is_boolean())
+                current_config.airplay_setup_legacy_pairing = j["airplay_setup_legacy_pairing"].get<bool>();
+            if (j.contains("airplay_require_password") && j["airplay_require_password"].is_boolean())
+                current_config.airplay_require_password = j["airplay_require_password"].get<bool>();
+            if (j.contains("airplay_pin") && j["airplay_pin"].is_number_unsigned())
+                current_config.airplay_pin = j["airplay_pin"].get<unsigned short>();
+            if (j.contains("airplay_db_low") && j["airplay_db_low"].is_number_float())
+                current_config.airplay_db_low = j["airplay_db_low"].get<double>();
+            if (j.contains("airplay_db_high") && j["airplay_db_high"].is_number_float())
+                current_config.airplay_db_high = j["airplay_db_high"].get<double>();
+            if (j.contains("airplay_taper_volume") && j["airplay_taper_volume"].is_boolean())
+                current_config.airplay_taper_volume = j["airplay_taper_volume"].get<bool>();
+            if (j.contains("airplay_h265_support") && j["airplay_h265_support"].is_boolean())
+                current_config.airplay_h265_support = j["airplay_h265_support"].get<bool>();
+            if (j.contains("airplay_n_renderers") && j["airplay_n_renderers"].is_number_integer())
+                current_config.airplay_n_renderers = j["airplay_n_renderers"].get<int>();
+#endif
+
+            ConfigurationManager::getInstance().updateConfiguration(current_config);
+            ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
+
             json response_json = {
                 {"status", "success"},
-                {"message", "Server configuration updated and saved"}};
+                {"message", "Configuration updated and saved"}};
             return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
         }
         catch (const std::exception &e)
@@ -513,7 +647,7 @@ public:
 
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(client_id, current_config);
-            ConfigurationManager::getInstance().saveConfigurations("/config.json");
+            ConfigurationManager::getInstance().saveConfigurations(current_config.configFilePath);
 
             json response_json = {
                 {"status", "success"},
@@ -525,6 +659,7 @@ public:
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -547,7 +682,7 @@ public:
 
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfigurations("/config.json");
+            ConfigurationManager::getInstance().saveConfigurations(current_config.configFilePath);
 
             json response_json = {
                 {"status", "success"},
@@ -559,6 +694,7 @@ public:
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }

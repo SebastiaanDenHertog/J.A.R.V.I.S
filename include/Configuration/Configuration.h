@@ -26,11 +26,24 @@ struct Configuration
     std::string web_server_key_path;
     bool use_bluetooth = false;
     int threads = 10;
-    std::string configFilePath = "/config.json";
+    std::string configFilePath = "/var/fastnas/sebastiaan/products/J.A.R.V.I.S/config.json";
+    bool bluetooth_available = false;
+    unsigned short main_server_port = 15880;
+#ifdef SERVER_BUILD
+
+    // Server-specific settings
+    bool use_terminal_input = false;
+    bool use_home_assistant = false;
+    std::string home_assistant_ip;
+    std::string home_assistant_token;
+    int home_assistant_port = 0;
+    bool use_client_server_connection = false;
+    std::string client_id;
+
+#else
 
     // Client-specific settings
     std::string client_id;
-    unsigned short main_server_port = 15880;
     std::string client_server_ip;
     bool use_airplay = false;
     bool use_client_server_connection = false;
@@ -40,13 +53,6 @@ struct Configuration
     uint8_t micCount = 4;
     uint8_t ledCount = 16;
     const char *main_server_ip;
-
-    // Server-specific settings
-    bool use_terminal_input = false;
-    bool use_home_assistant = false;
-    std::string home_assistant_ip;
-    std::string home_assistant_token;
-    int home_assistant_port = 0;
 
     // AirPlay settings
     std::string airplay_server_name;
@@ -86,6 +92,7 @@ struct Configuration
     bool airplay_taper_volume;
     bool airplay_h265_support;
     int airplay_n_renderers;
+#endif
 
 #ifdef CLIENT_BUILD
     bool use_client = true;
