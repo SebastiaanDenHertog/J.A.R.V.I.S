@@ -1,7 +1,6 @@
 #include "Watchdog.h"
 
 extern NetworkManager *serverNetworkManager;
-
 extern NetworkManager *clientNetworkManager;
 
 
@@ -12,14 +11,12 @@ extern std::unique_ptr<TaskProcessor> taskProcessor;
 extern std::unique_ptr<InputHandler> inputHandler;
 #endif
 
-
-
 /**
  * @brief Constructor for Watchdog.
  */
 
 Watchdog::Watchdog(Mode mode)
-    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false), client_server_connection(false) {}
+    : mode(mode), running(false), webServerRunning(false), bluetoothRunning(false), airPlayRunning(false), client_server_connection(false), respeakerRunning(false) {}
 
 /**
  * @brief Destructor for Watchdog.
@@ -97,6 +94,11 @@ void Watchdog::checkServices()
             {
                 logEvent("Bluetooth is not running. Attempting to start.");
                 startService("bluetooth");
+            }
+            if (config.use_respeaker && !respeakerRunning)
+            {
+                logEvent("Respeaker is not running. Attempting to start.");
+                startService("respeaker");
             }
 
             // Monitor AirPlay
@@ -192,6 +194,34 @@ void Watchdog::startService(const std::string &service)
         std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
         clientThread.detach();
     }
+    else if (service == "respeaeker")
+    {
+        respeakerRunning = true;
+        std::thread([&, config]()
+                    {
+            if (!clientNetworkManager) {
+                logEvent("Respeaker requires a running client NetworkManager.");
+                respeakerRunning = false;
+                return;
+            }
+
+            RespeakerAPI respeakerAPI(
+                config.spiDevicePath,
+                config.i2cDevicePath,
+                config.i2cDeviceAddress,
+                config.micCount,
+                config.ledCount,
+                clientNetworkManager  // Pass the running
+            );
+        
+            .detach();
+            }
+            )
+            
+            
+        logEvent("Respeaker API started.");
+    }
+
 #endif
 #ifdef SERVER_BUILD
     else if (service == "homeAssistant")

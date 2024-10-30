@@ -21,6 +21,7 @@
 #endif
 #ifdef CLIENT_BUILD
 #include "AirPlayServer.h"
+#include "ReSpeaker.h"
 #endif
 
 
@@ -87,6 +88,7 @@ private:
     bool webServerRunning;
     bool bluetoothRunning;
     bool airPlayRunning;
+    bool respeakerRunning;
     bool homeAssistantRunning;
     bool client_server_connection;
 

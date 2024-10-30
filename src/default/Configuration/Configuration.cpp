@@ -18,6 +18,7 @@ nlohmann::json Configuration::to_json() const
     j["threads"] = threads;
     j["use_server"] = use_server;
     j["use_client"] = use_client;
+    j["configFilePath"] = configFilePath;
     j["main_server_port"] = main_server_port;
     j["client_server_ip"] = client_server_ip;
     j["web_client_port"] = web_client_port;
@@ -66,6 +67,8 @@ nlohmann::json Configuration::to_json() const
     j["airplay_taper_volume"] = airplay_taper_volume;
     j["airplay_h265_support"] = airplay_h265_support;
     j["airplay_n_renderers"] = airplay_n_renderers;
+    //respeaker 4mic array
+    
     return j;
 }
 
@@ -101,6 +104,8 @@ void Configuration::from_json(const nlohmann::json &j)
     {
         main_server_ip = nullptr;
     }
+    if(j.contains("configFilePath"))
+        configFilePath = j["configFilePath"];
     if (j.contains("web_client_port"))
         web_client_port = j["web_client_port"];
     if (j.contains("use_airplay"))
@@ -115,6 +120,7 @@ void Configuration::from_json(const nlohmann::json &j)
         home_assistant_port = j["home_assistant_port"];
     if (j.contains("home_assistant_token"))
         home_assistant_token = j["home_assistant_token"];
+    
     // airplay
     if (j.contains("airplay_server_name"))
         airplay_server_name = j["airplay_server_name"];

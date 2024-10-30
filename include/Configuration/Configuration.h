@@ -6,6 +6,7 @@
 #include <memory>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
+#include <filesystem>
 
 // Enumeration for application modes
 enum class AppMode
@@ -26,7 +27,7 @@ struct Configuration
     std::string web_server_key_path;
     bool use_bluetooth = false;
     int threads = 10;
-    std::string configFilePath = "/config.json";
+    std::string configFilePath = std::filesystem::current_path().string()+"/config.json";
 
     // Client-specific settings
     std::string client_id;
@@ -86,6 +87,10 @@ struct Configuration
     bool airplay_taper_volume;
     bool airplay_h265_support;
     int airplay_n_renderers;
+
+// respeaker
+// 4mic array
+    uint8_t respeaker4MicArraySpiAders = 0;
 
 #ifdef CLIENT_BUILD
     bool use_client = true;
