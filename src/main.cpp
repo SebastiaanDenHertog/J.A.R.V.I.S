@@ -16,6 +16,7 @@
 #include <csignal>
 #include <chrono>
 #include <unordered_map>
+#include <fstream>
 
 // Common headers
 #include "BluetoothComm.h"
@@ -362,7 +363,6 @@ void createDefaultConfig(const std::string &filename)
     default_config.use_server = false; // Assuming default is client mode
     default_config.main_server_port = 15880;
     default_config.use_bluetooth = false;
-    default_config.use_airplay = false;
 
     // Get the ConfigurationManager instance
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
@@ -383,17 +383,17 @@ int main(int argc, char *argv[])
     std::signal(SIGTERM, signal_handler);
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
     // Initialize Configuration Manager with default or loaded config
-    std::string configFilePath = configManager.getConfiguration().configFilePath;
+    std::string config_file_path = configManager.getConfiguration().config_file_path;
 
     // Check if the config file exists
-    if (!fileExists(configFilePath))
+    if (!fileExists(config_file_path))
     {
         // Create a default configuration file if it doesn't exist
-        createDefaultConfig(configFilePath);
+        createDefaultConfig(config_file_path);
     }
 
     // Load configuration from file
-    configManager.loadConfiguration(configFilePath);
+    configManager.loadConfiguration(config_file_path);
     Configuration initial_config = configManager.getConfiguration();
 
     // Determine mode (Server or Client) based on the loaded configuration

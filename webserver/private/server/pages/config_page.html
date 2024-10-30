@@ -94,7 +94,7 @@
         async function fetchClientConfigs() {
             document.getElementById('client-loading').innerText = 'Loading client configurations...';
             try {
-                const response = await fetch('/api/clients');
+                const response = await fetch('/api/client/config');
                 if (response.ok) {
                     const data = await response.json();
                     displayClientConfigs(data);
@@ -115,9 +115,23 @@
             for (const [key, value] of Object.entries(config)) {
                 const label = document.createElement('label');
                 label.innerText = key;
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = value;
+                let input;
+
+                // Set input types based on the data type
+                if (typeof value === 'boolean') {
+                    input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.checked = value;
+                } else if (typeof value === 'number') {
+                    input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = value;
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = value;
+                }
+
                 input.id = `server-${key}`;
                 serverForm.appendChild(label);
                 serverForm.appendChild(input);
@@ -131,9 +145,18 @@
         async function saveServerConfig() {
             const inputs = document.querySelectorAll('#server-config-form input');
             const updatedConfig = {};
+
             inputs.forEach(input => {
                 const key = input.id.replace('server-', '');
-                updatedConfig[key] = input.value;
+
+                // Parse value based on input type
+                if (input.type === 'checkbox') {
+                    updatedConfig[key] = input.checked;
+                } else if (input.type === 'number') {
+                    updatedConfig[key] = parseFloat(input.value);
+                } else {
+                    updatedConfig[key] = input.value;
+                }
             });
 
             try {
@@ -187,13 +210,22 @@
         async function saveClientConfig(clientId) {
             const inputs = document.querySelectorAll(`#client-configs-container input[id^='client-${clientId}-']`);
             const updatedConfig = {};
+
             inputs.forEach(input => {
                 const key = input.id.replace(`client-${clientId}-`, '');
-                updatedConfig[key] = input.value;
+
+                // Parse value based on input type
+                if (input.type === 'checkbox') {
+                    updatedConfig[key] = input.checked;
+                } else if (input.type === 'number') {
+                    updatedConfig[key] = parseFloat(input.value);
+                } else {
+                    updatedConfig[key] = input.value;
+                }
             });
 
             try {
-                const response = await fetch(`/api/clientconfig/update?client_id=${clientId}`, {
+                const response = await fetch(`/api/clients/clientconfig/update?client_id=${clientId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updatedConfig)
@@ -229,7 +261,7 @@
             };
 
             try {
-                const response = await fetch(`/api/clients/update?client_id=${clientId}`, {
+                const response = await fetch(`/api/clients/clientconfig/update?client_id=${clientId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(defaultConfig)
