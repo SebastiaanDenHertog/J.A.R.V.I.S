@@ -7,32 +7,26 @@
 
 #include <Arduino.h>
 #include "WebServer.h"
-#include "GPIOMgr.h"
+#include "PinManager.h"
 #include "TemperatureSensor.h"
 
-const char* ssid = ""; 
-const char* password = "";
+// WiFi credentials
+const char* ssid = ""; // environment variable
+const char* password = "";  // environment variable
 
-WebServer webServer(ssid, password);
-GPIOMgr gpioMgr;
-TemperatureSensor tempSensor(4, DHT11); 
+// Create instances of the classes
+Internet internet;
+WebServer webServer;
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
 
+    internet.begin();
     webServer.begin();
-    webServer.addGPIOConfigRoute();
-
-    gpioMgr.configureGPIO(2, "output");
-    gpioMgr.writeGPIO(2, HIGH);
-
-    float temperature = tempSensor.readTemperature();
-    Serial.printf("Temperature: %.2f°C\n", temperature);
 }
 
-void loop() {
-    float temperature = tempSensor.readTemperature();
-    webServer.broadcastTemperature(temperature);
-    
-    delay(5000);
+void loop()
+{
+    delay(1);
 }
