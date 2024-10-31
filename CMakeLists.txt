@@ -50,26 +50,17 @@ set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture (x86_64, x86, aarch64
 set(TARGET_OS "linux" CACHE STRING "Target operating system (linux, windows)")
 
 # Options for different components
-option(BUILD_FULL "Build everything(server + client)" OFF)
 option(BUILD_SERVER "Build only server components" OFF)
 option(BUILD_CLIENT "Build only client components" OFF)
 
-# Ensure mutually exclusive build options
-if((BUILD_FULL AND BUILD_SERVER) OR(BUILD_FULL AND BUILD_CLIENT) OR(BUILD_SERVER AND BUILD_CLIENT))
-    message(FATAL_ERROR "You must enable only one of BUILD_FULL, BUILD_SERVER, or BUILD_CLIENT.")
-endif()
-
-# Default to BUILD_FULL if none are selected
-if(NOT BUILD_FULL AND NOT BUILD_SERVER AND NOT BUILD_CLIENT)
-    message(STATUS "No specific build selected, defaulting to full build.")
-    set(BUILD_FULL ON)
+# Default to BUILD_SERVER if none are selected
+if(NOT BUILD_SERVER AND NOT BUILD_CLIENT)
+    message(STATUS "No specific build selected, defaulting to server build.")
+    set(BUILD_SERVER ON)
 endif()
 
 # Set preprocessor definitions based on the build type
-if(BUILD_FULL)
-    add_definitions(-DBUILD_FULL)
-    message("Building full code")
-elseif(BUILD_SERVER)
+if(BUILD_SERVER)
     add_definitions(-DBUILD_SERVER)
     message("Building server code")
 elseif(BUILD_CLIENT)
@@ -129,7 +120,7 @@ else()
     include_directories(${JSON_INCLUDE_DIR})
 endif()
 
-if(BUILD_FULL OR BUILD_SERVER)
+if(BUILD_SERVER)
     find_package(OpenCV)
 
     if(NOT OpenCV_FOUND)
@@ -147,9 +138,7 @@ if(BUILD_FULL OR BUILD_SERVER)
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
         include_directories(${OpenCV_INCLUDE_DIRS})
     endif()
-endif()
 
-if(BUILD_FULL OR BUILD_SERVER)
     find_package(Whisper)
 
     if(NOT Whisper_FOUND)
@@ -217,7 +206,7 @@ if(BUILD_FULL OR BUILD_SERVER)
     endif()
 endif()
 
-if(BUILD_FULL OR BUILD_CLIENT)
+if(BUILD_CLIENT)
     # Find GLIB using pkg-config
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLIB2 REQUIRED glib-2.0)
@@ -261,7 +250,9 @@ if(NOT httpserver_FOUND)
     else()
         set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
         include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-        include_directories(${CMAKE_BINARY_DIR}/httpserver/include) # This might change depending on your structure
+        include_directories(${CMAKE_BINARY_DIR}/httpserver) 
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/details)
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils) # This might change depending on your structure
         add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
     endif()
 else()
@@ -269,7 +260,7 @@ else()
     include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
 endif()
 
-message(STATUS "buildstatus ${BUILD_FULL} ${BUILD_SERVER} ${BUILD_CLIENT}")
+message(STATUS "buildstatus ${BUILD_SERVER} ${BUILD_CLIENT}")
 
 # Include directories for the project
 include_directories(
@@ -290,24 +281,13 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/prometheus
     ${PROJECT_SOURCE_DIR}/include/webServer
     ${PROJECT_SOURCE_DIR}/include/whisperTranscriber
+    ${PROJECT_SOURCE_DIR}/include/dataStructures
+    ${PROJECT_SOURCE_DIR}/include/WatchDog
+    ${PROJECT_SOURCE_DIR}/include/Configuration
 )
 
 # Source files
-if(BUILD_FULL)
-    message("Building full code")
-
-    # Common (default) sources
-    file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
-    file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
-
-    # Full-specific sources (includes both server and client)
-    file(GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/src/server/*/*.cpp)
-    file(GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/src/client/*/*.cpp)
-
-    add_executable(full ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${CLIENT_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
-    add_compile_definitions(FULL_BUILD)
-
-elseif(BUILD_SERVER)
+if(BUILD_SERVER)
     message("Building server code")
 
     # Common (default) sources
@@ -338,17 +318,13 @@ message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
 # Linking libraries
 if(${TARGET_OS} STREQUAL linux)
-    if(BUILD_FULL)
-        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
-    elseif(BUILD_SERVER)
+    if(BUILD_SERVER)
         target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_CLIENT)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
-    if(BUILD_FULL)
-        target_link_libraries(full PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
-    elseif(BUILD_SERVER)
+    if(BUILD_SERVER)
         target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_CLIENT)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
@@ -357,17 +333,13 @@ endif()
 
 # Compile options
 if(${TARGET_OS} STREQUAL linux)
-    if(BUILD_FULL)
-        target_compile_options(full PRIVATE -Wall -g -pthread -DSERVER_MODE)
-    elseif(BUILD_SERVER)
+    if(BUILD_SERVER)
         target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
-    if(BUILD_FULL)
-        target_compile_options(full PRIVATE -Wall -g -pthread -DSERVER_MODE)
-    elseif(BUILD_SERVER)
+    if(BUILD_SERVER)
         target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)

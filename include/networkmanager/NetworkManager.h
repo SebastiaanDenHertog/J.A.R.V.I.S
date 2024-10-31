@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    10-04-2024
+ * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the NetworkManager class and the SoundData struct
+ */
+
 #ifndef NETWORKMANAGER_H
 #define NETWORKMANAGER_H
 
@@ -10,7 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+#ifdef SERVER_BUILD
 #include "ModelRunner.h"
 #include "WhisperTranscriber.h"
 #endif
@@ -62,10 +69,10 @@ public:
         UDP
     };
 
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
-    NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
+#if defined(BUILD_SERVER)
+    NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
-    NetworkManager(int port, char *serverIp, Protocol protocol);
+    NetworkManager(int port, const char *serverIp, Protocol protocol);
 #endif
     ~NetworkManager();
 
@@ -84,7 +91,7 @@ public:
 
 private:
     int port;
-    const char *serverIp;
+    const std::string serverIp;
     int serverSd;
     int udpSd;
     sockaddr_in servAddr;
@@ -110,7 +117,7 @@ private:
     void addKnownClient(int clientSd);
     void processSoundData(const SoundData *inputData, uint8_t *outputData);
 
-#if defined(BUILD_FULL) || defined(BUILD_SERVER)
+#if defined(BUILD_SERVER)
     ModelRunner *nerModel;            // Model for NER
     ModelRunner *classificationModel; // Model for Classification
     WhisperTranscriber transcriber;   // Whisper transcriber for live audio transcription

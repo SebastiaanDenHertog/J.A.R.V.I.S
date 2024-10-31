@@ -1,19 +1,35 @@
-#include "DeviceScanner.h"
-#include <filesystem>
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    09-05-2024
+ * @Date updated    14-05-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the DeviceScanner class
+ **/
 
-namespace fs = std::filesystem;
+#include "DeviceScanner.h"
+#include <dirent.h>  // For directory iteration
+#include <cstring>   // For string operations
+#include <string>
 
 // Helper function to find the first matching file
 std::string find_first_device(const std::string &directory, const std::string &prefix)
 {
-    for (const auto &entry : fs::directory_iterator(directory))
+    DIR *dir;
+    struct dirent *ent;
+    
+    if ((dir = opendir(directory.c_str())) != NULL)
     {
-        std::string path = entry.path().string();
-        if (path.find(prefix) != std::string::npos)
+        while ((ent = readdir(dir)) != NULL)
         {
-            return path;
+            std::string path = std::string(ent->d_name);
+            if (path.find(prefix) != std::string::npos)
+            {
+                closedir(dir);
+                return directory + "/" + path;
+            }
         }
+        closedir(dir);
     }
+    
     return "";
 }
 

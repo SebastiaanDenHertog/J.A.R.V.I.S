@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    02-05-2024
+ * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the NetworkManager class and the SoundData struct
+ **/
+
 #include "NetworkManager.h"
 #include <cerrno>
 #include <cstring>
@@ -5,11 +12,19 @@
 
 #if defined(BUILD_FULL) || defined(BUILD_SERVER)
 
-NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
-    : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
+/**
+ * @brief Constructor for NetworkManager.
+ * @param port The port to listen on.
+ * @param protocol The communication protocol to use.
+ * @param nerModel The NER model to use.
+ * @param classificationModel The classification model to use.
+ * @note This constructor is only available in the full build or server build.
+ * @note The WhisperTranscriber setup is only available in the server build.
+ */
+
+NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
+    : port(port), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
-    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
-    std::cout << "Server Port: " << port << std::endl;
 
     // WhisperTranscriber setup
     WhisperTranscriber::Params transcriberParams;
@@ -20,7 +35,7 @@ NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, Mode
 
     if (protocol == TCP)
     {
-        if (serverIp == nullptr)
+        if (serverIp == "")
         {
             setupServerSocket();
             bindSocket();
@@ -39,12 +54,17 @@ NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol, Mode
 
 #else
 
-NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol)
+/**
+ * @brief Constructor for NetworkManager.
+ * @param port The port to listen on.
+ * @param serverIp The IP address of the server.
+ * @param protocol The communication protocol to use.
+ * @note This constructor is only available in the default build or client build.
+ */
+
+NetworkManager::NetworkManager(int port, const char* serverIp, Protocol protocol)
     : port(port), serverIp(serverIp), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP))
 {
-    std::cout << "Server IP: " << (serverIp ? serverIp : "None") << std::endl;
-    std::cout << "Server Port: " << port << std::endl;
-
     if (protocol == TCP)
     {
         if (serverIp == nullptr)
@@ -65,6 +85,12 @@ NetworkManager::NetworkManager(int port, char *serverIp, Protocol protocol)
 }
 
 #endif
+
+/**
+ * @brief Method to process sound data.
+ * @param inputData The input sound data.
+ * @param outputData The output sound data.
+ */
 
 void NetworkManager::processSoundData(const SoundData *inputData, uint8_t *outputData)
 {
@@ -101,6 +127,9 @@ NetworkManager::~NetworkManager()
     }
 }
 
+/**
+ * @brief Method to send data over a socket.
+ */
 void NetworkManager::setupServerSocket()
 {
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
@@ -124,6 +153,10 @@ void NetworkManager::setupServerSocket()
     std::cout << "Server socket created" << std::endl;
 }
 
+/**
+ * @brief Method to setup a UDP socket.
+ */
+
 void NetworkManager::setupUDPSocket()
 {
     udpSd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -144,6 +177,10 @@ void NetworkManager::setupUDPSocket()
         exit(1);
     }
 }
+
+/**
+ * @brief Method to run the NetworkManager server
+ */
 
 void NetworkManager::runServer()
 {
@@ -170,15 +207,31 @@ void NetworkManager::runServer()
     }
 }
 
+/**
+ * @brief Method to send udp data.
+ * @param data message data to send
+ * @param length length of the message data
+ */
+
 void NetworkManager::sendToUDP(const uint8_t *data, size_t length)
 {
     sendto(udpSd, data, length, 0, (struct sockaddr *)&clientAddrUDP, clientAddrUDPSize);
 }
 
+/**
+ * @brief Method to receive data from a socket.
+ * @param buffer The buffer to store the received data.
+ * @param length The length of the buffer.
+ */
+
 int NetworkManager::recvFromUDP(uint8_t *buffer, size_t length)
 {
     return recvfrom(udpSd, buffer, length, 0, (struct sockaddr *)&clientAddrUDP, &clientAddrUDPSize);
 }
+
+/**
+ * @brief Method to connect with a client.
+ */
 
 void NetworkManager::connectClient()
 {
@@ -193,6 +246,10 @@ void NetworkManager::connectClient()
     }
 }
 
+/**
+ * @brief Setup client socket
+ */
+
 void NetworkManager::setupClientSocket()
 {
     serverSd = socket(AF_INET, SOCK_STREAM, 0);
@@ -205,9 +262,13 @@ void NetworkManager::setupClientSocket()
     servAddr.sin_port = htons(port);
 }
 
+/**
+ * @brief connect to server from client
+ */
+
 void NetworkManager::connectToServer()
 {
-    servAddr.sin_addr.s_addr = inet_addr(serverIp);
+    servAddr.sin_addr.s_addr = inet_addr(serverIp.data());
     servAddr.sin_family = AF_INET;
     servAddr.sin_port = htons(port);
     std::cout << "Client trying to connect to server at IP: " << serverIp << " on port: " << port << std::endl;
@@ -225,6 +286,12 @@ void NetworkManager::connectToServer()
     }
     std::cout << "Successfully connected to the server!" << std::endl;
 }
+
+/**
+ * @brief send sound data to server
+ * @param data The sound data to send.
+ * @param length The length of the sound data.
+ */
 
 void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
 {
@@ -244,6 +311,9 @@ void NetworkManager::sendSoundData(const uint8_t *data, size_t length)
     }
 }
 
+/**
+ * @brief Method to send data over a socket.
+ */
 void NetworkManager::receiveResponse()
 {
     if (protocol == TCP)
@@ -270,6 +340,10 @@ void NetworkManager::receiveResponse()
     }
 }
 
+/**
+ * @brief Bind with socket
+ */
+
 void NetworkManager::bindSocket()
 {
     if (serverSd < 0)
@@ -287,6 +361,10 @@ void NetworkManager::bindSocket()
     std::cout << "Server socket bound to address" << std::endl;
 }
 
+/**
+ * @brief Listen for clients
+ */
+
 void NetworkManager::listenForClients()
 {
     if (serverSd < 0)
@@ -303,6 +381,10 @@ void NetworkManager::listenForClients()
     }
     std::cout << "Server is now listening for clients..." << std::endl;
 }
+
+/**
+ * @brief Accept client connection
+ */
 
 void NetworkManager::acceptClient()
 {
@@ -326,6 +408,11 @@ void NetworkManager::acceptClient()
     std::lock_guard<std::mutex> guard(clientMutex);
     clientThreads.push_back(std::thread(&NetworkManager::session, this, newSd));
 }
+
+/**
+ * @brief Method to handle a client session
+ * @param clientSd The client socket descriptor.
+ */
 
 void NetworkManager::session(int clientSd)
 {
@@ -389,6 +476,15 @@ void NetworkManager::session(int clientSd)
     closeSocket(clientSd);
 }
 
+/**
+ * @brief Method to send an HTTP response.
+ * @param clientSd The client socket descriptor.
+ * @param data The data to send.
+ * @param length The length of the data.
+ * @param statusCode The HTTP status code.
+ * @param contentType The content type.
+ */
+
 void NetworkManager::sendHttpResponse(int clientSd, const uint8_t *data, size_t length, const std::string &statusCode, const std::string &contentType)
 {
     std::ostringstream httpResponse;
@@ -404,6 +500,11 @@ void NetworkManager::sendHttpResponse(int clientSd, const uint8_t *data, size_t 
     }
 }
 
+/**
+ * @brief closes the socked
+ * @param sd The socket descriptor to close.
+ */
+
 void NetworkManager::closeSocket(int sd)
 {
     if (sd >= 0)
@@ -413,11 +514,21 @@ void NetworkManager::closeSocket(int sd)
     }
 }
 
+/**
+ * @brief Method to check if a client is known.
+ * @param clientSd The client socket descriptor.
+ */
+
 bool NetworkManager::isKnownClient(int clientSd)
 {
     std::lock_guard<std::mutex> guard(clientMutex);
     return knownClients.find(clientSd) != knownClients.end();
 }
+
+/**
+ * @brief Method to add a known client.
+ * @param clientSd The client socket descriptor.
+ */
 
 void NetworkManager::addKnownClient(int clientSd)
 {
@@ -425,20 +536,48 @@ void NetworkManager::addKnownClient(int clientSd)
     knownClients.insert(clientSd);
 }
 
+/**
+ * @brief Method to get the server socket descriptor.
+ */
+
 int NetworkManager::getServerSocket() const
 {
     return serverSd;
 }
+
+/**
+ * @brief Method to send data over a socket.
+ * @param sd The socket descriptor.
+ * @param data The data to send. in char
+ * @param length The length of the data.
+ * @param flags The send flags.
+ */
 
 void NetworkManager::send(int sd, const char *data, size_t length, int flags)
 {
     ::send(sd, data, length, flags);
 }
 
+/**
+ * @brief Method to send data over a socket.
+ * @param sd The socket descriptor.
+ * @param data The data to send. in uint8_t
+ * @param length The length of the data.
+ * @param flags The send flags.
+ */
+
 void NetworkManager::send(int sd, const uint8_t *data, size_t length, int flags)
 {
     ::send(sd, reinterpret_cast<const char *>(data), length, flags);
 }
+
+/**
+ * @brief Method to receive data from a socket.
+ * @param sd The socket descriptor.
+ * @param buffer The buffer to store the received data.
+ * @param length The length of the buffer.
+ * @param flags The receive flags.
+ */
 
 int NetworkManager::recv(int sd, char *buffer, size_t length, int flags)
 {

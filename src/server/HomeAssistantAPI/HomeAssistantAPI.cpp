@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    13-07-2024
+ * @Date updated    24-08-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the HomeAssistantAPI class
+ **/
+
 #include "HomeAssistantAPI.h"
 #include <iostream>
 #include <boost/asio/connect.hpp>

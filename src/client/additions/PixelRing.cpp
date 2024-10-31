@@ -1,3 +1,10 @@
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    18-05-2024
+ * @Date updated    26-05-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the PixelRing class
+ **/
+
 #include "PixelRing.h"
 #include <stdexcept>
 #include <iostream>

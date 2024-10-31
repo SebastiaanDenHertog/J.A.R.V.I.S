@@ -1,9 +1,11 @@
-/*
-Create by: Sebastiaan den Hertog
-Date: 2024-09-01
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    03-10-2024
+ * @Date updated    01-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the WhisperTranscriber class
+ **/
 
-Description:
-*/
+
 #include "WhisperTranscriber.h"
 #include <iostream>
 #include <sstream>

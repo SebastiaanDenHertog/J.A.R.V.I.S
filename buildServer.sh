@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TENSORFLOW_LITE_BRANCH="master" # Adjust this as needed
-
 # Name of the build directory
 BUILD_DIR="build"
 

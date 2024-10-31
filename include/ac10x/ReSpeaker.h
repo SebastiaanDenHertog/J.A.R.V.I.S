@@ -1,9 +1,9 @@
-/*
-Create by: Sebastiaan den Hertog
-Date: 2024-09-01
-
-Description: 
-*/
+/**
+ * @Authors         Sebastiaan den Hertog
+ * @Date created    12-04-2024
+ * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
+ * @Description     constuctor, destructor and methods for the ReSpeaker class
+ **/
 
 #ifndef RESPEAKER_H
 #define RESPEAKER_H
