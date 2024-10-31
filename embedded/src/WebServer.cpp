@@ -19,19 +19,15 @@ void WebServer::begin()
     }
     Serial.println("Connected to WiFi");
 
-    // WebSocket setup
     ws.onEvent([](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
                {
         if (type == WS_EVT_DATA) {
-            // Handle incoming WebSocket data
         } });
     server.addHandler(&ws);
 
-    // Define a basic route
     server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
               { request->send(200, "text/html", "<h1>ESP32 Web Interface</h1>"); });
 
-    // Start the server
     server.begin();
     Serial.println("Web server started");
 }

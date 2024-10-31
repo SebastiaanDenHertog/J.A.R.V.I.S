@@ -374,10 +374,6 @@ public:
         {
             // Get all client configurations as a JSON object
             json all_configs = ConfigurationManager::getInstance().getAllConfigurations();
-        try
-        {
-            // Get all client configurations as a JSON object
-            json all_configs = ConfigurationManager::getInstance().getAllConfigurations();
 
             // Convert the JSON object to a formatted string
             std::string response_body = all_configs.dump(4);
@@ -611,7 +607,7 @@ public:
 #endif
 
             ConfigurationManager::getInstance().updateConfiguration(current_config);
-            ConfigurationManager::getInstance().saveConfiguration(current_config.config_file_path);
+            ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
 
             json response_json = {
                 {"status", "success"},
@@ -650,7 +646,7 @@ public:
 
             current_config.from_json(j);
             ConfigurationManager::getInstance().updateConfiguration(client_id, current_config);
-            ConfigurationManager::getInstance().saveConfigurations(current_config.config_file_path);
+            ConfigurationManager::getInstance().saveConfigurations(current_config.configFilePath);
             ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
 
             json response_json = {

@@ -24,13 +24,13 @@ nlohmann::json Configuration::to_json() const
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
     j["use_client_server_connection"] = use_client_server_connection;
-    j["config_file_path"] = config_file_path;
+    j["configFilePath"] = configFilePath;
 #endif
 // client
 #ifdef CLIENT_BUILD
     j["client_server_ip"] = client_server_ip;
     j["use_client_server_connection"] = use_client_server_connection;
-    j["config_file_path"] = config_file_path;
+    j["configFilePath"] = configFilePath;
     // airplay
     j["use_airplay"] = use_airplay;
     j["airplay_server_name"] = airplay_server_name;
@@ -70,8 +70,8 @@ nlohmann::json Configuration::to_json() const
     j["airplay_taper_volume"] = airplay_taper_volume;
     j["airplay_h265_support"] = airplay_h265_support;
     j["airplay_n_renderers"] = airplay_n_renderers;
-    //respeaker 4mic array
-    
+    // respeaker 4mic array
+#endif
     return j;
 }
 
@@ -97,8 +97,14 @@ void Configuration::from_json(const nlohmann::json &j)
         threads = j["threads"];
     if (j.contains("main_server_port"))
         main_server_port = j["main_server_port"];
-    if (j.contains("config_file_path"))
-        config_file_path = j["config_file_path"];
+    if (j.contains("configFilePath"))
+        configFilePath = j["configFilePath"];
+    if (j.contains("home_assistant_ip"))
+        home_assistant_ip = j["home_assistant_ip"];
+    if (j.contains("home_assistant_port"))
+        home_assistant_port = j["home_assistant_port"];
+    if (j.contains("home_assistant_token"))
+        home_assistant_token = j["home_assistant_token"];
 #endif
 #ifdef CLIENT_BUILD
     if (j.contains("main_server_ip") && !j["main_server_ip"].is_null())
@@ -110,7 +116,7 @@ void Configuration::from_json(const nlohmann::json &j)
     {
         main_server_ip = nullptr;
     }
-    if(j.contains("configFilePath"))
+    if (j.contains("configFilePath"))
         configFilePath = j["configFilePath"];
     if (j.contains("web_client_port"))
         web_client_port = j["web_client_port"];
@@ -120,13 +126,7 @@ void Configuration::from_json(const nlohmann::json &j)
         use_client_server_connection = j["use_client_server_connection"];
     if (j.contains("use_bluetooth"))
         use_bluetooth = j["use_bluetooth"];
-    if (j.contains("home_assistant_ip"))
-        home_assistant_ip = j["home_assistant_ip"];
-    if (j.contains("home_assistant_port"))
-        home_assistant_port = j["home_assistant_port"];
-    if (j.contains("home_assistant_token"))
-        home_assistant_token = j["home_assistant_token"];
-    
+
     // airplay
     if (j.contains("airplay_server_name"))
         airplay_server_name = j["airplay_server_name"];

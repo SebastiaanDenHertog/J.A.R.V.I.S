@@ -108,7 +108,6 @@ const char *getLocalIP()
     return strdup(first_ip.c_str());
 }
 
-// Function to check if Bluetooth is available
 bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(NULL);
@@ -122,7 +121,6 @@ bool checkBluetoothAvailability()
 }
 
 #ifdef CLIENT_BUILD
-// Send speech data to the server
 void send_speech_data(NetworkManager &client)
 {
     try
@@ -139,8 +137,6 @@ void send_speech_data(NetworkManager &client)
 #endif
 
 #ifdef SERVER_BUILD
-
-// Convert string to Task::TaskType
 Task::TaskType stringToTaskType(const std::string &str)
 {
     static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
@@ -178,8 +174,6 @@ Task::TaskType stringToTaskType(const std::string &str)
     auto it = strToTaskType.find(str);
     return it != strToTaskType.end() ? it->second : Task::ERROR;
 }
-
-// Function for handling terminal input and processing tasks (server-side)
 void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (global_running)
@@ -219,7 +213,6 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 #endif
 
 #ifdef SERVER_BUILD
-// Placeholder for server logic
 void run_server(const Configuration &config)
 {
     try
@@ -242,7 +235,6 @@ void run_server(const Configuration &config)
 #endif
 
 #ifdef CLIENT_BUILD
-// Placeholder for client logic
 void run_client(const Configuration &config)
 {
     try
@@ -273,7 +265,6 @@ void run_client(const Configuration &config)
 #endif
 
 #ifdef SERVER_BUILD
-// Function to start the server network manager
 void start_server_network_manager(int server_port)
 {
     try
@@ -289,7 +280,6 @@ void start_server_network_manager(int server_port)
     }
 }
 
-// Function to stop the server network manager
 void stop_server_network_manager()
 {
     if (serverNetworkManager)
@@ -300,7 +290,6 @@ void stop_server_network_manager()
     }
 }
 
-// Initialize ModelRunners and TaskProcessor for NLP tasks
 void initialize_models_and_task_processor()
 {
     try
@@ -322,11 +311,10 @@ void initialize_models_and_task_processor()
     catch (const std::exception &e)
     {
         std::cerr << "Failed to initialize models or TaskProcessor: " << e.what() << std::endl;
-        exit(EXIT_FAILURE); // Exit if models fail to load since they are critical
+        exit(EXIT_FAILURE); 
     }
 }
 
-// Function to start terminal input handling for the server
 void start_terminal_input()
 {
     if (!nerModel || !classificationModel || !taskProcessor || !inputHandler)
@@ -356,21 +344,16 @@ bool fileExists(const std::string &filename)
 
 void createDefaultConfig(const std::string &filename)
 {
-    // Create a default configuration
     Configuration default_config;
 
-    // Set up default values
-    default_config.use_server = false; // Assuming default is client mode
+    default_config.use_server = false;
     default_config.main_server_port = 15880;
     default_config.use_bluetooth = false;
 
-    // Get the ConfigurationManager instance
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
 
-    // Temporarily release the lock before saving configurations
     configManager.updateConfiguration(default_config);
 
-    // Save the configuration without locking again
     configManager.saveConfiguration(filename);
 
     std::cout << "Default configuration created at " << filename << std::endl;
@@ -378,31 +361,23 @@ void createDefaultConfig(const std::string &filename)
 
 int main(int argc, char *argv[])
 {
-    // Register signal handlers for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
-    // Initialize Configuration Manager with default or loaded config
-    std::string config_file_path = configManager.getConfiguration().config_file_path;
+    std::string configFilePath = configManager.getConfiguration().configFilePath;
 
-    // Check if the config file exists
-    if (!fileExists(config_file_path))
+    if (!fileExists(configFilePath))
     {
-        // Create a default configuration file if it doesn't exist
-        createDefaultConfig(config_file_path);
+        createDefaultConfig(configFilePath);
     }
 
-    // Load configuration from file
-    configManager.loadConfiguration(config_file_path);
+    configManager.loadConfiguration(configFilePath);
     Configuration initial_config = configManager.getConfiguration();
 
-    // Determine mode (Server or Client) based on the loaded configuration
     Mode currentMode = (initial_config.get_mode_string() == "SERVER") ? Mode::SERVER : Mode::CLIENT;
 
-    // Initialize Watchdog based on the mode
     Watchdog watchdog(currentMode);
 
-// Start the appropriate NetworkManager and models based on the mode
 #ifdef SERVER_BUILD
     if (initial_config.use_server)
     {
@@ -412,16 +387,13 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    // Start Watchdog Monitoring
     watchdog.startMonitoring();
 
-    // Main loop to monitor configuration changes and handle graceful shutdown
     while (global_running)
     {
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
-    // Stop Watchdog and NetworkManager instances before exiting
     watchdog.stopMonitoring();
 #ifdef SERVER_BUILD
     stop_server_network_manager();

@@ -8,14 +8,12 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
-// Enumeration for application modes
 enum class AppMode
 {
     CLIENT,
     SERVER
 };
 
-// Structure to hold configuration settings
 struct Configuration
 {
     // Common settings
@@ -27,7 +25,7 @@ struct Configuration
     std::string web_server_key_path;
     bool use_bluetooth = false;
     int threads = 10;
-    std::string config_file_path = std::filesystem::current_path().string()+"/config.json";
+    std::string configFilePath = std::filesystem::current_path().string()+"/config.json";
     bool bluetooth_available = false;
     unsigned short main_server_port = 15880;
 #ifdef SERVER_BUILD
@@ -48,12 +46,15 @@ struct Configuration
     std::string client_server_ip;
     bool use_airplay = false;
     bool use_client_server_connection = false;
+    const char *main_server_ip;
+
+    // respeaker
+    bool use_respeaker = false;
     const char *spiDevicePath = "/dev/spidev0.0";
     const char *i2cDevicePath = "/dev/i2c-1";
     uint8_t i2cDeviceAddress = 0x3b;
     uint8_t micCount = 4;
     uint8_t ledCount = 16;
-    const char *main_server_ip;
 
     // AirPlay settings
     std::string airplay_server_name;
@@ -111,7 +112,6 @@ struct Configuration
     bool use_server = false;
 #endif
 
-    // Method to convert AppMode to string
     std::string get_mode_string() const
     {
         if (use_client)
@@ -121,54 +121,41 @@ struct Configuration
         return "NONE";
     }
 
-    // Serialize Configuration to JSON
     nlohmann::json to_json() const;
 
-    // Deserialize Configuration from JSON
     void from_json(const nlohmann::json &j);
 };
 
-// Singleton class to manage configuration
 class ConfigurationManager
 {
 public:
     static ConfigurationManager &getInstance();
 
-    // Get the configuration for a specific client
     Configuration getConfiguration(const std::string &client_id);
 
-    // Get the global configuration (for compatibility with existing code)
     Configuration getConfiguration();
 
-    // Update the configuration for a specific client
     void updateConfiguration(const std::string &client_id, const Configuration &new_config);
 
-    // Update the global configuration
     void updateConfiguration(const Configuration &new_config);
 
-    // Get all configurations as a JSON object
     nlohmann::json getAllConfigurations();
 
-    // Save the global configuration to a JSON file (for compatibility)
     void saveConfiguration(const std::string &filepath);
 
-    // Load the global configuration from a JSON file (for compatibility)
     void loadConfiguration(const std::string &filepath);
 
-    // Save all client configurations to a JSON file
     void saveConfigurations(const std::string &filepath);
 
-    // Load all client configurations from a JSON file
     void loadConfigurations(const std::string &filepath);
 
-    // Delete copy constructor and assignment operator
     ConfigurationManager(const ConfigurationManager &) = delete;
     ConfigurationManager &operator=(const ConfigurationManager &) = delete;
 
 private:
     ConfigurationManager() {}
     std::unordered_map<std::string, Configuration> configurations;
-    Configuration global_config; // For compatibility with single-client code
+    Configuration global_config; 
     std::mutex config_mutex;
 };
-#endif // CONFIGURATION_H
+#endif

@@ -92,11 +92,11 @@ void Watchdog::checkServices()
             logEvent("Bluetooth is not running. Attempting to start.");
             startService("bluetooth");
         }
-            if (config.use_respeaker && !respeakerRunning)
-            {
-                logEvent("Respeaker is not running. Attempting to start.");
-                startService("respeaker");
-            }
+        if (config.use_respeaker && !respeakerRunning)
+        {
+            logEvent("Respeaker is not running. Attempting to start.");
+            startService("respeaker");
+        }
 
         // Monitor AirPlay
         if (config.use_airplay && !airPlayRunning)
@@ -191,33 +191,35 @@ void Watchdog::startService(const std::string &service)
         std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
         clientThread.detach();
     }
-    else if (service == "respeaeker")
-    {
-        respeakerRunning = true;
-        std::thread([&, config]()
-                    {
-            if (!clientNetworkManager) {
-                logEvent("Respeaker requires a running client NetworkManager.");
-                respeakerRunning = false;
-                return;
-            }
+//     else if (service == "respeaeker")
+//     {
+//         respeakerRunning = true;
+//         std::thread([&, config]()
+//                     {
+//             if (!clientNetworkManager)
+//             {
+//                 logEvent("Respeaker requires a running client NetworkManager.");
+//                 respeakerRunning = false;
+//                 return;
+//             }
 
-            RespeakerAPI respeakerAPI(
-                config.spiDevicePath,
-                config.i2cDevicePath,
-                config.i2cDeviceAddress,
-                config.micCount,
-                config.ledCount,
-                clientNetworkManager  // Pass the running
-            );
-        
-            .detach();
-            }
-            )
-            
-            
-        logEvent("Respeaker API started.");
-    }
+//             ReSpeaker respeaker(
+//                 config.spiDevicePath,
+//                 config.i2cDevicePath,
+//                 config.i2cDeviceAddress,
+//                 config.micCount,
+//                 config.ledCount,
+//                 clientNetworkManager // Pass the running
+//             );
+//             resppeakerRunning = false;
+//                     }catch (const std::excetion &e)
+//                     logEvent("Failed to start Home Assistant: " + std::string(e.what()));
+//                 homeAssistantRunning = false;
+//     } })
+//     .detach();
+
+// logEvent("Respeaker API started.");
+// }
 
 #endif
 #ifdef SERVER_BUILD
@@ -226,24 +228,24 @@ void Watchdog::startService(const std::string &service)
         homeAssistantRunning = true;
         std::thread([&, config]()
                     {
-            try {
-                if (!serverNetworkManager) {
-                    logEvent("Home Assistant requires a running server NetworkManager.");
-                    homeAssistantRunning = false;
-                    return;
-                }
+                try {
+                    if (!serverNetworkManager) {
+                        logEvent("Home Assistant requires a running server NetworkManager.");
+                        homeAssistantRunning = false;
+                        return;
+                    }
 
-                HomeAssistantAPI homeAssistantAPI(
-                    config.home_assistant_ip,
-                    config.home_assistant_port,
-                    config.home_assistant_token,
-                    serverNetworkManager  // Pass the running server NetworkManager instance
-                );
-                homeAssistantRunning = false;
-            } catch (const std::exception &e) {
-                logEvent("Failed to start Home Assistant: " + std::string(e.what()));
-                homeAssistantRunning = false;
-            } })
+                    HomeAssistantAPI homeAssistantAPI(
+                        config.home_assistant_ip,
+                        config.home_assistant_port,
+                        config.home_assistant_token,
+                        serverNetworkManager  // Pass the running server NetworkManager instance
+                    );
+                    homeAssistantRunning = false;
+                } catch (const std::exception &e) {
+                    logEvent("Failed to start Home Assistant: " + std::string(e.what()));
+                    homeAssistantRunning = false;
+                } })
             .detach();
         logEvent("Home Assistant API started.");
     }
