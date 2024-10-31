@@ -11,7 +11,6 @@
 #include <thread>
 #include <chrono>
 
-// Static member initialization if needed
 dnssd_t *AirPlayServer::dnssd = NULL;
 raop_t *AirPlayServer::raop = NULL;
 logger_t *AirPlayServer::render_logger = NULL;
@@ -43,6 +42,10 @@ static std::vector<std::string> registered_keys;
 #define OCTETS 6
 #define VERSION "1.69"
 
+/**
+ * @brief Constructor for AirPlayServer.
+ * @note This constructor initializes the AirPlayServer with default values.
+ */
 AirPlayServer::AirPlayServer()
     : server_name("JARVIS"),
       audio_sync(false),
@@ -102,6 +105,12 @@ AirPlayServer::AirPlayServer()
 
 static int log_level = LOGGER_INFO;
 
+/**
+ * @brief Method to log messages.
+ * @param level The log level.
+ * @param format The format of the message.
+ */
+
 void log(int level, const char *format, ...)
 {
     va_list vargs;
@@ -126,6 +135,12 @@ void log(int level, const char *format, ...)
     printf("\n");
     va_end(vargs);
 }
+
+/**
+ * @brief Method to parse command line arguments.
+ * @param filename The number of arguments.
+ * @return True if the file has write access, false otherwise.
+ */
 
 bool AirPlayServer::file_has_write_access(const char *filename)
 {
@@ -155,6 +170,14 @@ bool AirPlayServer::file_has_write_access(const char *filename)
     return write;
 }
 
+/**
+ * @brief Method to write cover art to a file.
+ * @param filename The name of the file.
+ * @param image The image data.
+ * @param len The length of the image data.
+ * @return The number of bytes written.
+ */
+
 size_t write_coverart(const char *filename, const void *image, size_t len)
 {
     FILE *fp = fopen(filename, "wb");
@@ -163,6 +186,10 @@ size_t write_coverart(const char *filename, const void *image, size_t len)
     return count;
 }
 
+/**
+ * @brief finds the MAC address of a network interface
+ * @return The MAC address as a string.
+ */
 std::string AirPlayServer::find_mac()
 {
     /*  finds the MAC address of a network interface *
@@ -257,6 +284,12 @@ std::string AirPlayServer::find_mac()
     return mac;
 }
 
+/**
+ * @brief dumps audio frames to a file
+ * @param data The audio data.
+ * @param datalen The length of the audio data.
+ * @param type The type of audio data.
+ */
 void AirPlayServer::dump_audio_to_file(unsigned char *data, int datalen, unsigned char type)
 {
     if (!audio_dumpfile && audio_type != previous_audio_type)
@@ -302,6 +335,12 @@ void AirPlayServer::dump_audio_to_file(unsigned char *data, int datalen, unsigne
     }
 }
 
+/**
+ * @brief dumps video frames to a file
+ * @param data The video data.
+ * @param datalen The length of the video data.
+ */
+
 void AirPlayServer::dump_video_to_file(unsigned char *data, int datalen)
 {
     /*  SPS NAL has (data[4] & 0x1f) = 0x07  */
@@ -345,6 +384,10 @@ void AirPlayServer::dump_video_to_file(unsigned char *data, int datalen)
     }
 }
 
+/**
+ * @brief Method to add the hostname to the server name.
+ */
+
 void AirPlayServer::append_hostname()
 {
 #ifdef _WIN32 /*modification for compilation on Windows */
@@ -368,6 +411,13 @@ void AirPlayServer::append_hostname()
     }
 #endif
 }
+
+/**
+ * @brief Method to validate a MAC address.
+ * @param mac_address The MAC address to validate.
+ * @return True if the MAC address is valid, false otherwise.
+ *
+ */
 
 bool AirPlayServer::validate_mac(char *mac_address)
 {
@@ -397,6 +447,11 @@ bool AirPlayServer::validate_mac(char *mac_address)
     return true;
 }
 
+/**
+ * @brief Method to generate a random MAC address.
+ * @return The random MAC address as a string.
+ */
+
 std::string AirPlayServer::random_mac()
 {
     char str[3];
@@ -414,6 +469,14 @@ std::string AirPlayServer::random_mac()
     }
     return mac_address;
 }
+
+/**
+ * @brief Process metadata from the client.
+ * @param count The number of metadata items.
+ * @param dmap_tag The DMAP tag.
+ * @param metadata The metadata.
+ * @param datalen The length of the metadata.
+ */
 
 void AirPlayServer::process_metadata(int count, const std::string &dmap_tag, const unsigned char *metadata, int datalen)
 {
@@ -555,6 +618,14 @@ void AirPlayServer::process_metadata(int count, const std::string &dmap_tag, con
     printf("\n");
 }
 
+/**
+ * @brief Method to parse a DMAP header.
+ * @param metadata The metadata.
+ * @param tag The tag.
+ * @param len The length of the metadata.
+ * @return 0 if the header is valid, 1 otherwise.
+ */
+
 int AirPlayServer::parse_dmap_header(const unsigned char *metadata, char *tag, int *len)
 {
     const unsigned char *header = metadata;
@@ -583,6 +654,14 @@ int AirPlayServer::parse_dmap_header(const unsigned char *metadata, char *tag, i
     }
     return 0;
 }
+
+/**
+ * @brief creates pin on display
+ * @param pin_str The pin as a string.
+ * @param margin The margin.
+ * @param gap The gap.
+ * @return The pin image.
+ */
 
 char *AirPlayServer::create_pin_display(char *pin_str, int margin, int gap)
 {
@@ -674,6 +753,11 @@ struct signal_handler
 
 std::unordered_map<gint, signal_handler> u = {};
 
+/**
+ * @brief Signal handler for Windows.
+ * @param signum The signal number.
+ */
+
 void SignalHandler(int signum)
 {
     if (signum == SIGTERM || signum == SIGINT)
@@ -681,6 +765,14 @@ void SignalHandler(int signum)
         u[signum].handler(u[signum].user_data);
     }
 }
+
+/**
+ * @brief Method to add a signal handler.
+ * @param signum The signal number.
+ * @param handler The signal handler.
+ * @param user_data The user data.
+ * @return 0 if the signal handler was added successfully, -1 otherwise.
+ */
 
 guint g_unix_signal_add(gint signum, GSourceFunc handler, gpointer user_data)
 {
@@ -690,6 +782,13 @@ guint g_unix_signal_add(gint signum, GSourceFunc handler, gpointer user_data)
 }
 #endif
 
+/**
+ * @brief Method to parse a MAC address.
+ * @param str The MAC address as a string.
+ * @param hw_addr The hardware address.
+ * @return 0 if the MAC address is valid, 1 otherwise.
+ */
+
 int AirPlayServer::parse_hw_addr(std::string str, std::vector<char> &hw_addr)
 {
     for (int i = 0; i < (int)str.length(); i += 3)
@@ -698,6 +797,11 @@ int AirPlayServer::parse_hw_addr(std::string str, std::vector<char> &hw_addr)
     }
     return 0;
 }
+
+/**
+ * @brief get the home directory
+ * @return The home directory as a string.
+ */
 
 const char *AirPlayServer::get_homedir()
 {
@@ -714,6 +818,11 @@ const char *AirPlayServer::get_homedir()
 #endif
     return homedir;
 }
+
+/**
+ * @brief Method to find the configuration file.
+ * @return The configuration file as a string.
+ */
 
 std::string AirPlayServer::find_uxplay_config_file()
 {
@@ -744,6 +853,15 @@ std::string AirPlayServer::find_uxplay_config_file()
     return no_config_file;
 }
 
+/**
+ * @brief checks if option has value
+ * @param i The index.
+ * @param argc The number of arguments.
+ * @param option The option.
+ * @param next_arg The next argument.
+ * @return True if the option has a value, false otherwise.
+ */
+
 bool AirPlayServer::option_has_value(const int i, const int argc, std::string option, const char *next_arg)
 {
     if (i >= argc - 1 || next_arg[0] == '-')
@@ -753,6 +871,15 @@ bool AirPlayServer::option_has_value(const int i, const int argc, std::string op
     }
     return true;
 }
+
+/**
+ * @brief Method to parse the command line arguments.
+ * @param value The value of the argument.
+ * @param w The width.
+ * @param h The height.
+ * @param r The rotation.
+ * @return True if the command line arguments are valid, false otherwise.
+ */
 
 bool AirPlayServer::get_display_settings(std::string value, unsigned short *w, unsigned short *h, unsigned short *r)
 {
@@ -788,6 +915,13 @@ bool AirPlayServer::get_display_settings(std::string value, unsigned short *w, u
     return true;
 }
 
+/**
+ * @brief get value from string
+ * @param str The string.
+ * @param n The value.
+ * @return True if the value is valid, false otherwise.
+ */
+
 bool AirPlayServer::get_value(const char *str, unsigned int *n)
 {
     // if n > 0 str must be a positive decimal <= input value *n
@@ -803,6 +937,15 @@ bool AirPlayServer::get_value(const char *str, unsigned int *n)
     *n = (unsigned int)l;
     return true;
 }
+
+/**
+ * @brief get ports
+ * @param nports The number of ports.
+ * @param option The option.
+ * @param value The value.
+ * @param port The port.
+ * @return True if the ports are valid, false otherwise.
+ */
 
 bool AirPlayServer::get_ports(int nports, std::string option, const char *value, unsigned short *const port)
 {
@@ -846,6 +989,13 @@ bool AirPlayServer::get_ports(int nports, std::string option, const char *value,
          option.c_str(), value, nports, LOWEST_ALLOWED_PORT, HIGHEST_PORT);
     return false;
 }
+
+/**
+ * @brief flip video
+ * @param str The string.
+ * @param videoflip The video flip.
+ * @return True if the video flip is valid, false otherwise.
+ */
 
 bool AirPlayServer::get_videoflip(const char *str, videoflip_t *videoflip)
 {
