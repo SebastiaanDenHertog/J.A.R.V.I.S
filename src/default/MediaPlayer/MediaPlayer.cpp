@@ -3,16 +3,28 @@
  * @Date created    24-05-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the MediaPlayer class
- **/
+ */
 
 #include "MediaPlayer.h"
 
+/**
+ * @brief Constructor for MediaPlayer.
+ */
+
 MediaPlayer::MediaPlayer() : isInitialized(false) {}
 
+
+/**
+ * @brief Destructor for MediaPlayer.
+ */
 MediaPlayer::~MediaPlayer()
 {
-    // Cleanup resources if necessary
 }
+
+/**
+ * @brief Initialize the media player with Bluetooth protocol.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::initializeBluetooth()
 {
@@ -23,6 +35,11 @@ bool MediaPlayer::initializeBluetooth()
     return true;
 }
 
+/**
+ * @brief Initialize the media player with WiFi protocol.
+ * @return True if successful, false otherwise.
+ */
+
 bool MediaPlayer::initializeWiFi()
 {
     // Initialize WiFi resources
@@ -31,6 +48,11 @@ bool MediaPlayer::initializeWiFi()
     isInitialized = true;
     return true;
 }
+
+/**
+ * @brief Initialize the media player with AUX protocol.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::initializeAUX()
 {
@@ -41,18 +63,32 @@ bool MediaPlayer::initializeAUX()
     return true;
 }
 
-void MediaPlayer::setProtocol(const std::string &protocol)
+/**
+ * @brief Method to select the playback protocol.
+ * @param protocol The protocol to use.
+ * @return True if successful, false otherwise.
+ */
+
+bool MediaPlayer::setProtocol(const std::string &protocol)
 {
     if (protocol == "Bluetooth" || protocol == "WiFi" || protocol == "AUX")
     {
         currentProtocol = protocol;
         std::cout << "Protocol set to " << protocol << std::endl;
+        return true;
     }
     else
     {
         std::cerr << "Unknown protocol: " << protocol << std::endl;
+        return false;
     }
 }
+
+/**
+ * @brief Play media from the given path.
+ * @param mediaPath The path to the media file.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::play(const std::string &mediaPath)
 {
@@ -81,12 +117,22 @@ bool MediaPlayer::play(const std::string &mediaPath)
     }
 }
 
+/**
+ * @brief Pause the media playback.
+ * @return True if successful, false otherwise.
+ */
+
 bool MediaPlayer::pause()
 {
     std::cout << "Pausing media..." << std::endl;
     // Placeholder: Add actual pause code
     return true;
 }
+
+/**
+ * @brief Stop the media playback.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::stop()
 {
@@ -95,12 +141,24 @@ bool MediaPlayer::stop()
     return true;
 }
 
+/**
+ * @brief Play media over Bluetooth.
+ * @param mediaPath The path to the media file.
+ * @return True if successful, false otherwise.
+ */
+
 bool MediaPlayer::playBluetooth(const std::string &mediaPath)
 {
     std::cout << "Playing media over Bluetooth: " << mediaPath << std::endl;
     // Placeholder: Add actual Bluetooth play code
     return true;
 }
+
+/**
+ * @brief Play media over WiFi.
+ * @param mediaPath The path to the media file.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::playWiFi(const std::string &mediaPath)
 {
@@ -109,12 +167,25 @@ bool MediaPlayer::playWiFi(const std::string &mediaPath)
     return true;
 }
 
+/**
+ * @brief Play media over AUX.
+ * @param mediaPath The path to the media file.
+ * @return True if successful, false otherwise.
+ */
+
 bool MediaPlayer::playAUX(const std::string &mediaPath)
 {
     std::cout << "Playing media over AUX: " << mediaPath << std::endl;
     // Placeholder: Add actual AUX play code
     return true;
 }
+
+/**
+ * @brief Set the output device for the media player.
+ * @param device The device to set the output for.
+ * @param output The output to set.
+ * @return True if successful, false otherwise.
+ */
 
 bool MediaPlayer::setoutput(ClientInfo device, std::string output)
 {
@@ -131,6 +202,12 @@ bool MediaPlayer::setoutput(ClientInfo device, std::string output)
     std::cerr << "Output not found: " << output << std::endl;
     return false;
 }
+
+/**
+ * @brief Find the song based on the given entities.
+ * @param entities The entities to search for.
+ * @return The song file name.
+ */
 
 std::string MediaPlayer::FindSong(std::vector<std::vector<std::string>> entities)
 {

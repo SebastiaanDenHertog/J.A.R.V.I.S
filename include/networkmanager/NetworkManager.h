@@ -3,7 +3,7 @@
  * @Date created    10-04-2024
  * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the NetworkManager class and the SoundData struct
- **/
+ */
 
 #ifndef NETWORKMANAGER_H
 #define NETWORKMANAGER_H
@@ -70,9 +70,9 @@ public:
     };
 
 #if defined(BUILD_SERVER)
-    NetworkManager(int port, char *serverIp, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
+    NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
 #else
-    NetworkManager(int port, char *serverIp, Protocol protocol);
+    NetworkManager(int port, const char *serverIp, Protocol protocol);
 #endif
     ~NetworkManager();
 
@@ -91,7 +91,7 @@ public:
 
 private:
     int port;
-    const char *serverIp;
+    const std::string serverIp;
     int serverSd;
     int udpSd;
     sockaddr_in servAddr;

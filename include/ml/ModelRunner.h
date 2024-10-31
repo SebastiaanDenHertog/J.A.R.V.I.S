@@ -3,7 +3,7 @@
  * @Date created    13-06-2024
  * @Date updated    03-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the ModelRunner class
- **/
+ */
 
 #ifndef MODEL_RUNNER_H
 #define MODEL_RUNNER_H

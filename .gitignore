@@ -37,8 +37,9 @@
 # folders
 /models
 /build
-/lib
+#/lib
 
 /classes
 .vscode/settings.json
 web_service_*.log
+config.json

@@ -3,7 +3,7 @@
  * @Date created    04-10-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the webServer class
- **/
+ */
 
 #include "WebServer.h"
 

@@ -3,7 +3,7 @@
  * @Date created    29-05-2024
  * @Date updated    10-09-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the airplayServer class
- **/
+ */
 
 #ifndef AIRPLAYSERVER_H
 #define AIRPLAYSERVER_H

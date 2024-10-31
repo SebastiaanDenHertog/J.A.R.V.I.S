@@ -2,14 +2,17 @@
  * @Authors         Sebastiaan den Hertog
  * @Date created    04-10-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
- * @Description
- **/
+ * @Description     
+*/
 
 #include <Arduino.h>
 #include "WebServer.h"
 #include "PinManager.h"
 #include "TemperatureSensor.h"
-#include "Internet.h"
+
+// WiFi credentials
+const char* ssid = ""; // environment variable
+const char* password = "";  // environment variable
 
 // Create instances of the classes
 Internet internet;

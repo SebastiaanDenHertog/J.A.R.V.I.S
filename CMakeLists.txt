@@ -55,7 +55,7 @@ option(BUILD_CLIENT "Build only client components" OFF)
 
 # Default to BUILD_SERVER if none are selected
 if(NOT BUILD_SERVER AND NOT BUILD_CLIENT)
-    message(STATUS "No specific build selected, defaulting to full build.")
+    message(STATUS "No specific build selected, defaulting to server build.")
     set(BUILD_SERVER ON)
 endif()
 
@@ -138,9 +138,7 @@ if(BUILD_SERVER)
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
         include_directories(${OpenCV_INCLUDE_DIRS})
     endif()
-endif()
 
-if(BUILD_SERVER)
     find_package(Whisper)
 
     if(NOT Whisper_FOUND)
@@ -252,7 +250,9 @@ if(NOT httpserver_FOUND)
     else()
         set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
         include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-        include_directories(${CMAKE_BINARY_DIR}/httpserver/include) # This might change depending on your structure
+        include_directories(${CMAKE_BINARY_DIR}/httpserver) 
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/details)
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils) # This might change depending on your structure
         add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
     endif()
 else()

@@ -3,7 +3,7 @@
  * @Date created    13-07-2024
  * @Date updated    04-08-2024 (By: Sebastiaan den Hertog)
  * @Description     constuctor, destructor and methods for the HomeAssistantAPI class
- **/
+ */
 
 #ifndef HOMEASSISTANTAPI_H
 #define HOMEASSISTANTAPI_H

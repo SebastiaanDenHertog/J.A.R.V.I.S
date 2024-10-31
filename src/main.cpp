@@ -16,6 +16,7 @@
 #include <csignal>
 #include <chrono>
 #include <unordered_map>
+#include <fstream>
 
 // Common headers
 #include "BluetoothComm.h"
@@ -59,6 +60,9 @@ std::unique_ptr<ModelRunner> nerModel;
 std::unique_ptr<ModelRunner> classificationModel;
 std::unique_ptr<TaskProcessor> taskProcessor;
 std::unique_ptr<InputHandler> inputHandler;
+NetworkManager *serverNetworkManager = nullptr;
+#else
+std::unique_ptr<NetworkManager> clientNetworkManager;
 #endif
 
 // Debug print macro
@@ -104,7 +108,6 @@ const char *getLocalIP()
     return strdup(first_ip.c_str());
 }
 
-// Function to check if Bluetooth is available
 bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(NULL);
@@ -118,7 +121,6 @@ bool checkBluetoothAvailability()
 }
 
 #ifdef CLIENT_BUILD
-// Send speech data to the server
 void send_speech_data(NetworkManager &client)
 {
     try
@@ -132,8 +134,9 @@ void send_speech_data(NetworkManager &client)
         std::cerr << "Error sending speech data: " << e.what() << std::endl;
     }
 }
+#endif
 
-// Convert string to Task::TaskType
+#ifdef SERVER_BUILD
 Task::TaskType stringToTaskType(const std::string &str)
 {
     static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
@@ -171,8 +174,6 @@ Task::TaskType stringToTaskType(const std::string &str)
     auto it = strToTaskType.find(str);
     return it != strToTaskType.end() ? it->second : Task::ERROR;
 }
-
-// Function for handling terminal input and processing tasks (server-side)
 void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
 {
     while (global_running)
@@ -212,7 +213,6 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 #endif
 
 #ifdef SERVER_BUILD
-// Placeholder for server logic
 void run_server(const Configuration &config)
 {
     try
@@ -235,7 +235,6 @@ void run_server(const Configuration &config)
 #endif
 
 #ifdef CLIENT_BUILD
-// Placeholder for client logic
 void run_client(const Configuration &config)
 {
     try
@@ -266,20 +265,11 @@ void run_client(const Configuration &config)
 #endif
 
 #ifdef SERVER_BUILD
-NetworkManager *serverNetworkManager = nullptr; // For server-side communication
-#endif
-
-#ifdef CLIENT_BUILD
-NetworkManager *clientNetworkManager = nullptr; // For client-side communication
-#endif
-
-#ifdef SERVER_BUILD
-// Function to start the server network manager
 void start_server_network_manager(int server_port)
 {
     try
     {
-        serverNetworkManager = new NetworkManager(server_port, nullptr, NetworkManager::Protocol::TCP);
+        serverNetworkManager = new NetworkManager(server_port, NetworkManager::Protocol::TCP, nerModel.get(), classificationModel.get());
         std::thread networkThread(&NetworkManager::runServer, serverNetworkManager);
         networkThread.detach();
         DEBUG_PRINT("Server NetworkManager started on port " << server_port);
@@ -290,19 +280,16 @@ void start_server_network_manager(int server_port)
     }
 }
 
-// Function to stop the server network manager
 void stop_server_network_manager()
 {
     if (serverNetworkManager)
     {
-        serverNetworkManager->stop(); // Assuming NetworkManager has a stop function
         delete serverNetworkManager;
         serverNetworkManager = nullptr;
         DEBUG_PRINT("Server NetworkManager stopped.");
     }
 }
 
-// Initialize ModelRunners and TaskProcessor for NLP tasks
 void initialize_models_and_task_processor()
 {
     try
@@ -324,43 +311,10 @@ void initialize_models_and_task_processor()
     catch (const std::exception &e)
     {
         std::cerr << "Failed to initialize models or TaskProcessor: " << e.what() << std::endl;
-        exit(EXIT_FAILURE); // Exit if models fail to load since they are critical
+        exit(EXIT_FAILURE); 
     }
 }
 
-#endif
-
-#ifdef CLIENT_BUILD
-// Function to start the client network manager
-void start_client_network_manager(const std::string &server_ip, int server_port)
-{
-    try
-    {
-        clientNetworkManager = new NetworkManager(server_port, server_ip.c_str(), NetworkManager::Protocol::TCP);
-        std::thread clientThread(&NetworkManager::connectClient, clientNetworkManager);
-        clientThread.detach();
-        DEBUG_PRINT("Client NetworkManager started, connecting to " << server_ip << ":" << server_port);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Failed to start Client NetworkManager: " << e.what() << std::endl;
-    }
-}
-
-// Function to stop the client network manager
-void stop_client_network_manager()
-{
-    if (clientNetworkManager)
-    {
-        clientNetworkManager->disconnect(); // Assuming NetworkManager has a disconnect function
-        delete clientNetworkManager;
-        clientNetworkManager = nullptr;
-        DEBUG_PRINT("Client NetworkManager stopped.");
-    }
-}
-#endif
-#ifdef SERVER_BUILD
-// Function to start terminal input handling for the server
 void start_terminal_input()
 {
     if (!nerModel || !classificationModel || !taskProcessor || !inputHandler)
@@ -377,22 +331,53 @@ void start_terminal_input()
 }
 #endif
 
+bool fileExists(const std::string &filename)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Configuration file not found: " << filename << ". Using default settings." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void createDefaultConfig(const std::string &filename)
+{
+    Configuration default_config;
+
+    default_config.use_server = false;
+    default_config.main_server_port = 15880;
+    default_config.use_bluetooth = false;
+
+    ConfigurationManager &configManager = ConfigurationManager::getInstance();
+
+    configManager.updateConfiguration(default_config);
+
+    configManager.saveConfiguration(filename);
+
+    std::cout << "Default configuration created at " << filename << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-    // Register signal handlers for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
-
-    // Initialize Configuration Manager with default or loaded config
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
-    configManager.loadConfiguration("config.json"); // Load from file if exists
+    std::string configFilePath = configManager.getConfiguration().configFilePath;
+
+    if (!fileExists(configFilePath))
+    {
+        createDefaultConfig(configFilePath);
+    }
+
+    configManager.loadConfiguration(configFilePath);
     Configuration initial_config = configManager.getConfiguration();
 
-    // Determine mode and initialize Watchdog
-    Mode currentMode = initial_config.use_server ? Mode::SERVER : Mode::CLIENT;
+    Mode currentMode = (initial_config.get_mode_string() == "SERVER") ? Mode::SERVER : Mode::CLIENT;
+
     Watchdog watchdog(currentMode);
 
-// Start the appropriate NetworkManager and models based on the mode
 #ifdef SERVER_BUILD
     if (initial_config.use_server)
     {
@@ -402,31 +387,16 @@ int main(int argc, char *argv[])
     }
 #endif
 
-#ifdef CLIENT_BUILD
-    if (initial_config.use_client)
-    {
-        start_client_network_manager(initial_config.main_server_ip, initial_config.main_server_port);
-        std::thread clientThread(run_client, initial_config);
-        clientThread.detach();
-    }
-#endif
-
-    // Start Watchdog Monitoring
     watchdog.startMonitoring();
 
-    // Main loop to monitor configuration changes and handle graceful shutdown
     while (global_running)
     {
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
-    // Stop Watchdog and NetworkManager instances before exiting
     watchdog.stopMonitoring();
 #ifdef SERVER_BUILD
     stop_server_network_manager();
-#endif
-#ifdef CLIENT_BUILD
-    stop_client_network_manager();
 #endif
 
     std::cout << "Application exited gracefully." << std::endl;
