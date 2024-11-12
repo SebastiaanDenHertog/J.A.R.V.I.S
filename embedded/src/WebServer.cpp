@@ -255,6 +255,7 @@ void WebServer::updateNetwork()
 
                       Serial.println("Network settings updated and reconnected.");
                   }
+                  Serial.println("Network settings updated.");
 
                   request->send(200, "text/plain", "OK"); });
 }

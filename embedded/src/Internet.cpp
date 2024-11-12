@@ -212,7 +212,7 @@ void Internet::getSettings()
     byte subnet[4] = {};
     String hostname = "";
 
-    preferences.begin("network", false);
+    preferences.begin("network", true);
     if (preferences.getBytes("ip", ip, sizeof(ip)) == ESP_ERR_NOT_FOUND)
     {
         preferences.putBytes("ip", emptyArray, sizeof(emptyArray));
@@ -310,7 +310,7 @@ void Internet::updateSettings()
         byte subnet[4] = {networkSettings.subnet[0], networkSettings.subnet[1], networkSettings.subnet[2], networkSettings.subnet[3]};
 
         // Store the settings in preferences
-        preferences.begin("network", false);
+        preferences.begin("network", true);
         preferences.putBytes("ip", (byte *)(&ip), sizeof(ip));
         preferences.putBytes("gateway", (byte *)(&gateway), sizeof(gateway));
         preferences.putBytes("subnet", (byte *)(&subnet), sizeof(subnet));
@@ -336,7 +336,7 @@ void Internet::updateSettings()
         byte subnet[4] = {networkSettings.subnet[0], networkSettings.subnet[1], networkSettings.subnet[2], networkSettings.subnet[3]};
 
         // Store the settings in preferences
-        preferences.begin("network", false);
+        preferences.begin("network", true);
         preferences.putBytes("ip", (byte *)(&ip), sizeof(ip));
         preferences.putBytes("gateway", (byte *)(&gateway), sizeof(gateway));
         preferences.putBytes("subnet", (byte *)(&subnet), sizeof(subnet));
@@ -371,7 +371,7 @@ void Internet::updateSettings()
  */
 void Internet::resetSettings()
 {
-    preferences.begin("network", false);
+    preferences.begin("network", true);
     preferences.clear();
     preferences.putString("hostname", getControllerName());
     preferences.end();
@@ -408,12 +408,10 @@ void Internet::displaySettings()
     byte subnet[4] = {};
     String hostname = "";
 
-    preferences.begin("network", false);
+    preferences.begin("network", true);
     preferences.getBytes("ip", ip, sizeof(ip));
     preferences.getBytes("gateway", gateway, sizeof(gateway));
     preferences.getBytes("subnet", subnet, sizeof(subnet));
-    ssid = preferences.getString("ssid");
-    password = preferences.getString("password");
     hostname = preferences.getString("hostname");
     useDHCP = preferences.getBool("useDHCP", true);
     preferences.end();
@@ -483,18 +481,14 @@ void Internet::setHostname(String hostname)
 void Internet::setSSID(String ssid)
 {
     networkSettings.ssid = ssid;
-    preferences.begin("network", true);
-    preferences.putString("ssid", ssid);
-    preferences.end();
+    updateSettings();
     Serial.println("SSID set to: " + ssid); // Debugging statement
 }
 
 void Internet::setPassword(String password)
 {
     networkSettings.password = password;
-    preferences.begin("network", true);
-    preferences.putString("password", password);
-    preferences.end();
+    updateSettings();
     Serial.println("Password set."); // Avoid printing passwords directly for security
 }
 
@@ -643,6 +637,22 @@ String Internet::getControllerName()
     return controllerName;
 }
 
+String Internet::getSSID() const
+{
+    preferences.begin("network", true);
+    String ssid = preferences.getString("ssid", "").c_str();
+    preferences.end();
+    return ssid;
+}
+
+String Internet::getPassword() const
+{
+    preferences.begin("network", true);
+    String password = preferences.getString("password", "").c_str();
+    preferences.end();
+    return password;
+}
+
 /**
  * @brief Handles incoming UDP packets
  */
@@ -671,19 +681,9 @@ void Internet::handleTcpPacket()
     }
 }
 
-String Internet::getSSID() const
-{
-    return preferences.getString("ssid", "");
-}
-
-String Internet::getPassword() const
-{
-    return preferences.getString("password", "");
-}
-
 void Internet::setDHCP(bool useDHCP)
 {
-    this->useDHCP = useDHCP;
+    useDHCP = useDHCP;
     preferences.begin("network", true);
     preferences.putBool("useDHCP", useDHCP);
     preferences.end();
@@ -692,7 +692,7 @@ void Internet::setDHCP(bool useDHCP)
 bool Internet::isUsingDHCP() const
 {
     preferences.begin("network", true);
-    bool useDHCP = preferences.getBool("useDHCP", true); // Default to true (DHCP)
+    bool useDHCP = preferences.getBool("useDHCP", true); 
     preferences.end();
     return useDHCP;
 }
