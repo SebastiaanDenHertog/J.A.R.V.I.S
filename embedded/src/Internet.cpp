@@ -96,7 +96,7 @@ void Internet::begin()
     else
     {
         // Start AP mode for web configuration if needed
-        WiFi.softAP(name.c_str());
+        WiFi.softAP(name.c_str(), "jarvis123");
         Serial.print("AP Mode Hostname: ");
         Serial.println(name);
         Serial.print("IP Address of webpage: ");
