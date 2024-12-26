@@ -108,6 +108,41 @@ void Internet::begin()
 }
 
 /**
+ * @brief sends Packet to server by udp
+ * @param msg The message to send
+ */
+void Internet::sendUdpPacket(const char *msg)
+{
+    if (udp.beginPacket(udpIP, udpPort))
+    {
+        udp.write(msg);
+        udp.endPacket();
+    }
+}
+
+/**
+ * @brief Sends a Packet to the server by TCP
+ * @param msg The message to send
+ */
+void Internet::sendTcpPacket(const char *msg)
+{
+    if (!useTcp)
+    {
+        Serial.println("Cannot send TCP message while UDP is enabled.");
+        return;
+    }
+
+    if (tcpClient.connected())
+    {
+        tcpClient.print(msg);
+    }
+    else
+    {
+        Serial.println("TCP client not connected.");
+    }
+}
+
+/**
  * @brief Checks if Ethernet or WiFi should be used based on user preference and availability.
  * This method can be called to dynamically switch between Ethernet and WiFi if needed.
  */

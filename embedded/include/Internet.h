@@ -58,6 +58,8 @@ public:
     void initUdpTcp(uint16_t port, bool isTcp);
     void handleUdpPacket();
     void handleTcpPacket();
+    void sendUdpPacket(const char *msg);
+    void sendTcpPacket(const char *msg);
 
 private:
     WiFiUDP udp;
