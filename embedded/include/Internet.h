@@ -55,6 +55,12 @@ public:
     void setEthernet(bool useEthernet);
     bool getUsesEthernet();
 
+    void updateClientSettings(); 
+    void setClientIp(IPAddress ip);
+    void setClientPort(uint16_t port);
+    IpAddress getClientIp();
+    uint16_t getClientPort();
+
     void initUdpTcp(uint16_t port, bool isTcp);
     void handleUdpPacket();
     void handleTcpPacket();
@@ -85,6 +91,12 @@ private:
         String ssid = "";
         String password = "";
     } networkSettings;
+
+    struct ClientNetworkSettings
+    {
+        IPAddress ip = IPAddress(0, 0, 0, 0);
+        uint16_t port = 0;
+    } clientNetworkSettings;
 
     static void WiFiEvent(WiFiEvent_t event);
 };

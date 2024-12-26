@@ -242,6 +242,19 @@ void WebServer::updateNetwork()
                       Serial.println(useDHCP ? "DHCP enabled" : "Static IP enabled");
                       settingsUpdated = true;
                   }
+                  if (request->hasParam("clientIp")){
+                        IPAddress clientIp;
+                        clientIp.fromString(request->getParam("clientIp")->value());
+                        internet.setClientIp(clientIp);
+                        settingsUpdated = true;
+                  }
+
+                  if (request->hasParam("clientPort"))
+                  {
+                        uint16_t clientPort = request->getParam("clientPort")->value().toInt();
+                        internet.setClientPort(clientPort);
+                        settingsUpdated = true;
+                  }
 
                   if (settingsUpdated) {
                       Serial.println("Applying updated settings...");

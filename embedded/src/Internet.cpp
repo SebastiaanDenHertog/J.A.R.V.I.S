@@ -113,7 +113,7 @@ void Internet::begin()
  */
 void Internet::sendUdpPacket(const char *msg)
 {
-    if (udp.beginPacket(udpIP, udpPort))
+    if (udp.beginPacket(clientNetworkSettings.ip, clientNetworkSettings.port))
     {
         udp.write(msg);
         udp.endPacket();
@@ -688,6 +688,27 @@ String Internet::getPassword() const
     return password;
 }
 
+void Internet::updateClientSettings()
+{
+    byte ip[4] = {clientNetworkSettings.ip[0], clientNetworkSettings.ip[1], clientNetworkSettings.ip[2], clientNetworkSettings.ip[3]};
+    preferences.begin("Clientnetwork", true);
+    preferences.putBytes("ip", (byte *)(&ip), sizeof(ip));
+    preferences.putUInt("port", clientNetworkSettings.port);
+    preferences.end();
+}
+
+void Internet::setClientIp(IPAddress ip)
+{
+    clientNetworkSettings.ip = ip;
+    updateClientSettings();
+}
+
+void Internet::setClientPort(uint16_t port)
+{
+    clientNetworkSettings.port = port;
+    updateClientSettings();
+}
+
 /**
  * @brief Handles incoming UDP packets
  */
@@ -727,7 +748,7 @@ void Internet::setDHCP(bool useDHCP)
 bool Internet::isUsingDHCP() const
 {
     preferences.begin("network", true);
-    bool useDHCP = preferences.getBool("useDHCP", true); 
+    bool useDHCP = preferences.getBool("useDHCP", true);
     preferences.end();
     return useDHCP;
 }
