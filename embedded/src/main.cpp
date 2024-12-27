@@ -12,11 +12,7 @@
 #include "I2SMicrophone.h"
 #include "PinManager.h"
 
-
-const char* ssid = ""; 
-const char* password = "";
-
-WebServer webServer(ssid, password);
+WebServer webServer;
 GPIOMgr gpioMgr;
 TemperatureSensor tempSensor(4, DHT11); 
 I2SMicrophone mic1(I2S_NUM_0, 25, 33, 32);
@@ -38,7 +34,6 @@ WebServer webServer;
         Serial.println("No network connection could be established.");
     }
     webServer.begin();
-    webServer.addGPIOConfigRoute();
 
     gpioMgr.configureGPIO(2, "output");
     gpioMgr.writeGPIO(2, HIGH);
@@ -60,7 +55,6 @@ void loop() {
     if (currentMillis - lastTempTime >= 5000) {
         lastTempTime = currentMillis;
         float temperature = tempSensor.readTemperature();
-        webServer.broadcastTemperature(temperature);
     }
 }
 
