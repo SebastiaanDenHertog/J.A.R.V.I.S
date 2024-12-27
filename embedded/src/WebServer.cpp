@@ -7,8 +7,6 @@
 
 #include "WebServer.h"
 
-extern Internet internet;
-
 WebServer::WebServer() : server(80) {}
 
 /**
@@ -172,9 +170,9 @@ String WebServer::replacePlaceholder(const String &placeholderName) const
     }
     else if (placeholderName == "RESET_NETWORK_PLACEHOLDER")
     {
-        String resetNetworkSettings = "";
-        resetNetworkSettings += "<button type=\"submit\" onclick=\"resetNetworkSettings()\">Reset network settings</button>";
-        return resetNetworkSettings;
+        String resetNetworkSettingsButton = "";
+        resetNetworkSettingsButton += "<button type=\"submit\" onclick=\"resetNetworkSettings()\">Reset network settings</button>";
+        return resetNetworkSettingsButton;
     }
 
     else

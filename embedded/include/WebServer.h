@@ -9,6 +9,8 @@
 #include <ESPAsyncWebServer.h>
 #include "Internet.h"
 
+extern Internet internet;
+
 class WebServer
 {
 public:
