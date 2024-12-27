@@ -68,8 +68,50 @@
             color: #007BFF;
         }
 
+        .status-message {
+            display: none;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
         .error {
-            color: red;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-header {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .modal-footer {
+            text-align: right;
         }
     </style>
     <script>
@@ -82,31 +124,23 @@
                     displayServerConfig(data);
                     document.getElementById('server-loading').innerText = '';
                 } else {
-                    console.error('Failed to fetch server configuration.');
-                    document.getElementById('server-loading').innerText = 'Failed to load server configuration.';
+                    displayStatusMessage('Failed to load server configuration.', 'error');
                 }
             } catch (error) {
-                console.error('Error fetching server configuration:', error);
-                document.getElementById('server-loading').innerText = 'Error loading server configuration.';
+                displayStatusMessage('Error loading server configuration: ' + error.message, 'error');
             }
         }
 
-        async function fetchClientConfigs() {
-            document.getElementById('client-loading').innerText = 'Loading client configurations...';
-            try {
-                const response = await fetch('/api/client/config');
-                if (response.ok) {
-                    const data = await response.json();
-                    displayClientConfigs(data);
-                    document.getElementById('client-loading').innerText = '';
-                } else {
-                    console.error('Failed to fetch client configurations.');
-                    document.getElementById('client-loading').innerText = 'Failed to load client configurations.';
-                }
-            } catch (error) {
-                console.error('Error fetching client configurations:', error);
-                document.getElementById('client-loading').innerText = 'Error loading client configurations.';
-            }
+        function displayStatusMessage(message, type) {
+            const statusMessageContainer = document.getElementById('status-message');
+            statusMessageContainer.innerText = message;
+            statusMessageContainer.className = `status-message ${type}`;
+            statusMessageContainer.style.display = 'block';
+
+            // Automatically hide the message after 5 seconds
+            setTimeout(() => {
+                statusMessageContainer.style.display = 'none';
+            }, 5000);
         }
 
         function displayServerConfig(config) {
@@ -167,13 +201,13 @@
                 });
 
                 if (response.ok) {
-                    alert('Server configuration updated successfully.');
+                    displayStatusMessage('Server configuration updated successfully.', 'success');
                     fetchServerConfig();
                 } else {
-                    alert('Failed to update server configuration.');
+                    displayStatusMessage('Failed to update server configuration.', 'error');
                 }
             } catch (error) {
-                alert('Failed to update server configuration: ' + error.message);
+                displayStatusMessage('Failed to update server configuration: ' + error.message, 'error');
             }
         }
 
@@ -181,107 +215,105 @@
             const clientContainer = document.getElementById('client-configs-container');
             clientContainer.innerHTML = '';
 
-            for (const clientId in clients) {
+            for (const clientName in clients) {
                 const clientSection = document.createElement('section');
                 const title = document.createElement('h3');
-                title.innerText = `Client ID: ${clientId}`;
+                title.innerText = `Client Name: ${clientName}`;
                 clientSection.appendChild(title);
 
-                for (const [key, value] of Object.entries(clients[clientId])) {
+                for (const [key, value] of Object.entries(clients[clientName])) {
                     const label = document.createElement('label');
                     label.innerText = key;
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.value = value;
-                    input.id = `client-${clientId}-${key}`;
+                    input.id = `client-${clientName}-${key}`;
                     clientSection.appendChild(label);
                     clientSection.appendChild(input);
                 }
 
                 const saveButton = document.createElement('button');
                 saveButton.innerText = 'Save Client Configuration';
-                saveButton.onclick = () => saveClientConfig(clientId);
+                saveButton.onclick = () => saveClientConfig(clientName);
                 clientSection.appendChild(saveButton);
 
                 clientContainer.appendChild(clientSection);
             }
         }
 
-        async function saveClientConfig(clientId) {
-            const inputs = document.querySelectorAll(`#client-configs-container input[id^='client-${clientId}-']`);
+        async function saveClientConfig(clientName) {
+            const inputs = document.querySelectorAll(`#client-configs-container input[id^='client-${clientName}-']`);
             const updatedConfig = {};
 
             inputs.forEach(input => {
-                const key = input.id.replace(`client-${clientId}-`, '');
-
-                // Parse value based on input type
-                if (input.type === 'checkbox') {
-                    updatedConfig[key] = input.checked;
-                } else if (input.type === 'number') {
-                    updatedConfig[key] = parseFloat(input.value);
-                } else {
-                    updatedConfig[key] = input.value;
-                }
+                const key = input.id.replace(`client-${clientName}-`, '');
+                updatedConfig[key] = input.value;
             });
 
             try {
-                const response = await fetch(`/api/clients/clientconfig/update?client_id=${clientId}`, {
+                const response = await fetch(`/api/clients/clientconfig/update?client_name=${encodeURIComponent(clientName)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updatedConfig)
                 });
 
                 if (response.ok) {
-                    alert('Client configuration updated successfully.');
+                    displayStatusMessage('Client configuration updated successfully.', 'success');
                     fetchClientConfigs();
                 } else {
-                    alert('Failed to update client configuration.');
+                    displayStatusMessage('Failed to update client configuration.', 'error');
                 }
             } catch (error) {
-                alert('Failed to update client configuration: ' + error.message);
+                displayStatusMessage('Failed to update client configuration: ' + error.message, 'error');
             }
+        }
+
+        function showAddClientModal() {
+            document.getElementById('add-client-modal').classList.add('active');
+        }
+
+        function hideAddClientModal() {
+            document.getElementById('add-client-modal').classList.remove('active');
         }
 
         async function addNewClient() {
-            const clientId = prompt("Enter a new Client ID:");
-            if (!clientId) {
-                alert("Client ID is required.");
+            const clientName = document.getElementById('new-client-name').value;
+            const clientIP = document.getElementById('new-client-ip').value;
+            const clientPort = document.getElementById('new-client-port').value;
+
+            if (!clientId || !clientIP || !clientPort) {
+                displayStatusMessage("All fields are required.", 'error');
                 return;
             }
 
-            const defaultConfig = {
-                use_web_server: true,
-                web_server_port: 15881,
-                use_bluetooth: false,
-                threads: 10,
-                main_server_port: 15880,
-                client_server_ip: "127.0.0.1",
-                use_airplay: false,
-                use_client_server_connection: false
+            const clientData = {
+                client_name: clientName,
+                client_ip: clientIP,
+                client_port: parseInt(clientPort, 10)
             };
 
             try {
-                const response = await fetch(`/api/clients/clientconfig/update?client_id=${clientId}`, {
+                const response = await fetch(`/api/clients/clientconfig/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(defaultConfig)
+                    body: JSON.stringify(clientData)
                 });
 
                 if (response.ok) {
-                    alert('New client added successfully.');
-                    fetchClientConfigs();
+                    displayStatusMessage('New client added successfully.', 'success');
+                    hideAddClientModal();
                 } else {
-                    alert('Failed to add new client.');
+                    displayStatusMessage('Failed to add new client.', 'error');
                 }
             } catch (error) {
-                alert('Failed to add new client: ' + error.message);
+                displayStatusMessage('Failed to add new client: ' + error.message, 'error');
             }
         }
-
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("Page loaded. Fetching server and client configurations...");
             fetchServerConfig();
-            fetchClientConfigs();
         });
+
     </script>
 </head>
 
@@ -289,6 +321,8 @@
     <header>
         <h1>Server and Client Configuration</h1>
     </header>
+
+    <div id="status-message" class="status-message"></div>
 
     <section>
         <h2>Server Configuration</h2>
@@ -300,8 +334,22 @@
         <h2>Client Configurations</h2>
         <div id="client-loading" class="loading"></div>
         <div id="client-configs-container"></div>
-        <button onclick="addNewClient()">Add New Client</button>
+        <button onclick="showAddClientModal()">Add New Client</button>
     </section>
+
+    <div id="add-client-modal" class="modal">
+        <div class="modal-header">Add New Client</div>
+        <label for="new-client-name">Client Name</label>
+        <input type="text" id="new-client-name" placeholder="Enter Client Name">
+        <label for="new-client-ip">Client IP Address</label>
+        <input type="text" id="new-client-ip" placeholder="Enter Client IP">
+        <label for="new-client-port">Client Port</label>
+        <input type="number" id="new-client-port" placeholder="Enter Client Port">
+        <div class="modal-footer">
+            <button onclick="addNewClient()">Add Client</button>
+            <button onclick="hideAddClientModal()">Cancel</button>
+        </div>
+    </div>
 </body>
 
 </html>

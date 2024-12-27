@@ -2,14 +2,15 @@
  * @Authors         Sebastiaan den Hertog
  * @Date created    04-10-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
- * @Description     
-*/
+ * @Description
+ */
 
 #include <Arduino.h>
 #include "WebServer.h"
 #include "GPIOMgr.h"
 #include "TemperatureSensor.h"
 #include "I2SMicrophone.h"
+#include "PinManager.h"
 
 
 const char* ssid = ""; 
@@ -21,8 +22,21 @@ TemperatureSensor tempSensor(4, DHT11);
 I2SMicrophone mic1(I2S_NUM_0, 25, 33, 32);
 
 void setup() {
+
+Internet internet;
+WebServer webServer;
+
     Serial.begin(115200);
 
+    internet.begin();
+    if (internet.getLinkStatus() || WiFi.status() == WL_CONNECTED)
+    {
+        Serial.println("Network connection established.");
+    }
+    else
+    {
+        Serial.println("No network connection could be established.");
+    }
     webServer.begin();
     webServer.addGPIOConfigRoute();
 
