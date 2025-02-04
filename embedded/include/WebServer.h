@@ -22,7 +22,8 @@ private:
     const char *password;
 
     void setupRoutes();
-    String replacePlaceholder(const String &placeholderName) const;
     void updateNetwork();
     void resetNetworkSettings();
+    static String processor(const String& var);
+    void getNetworkData();
 };
