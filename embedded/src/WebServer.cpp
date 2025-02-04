@@ -12,80 +12,6 @@ extern Internet internet;
 WebServer::WebServer() : server(80) {}
 
 /**
- * @brief HTML webpage
- */
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-    <head>
-        <title>%CONTROLLER_NAME%</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" href="data:,">
-        <style>
-            body { text-align: center; font-family: "Trebuchet MS", Arial; margin-left:auto; margin-right:auto; }
-            h1 { color: #0f3376; }
-            h2 { color: #0f3376; }
-            h3 { color: #0f3376; }
-            .card { background-color: #f7f7f7; border-radius: 10px; padding: 20px; margin: 20px; display: inline-block; }
-            table { margin-left:auto; margin-right:auto; text-align: left; }
-            th, td { text-align: left; }
-            input, select { width: 100%; padding: 12px 20px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; box-sizing: border-box; }
-            button { background-color: #0f3376; color: white; padding: 14px 20px; margin: 8px 0; border: none; cursor: pointer; width: 100%; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Sphere Controller</h1>
-            <h2>(%CONTROLLER_NAME%)</h2>
-            
-            <div class="card">
-                <h3>Update Network Settings</h3>
-                %UPDATE_NETWORK_PLACEHOLDER%
-            </div>
-            
-            <div class="card">
-                <h3>Network Info</h3>
-                %NETWORK_INFO_PLACEHOLDER%
-            </div>
-
-            <div class="card">
-                <h3>System Info</h3>
-                %SYSTEM_INFO_PLACEHOLDER%
-            </div>
-
-            <br>
-            <div class="card">
-                <h3 style="color:red;">Reset Network Settings</h3>
-                %RESET_NETWORK_PLACEHOLDER%
-            </div>
-        </div>
-
-        <script>
-            function updateNetwork(ip, gateway, subnet, hostname, ssid, password, connectionType, useDHCP){
-                var xhr = new XMLHttpRequest();
-                xhr.open("GET", "updateNetwork?ip=" + ip + "&gateway=" + gateway + "&subnet=" + subnet + "&hostname=" + hostname + "&ssid=" + ssid + "&password=" + password + "&connectionType=" + connectionType + "&useDHCP=" + useDHCP, true);
-                xhr.onload = function() {
-                    if (xhr.status == 200) {
-                        alert("Network settings updated successfully. The device will restart the connection.");
-                    }
-                };
-                xhr.send();
-            }
-            function resetNetworkSettings(){
-                var xhr = new XMLHttpRequest();
-                xhr.open("GET", "resetNetworkSettings", true);
-                xhr.onload = function(){
-                    if(xhr.status == 200){
-                        location.reload();
-                    }
-                }
-                xhr.send();
-            }
-        </script>
-    </body>
-</html>
-)rawliteral";
-
-/**
  * @brief sets up the webserver
  */
 void WebServer::begin()
@@ -104,9 +30,39 @@ void WebServer::begin()
  */
 void WebServer::setupRoutes()
 {
-    server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
-              { request->send_P(200, "text/html", index_html, [this](const String &var)
-                                { return this->replacePlaceholder(var); }); });
+ server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/index.html", String(), false, processor);
+    });
+
+    // Route for the api.js
+    server.on("/api.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/api.js", "text/javascript");
+    });
+
+    // Route for the style.css
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/style.css", "text/css");
+     });
+
+    // Route for bootstrap css
+    server.on("/bootstrap.min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/bootstrap.min.css", "text/css");
+    });
+
+    // Route for ledstrip.js
+    server.on("/ledstrip.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/ledstrip.js", "text/javascript");
+    });
+
+    // Route for createHTML.js
+    server.on("/createHTML.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/createHTML.js", "text/javascript");
+    });
+
+    // Route for globals.js 
+    server.on("/globals.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(LittleFS, "/globals.js", "text/javascript");
+    });
 }
 
 /**
