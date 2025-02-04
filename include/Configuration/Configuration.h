@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <filesystem>
+#include <LittleFS.h>
 
 enum class AppMode
 {

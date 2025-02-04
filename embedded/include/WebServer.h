@@ -5,20 +5,25 @@
  * @Description     constuctor, destructor and methods for the webServer class
  */
 
-#include <WiFi.h>
+#include <Wifi.h>
 #include <ESPAsyncWebServer.h>
+#include "Internet.h"
+
+extern Internet internet;
 
 class WebServer
 {
-private:
-    const char *ssid;
-    const char *password;
-    AsyncWebServer server;
-    AsyncWebSocket ws; // WebSocket for real-time communication
-
 public:
-    WebServer(const char *_ssid, const char *_password);
+    WebServer();
     void begin();
-    void addGPIOConfigRoute();
-    void broadcastTemperature(float temp);
+
+private:
+    AsyncWebServer server;
+    const char *password;
+
+    void setupRoutes();
+    void updateNetwork();
+    void resetNetworkSettings();
+    static String processor(const String& var);
+    void getNetworkData();
 };
