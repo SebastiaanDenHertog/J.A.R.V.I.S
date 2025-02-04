@@ -18,6 +18,14 @@ TemperatureSensor tempSensor(4, DHT11);
 I2SMicrophone mic1(I2S_NUM_0, 25, 33, 32);
 
 void setup() {
+    
+    bool fsinit = false;
+    DEBUGFS_PRINTLN(F("Mounting FS"));
+    fsinit = LittleFS.begin(true);
+    if (!fsinit) {
+        DEBUGFS_PRINTLN(F("FS failed!"));
+        return;
+    }
 
 Internet internet;
 WebServer webServer;

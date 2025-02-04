@@ -361,13 +361,6 @@ void createDefaultConfig(const std::string &filename)
 
 int main(int argc, char *argv[])
 {
-    bool fsinit = false;
-    DEBUGFS_PRINTLN(F("Mounting FS"));
-    fsinit = LittleFS.begin(true);
-    if (!fsinit) {
-        DEBUGFS_PRINTLN(F("FS failed!"));
-        return;
-    }
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
     ConfigurationManager &configManager = ConfigurationManager::getInstance();
