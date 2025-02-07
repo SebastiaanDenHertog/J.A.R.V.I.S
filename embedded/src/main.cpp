@@ -11,6 +11,7 @@
 #include "TemperatureSensor.h"
 #include "I2SMicrophone.h"
 #include "PinManager.h"
+#include <LittleFS.h>
 
 WebServer webServer;
 GPIOMgr gpioMgr;
@@ -19,10 +20,20 @@ I2SMicrophone mic1(I2S_NUM_0, 25, 33, 32);
 
 void setup() {
 
-Internet internet;
-WebServer webServer;
+    Internet internet;
+    WebServer webServer;
+    
 
     Serial.begin(115200);
+
+    bool fsinit = false;
+    //DEBUGFS_PRINTLN(F("Mounting FS"));
+    fsinit = LittleFS.begin(true);
+    if (!fsinit)
+    {
+        //DEBUGFS_PRINTLN(F("FS failed!"));
+        return;
+    }
 
     internet.begin();
     if (internet.getLinkStatus() || WiFi.status() == WL_CONNECTED)
@@ -34,6 +45,7 @@ WebServer webServer;
         Serial.println("No network connection could be established.");
     }
     webServer.begin();
+
 
     gpioMgr.configureGPIO(2, "output");
     gpioMgr.writeGPIO(2, HIGH);

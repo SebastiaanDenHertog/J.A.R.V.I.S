@@ -190,20 +190,26 @@ if(BUILD_SERVER)
         message(WARNING "TensorFlow not found, will build from source.")
 
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/tensorflow)
-            message(FATAL_ERROR "TensorFlow source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+            message(FATAL_ERROR "TensorFlow source directory not found...")
         else()
-            # Configure TensorFlow Lite build. We assume TensorFlow Lite's source is in a third_party directory
             set(TFLITE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
+
+            # In-source TFLite typically reads these options in its CMakeLists.txt:
+            set(TFLITE_ENABLE_SELECT_TF_OPS ON CACHE BOOL "Enable Select TF ops in TFLite")
+            set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration in TFLite")
+            set(TFLITE_ENABLE_RESOURCE_VARIABLE ON CACHE BOOL "Enable resource variables in TFLite")
+
             include_directories(${TFLITE_SOURCE_DIR})
             include_directories(${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include)
 
-            # Add TensorFlow Lite directory to the project
+            # Add subdirectory with flags set
             add_subdirectory(${TFLITE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/tensorflow-lite EXCLUDE_FROM_ALL)
         endif()
     else()
         message(STATUS "TensorFlow found")
         include_directories(${TENSORFLOW_INCLUDE_DIR})
     endif()
+
 endif()
 
 if(BUILD_CLIENT)

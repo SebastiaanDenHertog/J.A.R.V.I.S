@@ -8,6 +8,7 @@
 #include <Wifi.h>
 #include <ESPAsyncWebServer.h>
 #include "Internet.h"
+#include <ArduinoJson.h>
 
 extern Internet internet;
 
@@ -24,6 +25,7 @@ private:
     void setupRoutes();
     void updateNetwork();
     void resetNetworkSettings();
-    static String processor(const String& var);
+    static String processor(const String &var);
     void getNetworkData();
+    JsonDocument doc;
 };

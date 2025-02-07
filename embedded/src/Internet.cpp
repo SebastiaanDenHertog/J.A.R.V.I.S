@@ -113,9 +113,9 @@ void Internet::begin()
  */
 void Internet::sendUdpPacket(const char *msg)
 {
-    if (udp.beginPacket(udpIP, udpPort))
+    if (udp.beginPacket(networkSettings.ip, port))
     {
-        udp.write(msg);
+        udp.write(reinterpret_cast<const uint8_t *>(msg), strlen(msg)); 
         udp.endPacket();
     }
 }
