@@ -79,6 +79,7 @@ cmake --build . -- -j %NUMBER_OF_PROCESSORS%``
 
 sudo apt install libboost-all-dev
 sudo apt install libssl-dev
+sudo apt-get install libpq-dev
 
 # Changelog
 

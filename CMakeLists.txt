@@ -120,6 +120,15 @@ else()
     include_directories(${JSON_INCLUDE_DIR})
 endif()
 
+find_package(PostgreSQL REQUIRED)
+
+if(PostgreSQL_FOUND)
+    message(STATUS "PostgreSQL found. Version: ${PostgreSQL_VERSION}")
+    include_directories(${PostgreSQL_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "PostgreSQL not found!")
+endif()
+
 if(BUILD_SERVER)
     find_package(OpenCV)
 
@@ -284,6 +293,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/dataStructures
     ${PROJECT_SOURCE_DIR}/include/WatchDog
     ${PROJECT_SOURCE_DIR}/include/Configuration
+    ${PROJECT_SOURCE_DIR}/include/Database
 )
 
 # Source files
@@ -319,15 +329,15 @@ message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 # Linking libraries
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver ${PostgreSQL_LIBRARIES})
     elseif(BUILD_CLIENT)
-        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
+        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver ${PostgreSQL_LIBRARIES})
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_SERVER)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver ${PostgreSQL_LIBRARIES})
     elseif(BUILD_CLIENT)
-        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
+        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver ${PostgreSQL_LIBRARIES})
     endif()
 endif()
 
