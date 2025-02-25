@@ -116,8 +116,7 @@ The previous authors of code included in UxPlay by inheritance from RPiPlay incl
 * **Florian Draschbacher** (FD-) and contributors: adapted dsafa22's Android project for the Raspberry Pi, with extensive cleanups, debugging and improvements.  The project [RPiPlay](https://github.com/FD-/RPiPlay) is basically a port of dsafa22's code to the Raspberry Pi, utilizing OpenMAX and OpenSSL for better performance on the Pi.
 
 # webserver implentation
-For the website we use a forked version of [libhttpserver](https://github.com/etr/libhttpserver)
+For the website we use a forked version of [libhttpserver](https://github.com/etr/libhttpserver) witch you can find here: [libhttpserver](https://github.com/SebastiaanDenHertog/libhttpserver)
 
 # Prometheus implementation
-
 The prometheus imlementation is based on the [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp) project. This is a unofficial project that is supported by prometheus themself.
