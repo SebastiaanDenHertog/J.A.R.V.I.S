@@ -20,6 +20,7 @@
 #ifdef SERVER_BUILD
 #include "ModelRunner.h"
 #include "WhisperTranscriber.h"
+#include "PostgreSQLConnection.h"
 #endif
 
 struct SoundData
@@ -71,6 +72,11 @@ public:
 
 #if defined(BUILD_SERVER)
     NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel);
+    // client id will be its mac address
+    void addClientToDatabase(int clientSd, const std::string &clientMacAddress);
+    void updateClientInDatabase(int clientSd, const std::string &clientMacAddress);
+    void removeClientFromDatabase(int clientSd);
+
 #else
     NetworkManager(int port, const char *serverIp, Protocol protocol);
 #endif
@@ -121,6 +127,7 @@ private:
     ModelRunner *nerModel;            // Model for NER
     ModelRunner *classificationModel; // Model for Classification
     WhisperTranscriber transcriber;   // Whisper transcriber for live audio transcription
+    PostgreSQLConnection dbConnection; // Database connection
 #endif
 };
 

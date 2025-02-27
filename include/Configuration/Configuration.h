@@ -28,6 +28,10 @@ struct Configuration
     std::string configFilePath = std::filesystem::current_path().string()+"/config.json";
     bool bluetooth_available = false;
     unsigned short main_server_port = 15880;
+    std::string postgres_host;
+    std::string postgres_db;
+    std::string postgres_user;
+    std::string postgres_password;
 #ifdef SERVER_BUILD
 
     // Server-specific settings
@@ -38,9 +42,7 @@ struct Configuration
     int home_assistant_port = 0;
     bool use_client_server_connection = false;
     std::string client_id;
-
 #else
-
     // Client-specific settings
     std::string client_id;
     std::string client_server_ip;

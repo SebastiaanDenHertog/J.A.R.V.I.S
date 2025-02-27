@@ -24,6 +24,10 @@ nlohmann::json Configuration::to_json() const
     j["home_assistant_port"] = home_assistant_port;
     j["home_assistant_token"] = home_assistant_token;
     j["use_client_server_connection"] = use_client_server_connection;
+    j["postgres_server_host"] = postgres_host;
+    j["postgres_server_db"] = postgres_db;
+    j["postgres_server_user"] = postgres_user;
+    j["postgres_server_password"] = postgres_password;
     j["configFilePath"] = configFilePath;
 #endif
 // client
@@ -31,6 +35,11 @@ nlohmann::json Configuration::to_json() const
     j["client_server_ip"] = client_server_ip;
     j["use_client_server_connection"] = use_client_server_connection;
     j["configFilePath"] = configFilePath;
+    j["postgres_client_host"] = postgres_host;
+    j["postgres_client_db"] = postgres_db;
+    j["postgres_client_user"] = postgres_user;
+    j["postgres_client_password"] = postgres_password;
+
     // airplay
     j["use_airplay"] = use_airplay;
     j["airplay_server_name"] = airplay_server_name;
@@ -105,6 +114,16 @@ void Configuration::from_json(const nlohmann::json &j)
         home_assistant_port = j["home_assistant_port"];
     if (j.contains("home_assistant_token"))
         home_assistant_token = j["home_assistant_token"];
+    if (j.contains("use_client_server_connection"))
+        use_client_server_connection = j["use_client_server_connection"];
+    if (j.contains("postgres_server_host"))
+        postgres_server_host = j["postgres_server_host"];
+    if (j.contains("postgres_server_db"))
+        postgres_server_db = j["postgres_server_db"];
+    if (j.contains("postgres_server_user"))
+        postgres_server_user = j["postgres_server_user"];
+    if (j.contains("postgres_server_password"))
+        postgres_server_password = j["postgres_server_password"];
 #endif
 #ifdef CLIENT_BUILD
     if (j.contains("main_server_ip") && !j["main_server_ip"].is_null())
@@ -126,6 +145,14 @@ void Configuration::from_json(const nlohmann::json &j)
         use_client_server_connection = j["use_client_server_connection"];
     if (j.contains("use_bluetooth"))
         use_bluetooth = j["use_bluetooth"];
+    if (j.contains("postgres_client_host"))
+        postgres_client_host = j["postgres_client_host"];
+    if (j.contains("postgres_client_db"))
+        postgres_client_db = j["postgres_client_db"];
+    if (j.contains("postgres_client_user"))
+        postgres_client_user = j["postgres_client_user"];
+    if (j.contains("postgres_client_password"))
+        postgres_client_password = j["postgres_client_password"];
 
     // airplay
     if (j.contains("airplay_server_name"))

@@ -52,6 +52,20 @@ NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerMode
     }
 }
 
+
+void NetworkManager::addClientToDatabase(int clientSd, const std::string &clientMacAddress)
+{
+    dbConnection.addClient(clientSd, clientMacAddress);
+}
+void NetworkManager::updateClientInDatabase(int clientSd, const std::string &clientMacAddress)
+{
+
+}
+void NetworkManager::removeClientFromDatabase(int clientSd)
+{
+
+}
+
 #else
 
 /**
