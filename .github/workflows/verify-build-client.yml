@@ -1,0 +1,321 @@
+name: "Verify Build"
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master]
+  schedule:
+    - cron: '0 0 * * 0'
+
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ${{ matrix.os }}
+    env:
+      DEBUG: ${{ matrix.debug }}
+      COVERAGE: ${{ matrix.coverage }}
+      LINKING: ${{ matrix.linking }}
+      BUILD_TYPE: ${{ matrix.build-type }}
+      CC: ${{ matrix.c-compiler }}
+      CXX: ${{ matrix.cc-compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        os-type: [ubuntu, mac]
+        test-group: [basic]
+        compiler-family: [none]
+        c-compiler: [gcc, clang]
+        cc-compiler: [g++, clang++]
+        debug: [debug, nodebug]
+        coverage: [coverage, nocoverage]
+        linking: [dynamic, static]
+        build-type: [classic]
+        exclude:
+          - os: ubuntu-latest
+            os-type: mac
+          - os: macos-latest
+            os-type: ubuntu
+          - c-compiler: gcc
+            cc-compiler: clang++
+          - c-compiler: clang
+            cc-compiler: g++
+          - c-compiler: clang
+            debug: debug
+          - debug: debug
+            coverage: nocoverage
+          - debug: nodebug
+            coverage: coverage
+          - linking: static
+            debug: debug
+          - linking: static
+            coverage: coverage
+        include:
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: asan
+            compiler-family: clang
+            c-compiler: clang-13
+            cc-compiler: clang++-13
+            debug: debug
+            coverage: nocoverage
+          # This test gives false positives on newer versions of clang
+          # and ubuntu-18.04 is not supported anymore on github
+          #- test-group: extra
+          #  os: ubuntu-18.04
+          #  os-type: ubuntu
+          #  build-type: msan
+          #  compiler-family: clang
+          #  c-compiler: clang-6.0
+          #  cc-compiler: clang++-6.0
+          #  debug: debug
+          #  coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: lsan
+            compiler-family: clang
+            c-compiler: clang-13
+            cc-compiler: clang++-13
+            debug: debug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: tsan
+            compiler-family: clang
+            c-compiler: clang-13
+            cc-compiler: clang++-13
+            debug: debug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: ubsan
+            compiler-family: clang
+            c-compiler: clang-13
+            cc-compiler: clang++-13
+            debug: debug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: gcc
+            c-compiler: gcc-7
+            cc-compiler: g++-7
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: gcc
+            c-compiler: gcc-8
+            cc-compiler: g++-8
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: none
+            compiler-family: gcc
+            c-compiler: gcc-9
+            cc-compiler: g++-9
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: none
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-6.0
+            cc-compiler: clang++-6.0
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-7
+            cc-compiler: clang++-7
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-8
+            cc-compiler: clang++-8
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-9
+            cc-compiler: clang++-9
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-10
+            cc-compiler: clang++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-11
+            cc-compiler: clang++-11
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-12
+            cc-compiler: clang++-12
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: none
+            compiler-family: clang
+            c-compiler: clang-13
+            cc-compiler: clang++-13
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: valgrind
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-20.04
+            os-type: ubuntu
+            build-type: iwyu
+            compiler-family: clang
+            c-compiler: clang-9
+            cc-compiler: clang++-9
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: performance
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: select
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: performance
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: nodelay
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: performance
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: threads
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: nodebug
+            coverage: nocoverage
+          - test-group: extra
+            os: ubuntu-latest
+            os-type: ubuntu
+            build-type: lint
+            compiler-family: gcc
+            c-compiler: gcc-10
+            cc-compiler: g++-10
+            debug: debug
+            coverage: nocoverage
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        # We must fetch at least the immediate parents so that if this is
+        # a pull request then we can checkout the head.
+        fetch-depth: 2
+
+    # If this run was triggered by a pull request event, then checkout
+    # the head of the pull request instead of the merge commit.
+    - run: git checkout HEAD^2
+      if: ${{ github.event_name == 'pull_request' }}
+        
+    - name: Install Ubuntu test sources
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test ;
+        sudo apt-get update ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+        
+    - name: Install lib 11 dev for Gstreamer UxPlay
+      run: |
+        sudo apt install libx11-dev ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    - name: Install other dependencys for UxPlay
+      run: |
+        sudo apt install libssl-dev libplist-dev libavahi-compat-libdnssd-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libmicrohttpd-dev ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    - name: Install dependencys for Kaldi
+      run: |
+        sudo apt install liblapack-devlibopenblas-dev libblas-dev ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    - name: Install dependencys for Boost
+      run: |
+        sudo apt install libboost-all-dev libssl-dev libpq-dev ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    # get submodules
+    - name: Get submodules
+      run: |
+        git submodule update --init --recursive ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    - name: Make
+      run: |
+        ./buildClient.sh ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
+    - name: Run tests
+      run: |
+        cd build ;
+        make check;
+      if: ${{ matrix.build-type != 'iwyu' }}

@@ -10,12 +10,7 @@ bool createTable(PostgreSQLConnection& conn)
         return false;
     }
 
-    std::string query = R"(
-        CREATE TABLE IF NOT EXISTS my_table (
-            id SERIAL PRIMARY KEY,
-            info TEXT NOT NULL
-        )
-    )";
+    std::string query = file.read("init.sql");
 
     // Reuse PostgreSQLConnection::executeQuery
     return conn.executeQuery(query);
