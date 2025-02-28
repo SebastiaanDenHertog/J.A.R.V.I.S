@@ -295,7 +295,7 @@ jobs:
 
     - name: Install dependencys for Kaldi
       run: |
-        sudo apt install liblapack-devlibopenblas-dev libblas-dev ;
+        sudo apt install liblapack-dev libopenblas-dev libblas-dev ;
       if: ${{ matrix.os-type == 'ubuntu' }}
 
     - name: Install dependencys for Boost
