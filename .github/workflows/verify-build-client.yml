@@ -1,4 +1,4 @@
-name: "Verify Build"
+name: "Verify Client Build"
 
 on:
   push:
