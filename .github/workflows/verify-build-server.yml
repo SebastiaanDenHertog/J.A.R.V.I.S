@@ -291,7 +291,14 @@ jobs:
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test ;
         sudo apt-get update ;
       if: ${{ matrix.os-type == 'ubuntu' }}
-        
+    
+    - name: Install Gcc 
+      run: |
+        sudo apt install build-essential ;
+        gcc --version ;
+        g++ --version ;
+      if: ${{ matrix.os-type == 'ubuntu' }}
+
     - name: Install lib 11 dev for Gstreamer UxPlay
       run: |
         sudo apt install libx11-dev ;
