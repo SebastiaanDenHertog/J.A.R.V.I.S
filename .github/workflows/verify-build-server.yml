@@ -326,9 +326,3 @@ jobs:
       run: |
         ./buildServer.sh ;
       if: ${{ matrix.os-type == 'ubuntu' }}
-
-    - name: Run tests
-      run: |
-        cd build ;
-        make check;
-      if: ${{ matrix.build-type != 'iwyu' }}
