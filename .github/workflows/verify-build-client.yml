@@ -275,6 +275,19 @@ jobs:
     # the head of the pull request instead of the merge commit.
     - run: git checkout HEAD^2
       if: ${{ github.event_name == 'pull_request' }}
+
+    - name: Add SSH key
+      env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      run: |
+          mkdir -p /home/runner/.ssh
+          # Replace example.com with the hostname of the machine
+          # you're SSH-ing into
+          ssh-keyscan example.com >> /home/runner/.ssh/known_hosts
+          echo "${{ secrets.ACTION_SSH_KEY }}" > /home/runner/.ssh/github_actions
+          chmod 600 /home/runner/.ssh/github_actions
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null	
+          ssh-add /home/runner/.ssh/github_actions
         
     - name: Install Ubuntu test sources
       run: |
@@ -305,7 +318,11 @@ jobs:
 
     # get submodules
     - name: Get submodules
+      env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub actions"
         git submodule update --init --recursive ;
       if: ${{ matrix.os-type == 'ubuntu' }}
 
