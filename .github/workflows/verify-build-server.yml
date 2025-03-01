@@ -269,8 +269,7 @@ jobs:
       with:
         # We must fetch at least the immediate parents so that if this is
         # a pull request then we can checkout the head.
-        fetch-depth: 2
-
+        fetch-depth: 0
     # If this run was triggered by a pull request event, then checkout
     # the head of the pull request instead of the merge commit.
     - run: git checkout HEAD^2
@@ -280,14 +279,12 @@ jobs:
       env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       run: |
-          mkdir -p ~/.ssh
-          # Replace example.com with the hostname of the machine
-          # you're SSH-ing into
-          ssh-keyscan example.com >> /home/runner/.ssh/known_hosts
-          echo "${{ secrets.ACTION_SSH_KEY }}" > ~/.ssh/github_actions
-          chmod 600 ~/.ssh/github_actions
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null	
-          ssh-add ~/.ssh/github_actions
+        mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        echo "${{ secrets.ACTION_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        eval $(ssh-agent -s)
+        ssh-add ~/.ssh/id_rsa
         
     - name: Install Ubuntu test sources
       run: |
