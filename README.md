@@ -64,23 +64,43 @@ Building the Project change this in the build_project file you use
 You can specify the target architecture, build component, and operating system when running CMake:
 
 For AArch64 Linux:
-``cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
-make -j$(nproc)``
+```
+cmake -DTARGET_ARCH=aarch64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
+make -j$(nproc) 
+```
+
 
 For x86_64 Linux:
-``cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
-make -j$(nproc)``
+```
+cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
+make -j$(nproc)
+```
 
 For Windows x86:
 ``cmake -DTARGET_ARCH=x86 -DTARGET_OS=windows -DBUILD_COMPONENT=full ..
 cmake --build . -- -j %NUMBER_OF_PROCESSORS%``
 
 -bash: ./build_project.sh: /bin/bash^M: bad interpreter: No such file or directory: FIX -> sed -i -e 's/\r$//' build_project.sh
-
+```
 sudo apt install libboost-all-dev
 sudo apt install libssl-dev
 sudo apt-get install libpq-dev
+sudo apt install cmake
+sudo apt-get install bluetooth libbluetooth-dev
+```
 
+```
+https://github.com/milekium/spidev-lib
+
+mkdir build
+cd build
+cmake ../
+make
+sudo make install
+
+sudo apt-get install i2c-tools
+sudo apt-get install libi2c-dev
+```
 # Changelog
 
 # Disclaimer
