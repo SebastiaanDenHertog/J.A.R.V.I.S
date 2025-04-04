@@ -35,6 +35,7 @@ the cmake option `-DNO_X11_DEPS=ON`.
 2.  `sudo apt install libavahi-compat-libdnssd-dev`
 3.  `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`. (\*_Skip if you built Gstreamer from source_)
 4. `sudo apt-get install libmicrohttpd-dev`
+5. `sudo apt update sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad`
 
 # kaldi install
 
