@@ -74,7 +74,7 @@ For x86_64 Linux:
 ```
 cmake -DTARGET_ARCH=x86_64 -DTARGET_OS=linux -DBUILD_COMPONENT=full ..
 make -j$(nproc)
-```
+`98``
 
 For Windows x86:
 ``cmake -DTARGET_ARCH=x86 -DTARGET_OS=windows -DBUILD_COMPONENT=full ..
