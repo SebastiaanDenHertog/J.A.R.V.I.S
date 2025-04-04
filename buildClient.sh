@@ -24,8 +24,12 @@ fi
 echo "Building the project..."
 make -j$(nproc)
 
+mkdir -p webserver
+
 # Navigate back to the root project directory
 cd ..
+
+cp -r webserver/** "$BUILD_DIR/webserver/"
 
 echo "Build process completed."
 export AVAHI_COMPAT_NOWARN=y
