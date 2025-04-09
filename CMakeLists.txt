@@ -359,10 +359,7 @@ if(${TARGET_OS} STREQUAL linux)
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
         install(TARGETS client RUNTIME DESTINATION bin)
-        install(TARGETS whisper
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
+
         # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
         install(FILES resources/jarvis_client.service
                 DESTINATION /lib/systemd/system
@@ -405,10 +402,6 @@ elseif(${TARGET_OS} STREQUAL windows)
         target_compile_options(client PRIVATE -Wall -g -pthread)
 
         install(TARGETS client RUNTIME DESTINATION bin)
-        install(TARGETS whisper
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
