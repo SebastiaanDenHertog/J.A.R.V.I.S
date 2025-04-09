@@ -1,0 +1,15 @@
+[Unit]
+Description=Jarvis server service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/server >> /var/log/jarvis/server.log 2>&1
+# Optionally set working directory, environment variables, etc.
+# WorkingDirectory=/var/myserver
+# Environment=MY_ENV_VAR=some_value
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
