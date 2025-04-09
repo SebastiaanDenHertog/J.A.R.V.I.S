@@ -1,0 +1,28 @@
+# cmake_uninstall.cmake.in
+
+if(EXISTS "@CMAKE_BINARY_DIR@/install_manifest.txt")
+    file(READ "@CMAKE_BINARY_DIR@/install_manifest.txt" INSTALLED_FILES)
+    separate_arguments(INSTALLED_FILES)
+    foreach(FILE_PATH ${INSTALLED_FILES})
+        message(STATUS "Removing installed file: ${FILE_PATH}")
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E remove "${FILE_PATH}")
+    endforeach()
+endif()
+
+# -- OPTIONAL: Service cleanup steps below --
+
+# If on Linux, remove or disable the systemd service
+if(UNIX AND NOT APPLE)
+    # Example for a systemd service named "jarvis.service"
+    execute_process(COMMAND systemctl stop jarvis.service)
+    execute_process(COMMAND systemctl disable jarvis.service)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E remove /lib/systemd/system/jarvis.service)
+    execute_process(COMMAND systemctl daemon-reload)
+endif()
+
+# If on Windows, remove the Windows service
+if(WIN32)
+    # Example for a service named "JarvisServerService"
+    execute_process(COMMAND sc stop JarvisServerService)
+    execute_process(COMMAND sc delete JarvisServerService)
+endif()

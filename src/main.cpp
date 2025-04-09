@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <fstream>
 
-// Common headers
+
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
 #include "webServer.h"
@@ -27,7 +27,7 @@
 #include "Watchdog.h"
 
 #ifdef CLIENT_BUILD
-// Client-specific headers
+
 #include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "HardwareInterface.h"
@@ -213,7 +213,7 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
 #endif
 
 #ifdef SERVER_BUILD
-void run_server(const Configuration &config)
+void    run_server(const Configuration &config)
 {
     try
     {

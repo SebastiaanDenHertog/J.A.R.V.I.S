@@ -22,14 +22,15 @@ fi
 
 # Build the project
 echo "Building the project..."
-make -j$(nproc)
-
-mkdir -p webserver
+make -j$(nproc) install
 
 # Navigate back to the root project directory
 cd ..
 
-cp -r webserver/** "$BUILD_DIR/webserver/"
+if [ ! -d "/var/log/jarvis" ]; then
+    echo "Build directory does not exist. Creating it..."
+    mkdir "/var/log/jarvis"
+fi
 
 echo "Build process completed."
 export AVAHI_COMPAT_NOWARN=y
