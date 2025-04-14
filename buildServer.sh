@@ -32,6 +32,5 @@ if [ ! -d "/var/log/jarvis" ]; then
     mkdir "/var/log/jarvis"
 fi
 
-
 echo "Build process completed."
 export AVAHI_COMPAT_NOWARN=y

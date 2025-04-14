@@ -143,9 +143,7 @@ if(BUILD_SERVER)
 
     find_package(Whisper)
 
-
     if(NOT Whisper_FOUND)
-        set(BUILD_SHARED_LIBS_DEFAULT ON)
         message(WARNING "Whisper.cpp not found, will build from source.")
 
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
@@ -193,7 +191,7 @@ if(BUILD_SERVER)
     if(NOT tensorflow-lite_FOUND)
         message(WARNING "TensorFlow not found, will build from source.")
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/tensorflow)
-            message(FATAL_ERROR "TensorFlow source directory not found...")
+            message(FATAL_ERROR "TensorFlow source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
         else()
             set(TFLITE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
 
@@ -205,14 +203,13 @@ if(BUILD_SERVER)
             include_directories(${TFLITE_SOURCE_DIR})
             include_directories(${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include)
 
-            # Add subdirectory with flags set
+            # Add TensorFlow Lite directory to the project
             add_subdirectory(${TFLITE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/tensorflow-lite EXCLUDE_FROM_ALL)
         endif()
     else()
         message(STATUS "TensorFlow found")
         include_directories(${TENSORFLOW_INCLUDE_DIR})
     endif()
-
 endif()
 
 if(BUILD_CLIENT)
@@ -259,7 +256,7 @@ if(NOT httpserver_FOUND)
     else()
         set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
         include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-        include_directories(${CMAKE_BINARY_DIR}/httpserver)
+        include_directories(${CMAKE_BINARY_DIR}/httpserver) 
         include_directories(${CMAKE_BINARY_DIR}/httpserver/include/details)
         include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils) # This might change depending on your structure
         add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
