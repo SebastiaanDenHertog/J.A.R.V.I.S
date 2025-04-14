@@ -6,6 +6,8 @@ include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 option(DEBUG_MODE "Enable debug prints" ON)
 
@@ -141,7 +143,9 @@ if(BUILD_SERVER)
 
     find_package(Whisper)
 
+
     if(NOT Whisper_FOUND)
+        set(BUILD_SHARED_LIBS_DEFAULT ON)
         message(WARNING "Whisper.cpp not found, will build from source.")
 
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
@@ -163,7 +167,7 @@ if(BUILD_SERVER)
         message(STATUS "Whisper.cpp found")
         include_directories(${WhisperCPP_INCLUDE_DIR})
     endif()
-
+    set(BUILD_SHARED_LIBS_DEFAULT OFF)
     find_package(LlamaCPP)
 
     if(NOT LlamaCPP_FOUND)
@@ -255,7 +259,7 @@ if(NOT httpserver_FOUND)
     else()
         set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
         include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-        include_directories(${CMAKE_BINARY_DIR}/httpserver) 
+        include_directories(${CMAKE_BINARY_DIR}/httpserver)
         include_directories(${CMAKE_BINARY_DIR}/httpserver/include/details)
         include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils) # This might change depending on your structure
         add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
@@ -345,25 +349,71 @@ if(${TARGET_OS} STREQUAL linux)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
+        if(TARGET ggml)
+            install(TARGETS ggml
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        install(TARGETS tensorflow-lite
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        if(TARGET farmhash)
+            install(TARGETS farmhash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg2d)
+            install(TARGETS fft2d_fftsg2d
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET XNNPACK)
+            install(TARGETS XNNPACK
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system
         )
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
     execute_process(COMMAND systemctl daemon-reload)
     execute_process(COMMAND systemctl enable jarvis_server.service)
 ")
-
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
         install(TARGETS client RUNTIME DESTINATION bin)
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
 
         # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
         install(FILES resources/jarvis_client.service
                 DESTINATION /lib/systemd/system
         )
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
@@ -380,6 +430,47 @@ elseif(${TARGET_OS} STREQUAL windows)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
+        if(TARGET ggml)
+            install(TARGETS ggml
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+
+        install(TARGETS tensorflow-lite
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        if(TARGET farmhash)
+            install(TARGETS farmhash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg2d)
+            install(TARGETS fft2d_fftsg2d
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET XNNPACK)
+            install(TARGETS XNNPACK
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
+
+
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
@@ -402,6 +493,16 @@ elseif(${TARGET_OS} STREQUAL windows)
         target_compile_options(client PRIVATE -Wall -g -pthread)
 
         install(TARGETS client RUNTIME DESTINATION bin)
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
@@ -418,6 +519,5 @@ elseif(${TARGET_OS} STREQUAL windows)
                 COMMAND sc start JarvisServerService
             )
         ")
-
     endif()
 endif()

@@ -18,7 +18,6 @@
 #include <unordered_map>
 #include <fstream>
 
-
 #include "BluetoothComm.h"
 #include "NetworkManager.h"
 #include "webServer.h"

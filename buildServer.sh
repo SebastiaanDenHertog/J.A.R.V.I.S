@@ -22,7 +22,7 @@ fi
 
 # Build the project
 echo "Building the project..."
-make -j$(nproc) install
+make install -j$(nproc)
 
 # Navigate back to the root project directory
 cd ..
@@ -31,6 +31,7 @@ if [ ! -d "/var/log/jarvis" ]; then
     echo "Build directory does not exist. Creating it..."
     mkdir "/var/log/jarvis"
 fi
+
 
 echo "Build process completed."
 export AVAHI_COMPAT_NOWARN=y

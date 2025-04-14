@@ -22,12 +22,10 @@ fi
 
 # Build the project
 echo "Building the project..."
-make -j$(nproc) install
+make install -j$(nproc)
 
 # Navigate back to the root project directory
 cd ..
-
-cp -r webserver/** "$BUILD_DIR/webserver/"
 
 if [ ! -d "/var/log/jarvis" ]; then
     echo "Build directory does not exist. Creating it..."

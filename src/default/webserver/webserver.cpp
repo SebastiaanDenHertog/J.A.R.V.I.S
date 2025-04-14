@@ -293,7 +293,8 @@ class ConfigPageResourceServer : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("webserver/private/server/pages/config_page.html");
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.webRoot +"webserver/private/server/pages/config_page.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
@@ -313,7 +314,8 @@ class ConfigPageResourceClient : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("webserver/private/client/pages/config_page.html");
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.webRoot +"webserver/private/client/pages/config_page.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
@@ -333,7 +335,8 @@ class HomePageServerResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("webserver/private/server/pages/home.html");
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.webRoot +"webserver/private/server/pages/home.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Home page not found.", 404, "text/plain");
@@ -353,7 +356,8 @@ class HomePageClientResource : public httpserver::http_resource
 public:
     std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
     {
-        std::ifstream html_file("webserver/private/client/pages/home.html");
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.webRoot + "webserver/private/client/pages/home.html");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Home page not found.", 404, "text/plain");
