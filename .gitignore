@@ -43,3 +43,4 @@
 .vscode/settings.json
 web_service_*.log
 config.json
+cmake-build-debug/**
