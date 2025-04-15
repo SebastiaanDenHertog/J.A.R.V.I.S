@@ -378,6 +378,150 @@ if(${TARGET_OS} STREQUAL linux)
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin)
         endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_hash)
+            install(TARGETS absl_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_synchronization)
+            install(TARGETS absl_synchronization
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings)
+            install(TARGETS absl_strings
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_logging_internal)
+            install(TARGETS absl_raw_logging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_city)
+            install(TARGETS absl_city
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_low_level_hash)
+            install(TARGETS absl_low_level_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_graphcycles_internal)
+            install(TARGETS absl_graphcycles_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_kernel_timeout_internal)
+            install(TARGETS absl_kernel_timeout_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_stacktrace)
+            install(TARGETS absl_stacktrace
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_symbolize)
+            install(TARGETS absl_symbolize
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time)
+            install(TARGETS absl_time
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_malloc_internal)
+            install(TARGETS absl_malloc_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_base)
+            install(TARGETS absl_base
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_spinlock_wait)
+            install(TARGETS absl_spinlock_wait
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings_internal)
+            install(TARGETS absl_strings_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_debugging_internal)
+            install(TARGETS absl_debugging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_demangle_internal)
+            install(TARGETS absl_demangle_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time_zone)
+            install(TARGETS absl_time_zone
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_int128)
+            install(TARGETS absl_int128
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif ()
+        if(TARGET fft2d_fftsg)
+            install(TARGETS fft2d_fftsg
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET pthreadpool)
+            install(TARGETS pthreadpool
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET cpuinfo)
+            install(TARGETS cpuinfo
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system
         )
@@ -400,7 +544,6 @@ if(${TARGET_OS} STREQUAL linux)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-
         # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
         install(FILES resources/jarvis_client.service
                 DESTINATION /lib/systemd/system
@@ -460,14 +603,144 @@ elseif(${TARGET_OS} STREQUAL windows)
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin)
         endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_hash)
+            install(TARGETS absl_hash
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_synchronization)
+            install(TARGETS absl_synchronization
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings)
+            install(TARGETS absl_strings
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_logging_internal)
+            install(TARGETS absl_raw_logging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_city)
+            install(TARGETS absl_city
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_low_level_hash)
+            install(TARGETS absl_low_level_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_graphcycles_internal)
+            install(TARGETS absl_graphcycles_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_kernel_timeout_internal)
+            install(TARGETS absl_kernel_timeout_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_stacktrace)
+            install(TARGETS absl_stacktrace
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_symbolize)
+            install(TARGETS absl_symbolize
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time)
+            install(TARGETS absl_time
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_malloc_internal)
+            install(TARGETS absl_malloc_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_base)
+            install(TARGETS absl_base
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_spinlock_wait)
+            install(TARGETS absl_spinlock_wait
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings_internal)
+            install(TARGETS absl_strings_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_debugging_internal)
+            install(TARGETS absl_debugging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_demangle_internal)
+            install(TARGETS absl_demangle_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time_zone)
+            install(TARGETS absl_time_zone
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg)
+            install(TARGETS fft2d_fftsg
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET pthreadpool)
+            install(TARGETS pthreadpool
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET cpuinfo)
+            install(TARGETS cpuinfo
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
         install(
                 DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
                 COMPONENT webfiles
         )
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
-
-
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
