@@ -26,6 +26,8 @@ struct Configuration
     bool use_bluetooth = false;
     int threads = 10;
     std::string configFilePath = std::filesystem::current_path().string()+"/config.json";
+    const char* envPath = std::getenv("JARVIS_WEBSERVER_PATH");
+    std::string webRoot = envPath ? envPath : "/usr/local/share/jarvis/";
     bool bluetooth_available = false;
     unsigned short main_server_port = 15880;
 #ifdef SERVER_BUILD

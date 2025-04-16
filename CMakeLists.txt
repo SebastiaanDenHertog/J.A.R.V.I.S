@@ -6,8 +6,23 @@ include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 option(DEBUG_MODE "Enable debug prints" ON)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_compile_options(-Wall -Wextra -Wpedantic -Wconversion)
+
+#Always keep frame‑pointers so back‑traces are reliable (esp. on ARM)
+add_compile_options(-fno-omit-frame-pointer)
+add_link_options(-fno-omit-frame-pointer)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g3 -O0 -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS)
+endif()
+
+add_link_options(-rdynamic)
 
 cmake_policy(SET CMP0028 NEW)
 cmake_policy(SET CMP0042 NEW)
@@ -163,7 +178,7 @@ if(BUILD_SERVER)
         message(STATUS "Whisper.cpp found")
         include_directories(${WhisperCPP_INCLUDE_DIR})
     endif()
-
+    set(BUILD_SHARED_LIBS_DEFAULT OFF)
     find_package(LlamaCPP)
 
     if(NOT LlamaCPP_FOUND)
@@ -189,7 +204,7 @@ if(BUILD_SERVER)
     if(NOT tensorflow-lite_FOUND)
         message(WARNING "TensorFlow not found, will build from source.")
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/tensorflow)
-            message(FATAL_ERROR "TensorFlow source directory not found...")
+            message(FATAL_ERROR "TensorFlow source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
         else()
             set(TFLITE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
 
@@ -201,14 +216,13 @@ if(BUILD_SERVER)
             include_directories(${TFLITE_SOURCE_DIR})
             include_directories(${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include)
 
-            # Add subdirectory with flags set
+            # Add TensorFlow Lite directory to the project
             add_subdirectory(${TFLITE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/tensorflow-lite EXCLUDE_FROM_ALL)
         endif()
     else()
         message(STATUS "TensorFlow found")
         include_directories(${TENSORFLOW_INCLUDE_DIR})
     endif()
-
 endif()
 
 if(BUILD_CLIENT)
@@ -336,6 +350,9 @@ elseif(${TARGET_OS} STREQUAL windows)
     endif()
 endif()
 
+configure_file(config.json /usr/local/share/jarvis/  COPYONLY)
+configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
+
 # Compile options
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
@@ -345,25 +362,214 @@ if(${TARGET_OS} STREQUAL linux)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
+        if(TARGET ggml)
+            install(TARGETS ggml
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        install(TARGETS tensorflow-lite
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        if(TARGET farmhash)
+            install(TARGETS farmhash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg2d)
+            install(TARGETS fft2d_fftsg2d
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET XNNPACK)
+            install(TARGETS XNNPACK
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_hash)
+            install(TARGETS absl_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_synchronization)
+            install(TARGETS absl_synchronization
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings)
+            install(TARGETS absl_strings
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_logging_internal)
+            install(TARGETS absl_raw_logging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_city)
+            install(TARGETS absl_city
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_low_level_hash)
+            install(TARGETS absl_low_level_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_graphcycles_internal)
+            install(TARGETS absl_graphcycles_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_kernel_timeout_internal)
+            install(TARGETS absl_kernel_timeout_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_stacktrace)
+            install(TARGETS absl_stacktrace
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_symbolize)
+            install(TARGETS absl_symbolize
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time)
+            install(TARGETS absl_time
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_malloc_internal)
+            install(TARGETS absl_malloc_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_base)
+            install(TARGETS absl_base
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_spinlock_wait)
+            install(TARGETS absl_spinlock_wait
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings_internal)
+            install(TARGETS absl_strings_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_debugging_internal)
+            install(TARGETS absl_debugging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_demangle_internal)
+            install(TARGETS absl_demangle_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time_zone)
+            install(TARGETS absl_time_zone
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_int128)
+            install(TARGETS absl_int128
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif ()
+        if(TARGET fft2d_fftsg)
+            install(TARGETS fft2d_fftsg
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET pthreadpool)
+            install(TARGETS pthreadpool
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET cpuinfo)
+            install(TARGETS cpuinfo
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system
         )
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
     execute_process(COMMAND systemctl daemon-reload)
     execute_process(COMMAND systemctl enable jarvis_server.service)
 ")
-
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
         install(TARGETS client RUNTIME DESTINATION bin)
-
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
         # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
         install(FILES resources/jarvis_client.service
                 DESTINATION /lib/systemd/system
         )
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
@@ -380,6 +586,177 @@ elseif(${TARGET_OS} STREQUAL windows)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
+        if(TARGET ggml)
+            install(TARGETS ggml
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+
+        install(TARGETS tensorflow-lite
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        if(TARGET farmhash)
+            install(TARGETS farmhash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg2d)
+            install(TARGETS fft2d_fftsg2d
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET XNNPACK)
+            install(TARGETS XNNPACK
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_hash_set)
+            install(TARGETS absl_raw_hash_set
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_hash)
+            install(TARGETS absl_hash
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_synchronization)
+            install(TARGETS absl_synchronization
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings)
+            install(TARGETS absl_strings
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_raw_logging_internal)
+            install(TARGETS absl_raw_logging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_city)
+            install(TARGETS absl_city
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_low_level_hash)
+            install(TARGETS absl_low_level_hash
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_graphcycles_internal)
+            install(TARGETS absl_graphcycles_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_kernel_timeout_internal)
+            install(TARGETS absl_kernel_timeout_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_stacktrace)
+            install(TARGETS absl_stacktrace
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_symbolize)
+            install(TARGETS absl_symbolize
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time)
+            install(TARGETS absl_time
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_malloc_internal)
+            install(TARGETS absl_malloc_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_base)
+            install(TARGETS absl_base
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_spinlock_wait)
+            install(TARGETS absl_spinlock_wait
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_strings_internal)
+            install(TARGETS absl_strings_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_debugging_internal)
+            install(TARGETS absl_debugging_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_demangle_internal)
+            install(TARGETS absl_demangle_internal
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET absl_time_zone)
+            install(TARGETS absl_time_zone
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET fft2d_fftsg)
+            install(TARGETS fft2d_fftsg
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET pthreadpool)
+            install(TARGETS pthreadpool
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        if(TARGET cpuinfo)
+            install(TARGETS cpuinfo
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin)
+        endif()
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
@@ -402,6 +779,16 @@ elseif(${TARGET_OS} STREQUAL windows)
         target_compile_options(client PRIVATE -Wall -g -pthread)
 
         install(TARGETS client RUNTIME DESTINATION bin)
+        install(TARGETS libhttpserver
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                RUNTIME DESTINATION bin)
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT webfiles
+        )
+        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
         # Now run `sc create` to register the service
         # (this requires Administrator privileges)
@@ -418,6 +805,5 @@ elseif(${TARGET_OS} STREQUAL windows)
                 COMMAND sc start JarvisServerService
             )
         ")
-
     endif()
 endif()

@@ -22,7 +22,7 @@ fi
 
 # Build the project
 echo "Building the project..."
-make -j$(nproc) install
+make install -j$(nproc)
 
 # Navigate back to the root project directory
 cd ..
