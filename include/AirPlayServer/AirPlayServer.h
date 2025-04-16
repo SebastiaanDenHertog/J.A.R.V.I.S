@@ -23,6 +23,7 @@
 #include <iterator>
 #include <sys/types.h>
 #include <unordered_map>
+#include <iostream>
 
 #ifdef _WIN32
 #include <glib.h>
