@@ -31,6 +31,7 @@ nlohmann::json Configuration::to_json() const
     j["client_server_ip"] = client_server_ip;
     j["use_client_server_connection"] = use_client_server_connection;
     j["configFilePath"] = configFilePath;
+    j["main_server_ip"] = main_server_ip;
     // airplay
     j["use_airplay"] = use_airplay;
     j["airplay_server_name"] = airplay_server_name;
@@ -114,7 +115,7 @@ void Configuration::from_json(const nlohmann::json &j)
     }
     else
     {
-        main_server_ip = nullptr;
+        main_server_ip = "";
     }
     if (j.contains("configFilePath"))
         configFilePath = j["configFilePath"];
