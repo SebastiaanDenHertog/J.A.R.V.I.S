@@ -74,7 +74,7 @@ std::unique_ptr<NetworkManager> clientNetworkManager;
 // Global running flag
 std::atomic<bool> global_running(true);
 
-// Signal handler to gracefully shutdown
+// Signal handler to graceful shutdown
 void signal_handler(int signal)
 {
     if (signal == SIGINT || signal == SIGTERM)
@@ -109,7 +109,7 @@ const char *getLocalIP()
 
 bool checkBluetoothAvailability()
 {
-    int dev_id = hci_get_route(NULL);
+    int dev_id = hci_get_route(nullptr);
     if (dev_id < 0)
         return false;
     int sock = hci_open_dev(dev_id);
@@ -173,7 +173,7 @@ Task::TaskType stringToTaskType(const std::string &str)
     auto it = strToTaskType.find(str);
     return it != strToTaskType.end() ? it->second : Task::ERROR;
 }
-void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationModel, HomeAssistantAPI *homeAssistantAPI, InputHandler &inputHandler, TaskProcessor &taskProcessor)
+void terminalInputFunction(ModelRunner &nerModelObj, ModelRunner &classificationModelObj, HomeAssistantAPI *homeAssistantAPIObj, InputHandler &inputHandlerObj, TaskProcessor &taskProcessorObj)
 {
     while (global_running)
     {
@@ -185,14 +185,14 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
             global_running = false;
             break;
         }
-        auto [_, predicted_entities] = nerModel.PredictlabelFromInput(user_input); // Ignore the first part
+        auto [_, predicted_entities] = nerModelObj.PredictlabelFromInput(user_input); // Ignore the first part
         std::vector<std::pair<std::string, std::string>> sentence_entities;
         std::istringstream iss(user_input);
         std::string word;
         int entity_index = 0;
         while (iss >> word && entity_index < predicted_entities.size())
         {
-            sentence_entities.push_back({word, predicted_entities[entity_index]});
+            sentence_entities.emplace_back(word, predicted_entities[entity_index]);
             entity_index++;
         }
         std::cout << "Sentence and Entities: " << std::endl;
@@ -200,19 +200,19 @@ void terminalInputFunction(ModelRunner &nerModel, ModelRunner &classificationMod
         {
             std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
         }
-        std::string sentence_label = classificationModel.ClassifySentence(user_input);
+        std::string sentence_label = classificationModelObj.ClassifySentence(user_input);
         std::cout << "Intent: " << sentence_label << std::endl;
         UserCommand user_command(user_input, sentence_entities, sentence_label, predicted_entities);
         Task::TaskType taskType = stringToTaskType(sentence_label);
         Task task(user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
-        inputHandler.addTask(task);
-        taskProcessor.processTask(task);
+        inputHandlerObj.addTask(task);
+        taskProcessorObj.processTask(task);
     }
 }
 #endif
 
 #ifdef SERVER_BUILD
-void    run_server(const Configuration &config)
+void run_server(const Configuration &config)
 {
     try
     {
@@ -293,14 +293,15 @@ void initialize_models_and_task_processor()
 {
     try
     {
-        nerModel = std::make_unique<ModelRunner>("./models/ner_model.tflite");
-        classificationModel = std::make_unique<ModelRunner>("./models/classification_model.tflite");
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        nerModel = std::make_unique<ModelRunner>(config.Root +"/models/ner_model.tflite");
+        classificationModel = std::make_unique<ModelRunner>(config.Root +"/models/classification_model.tflite");
 
-        nerModel->LoadTokenizer("./models/ner_tokenizer.json");
-        nerModel->LoadLabels("./models/ner_labels.json");
+        nerModel->LoadTokenizer(config.Root +"/models/ner_tokenizer.json");
+        nerModel->LoadLabels(config.Root +"/models/ner_labels.json");
 
-        classificationModel->LoadTokenizer("./models/classification_tokenizer.json");
-        classificationModel->LoadLabels("./models/classification_type_labels.json");
+        classificationModel->LoadTokenizer(config.Root +"/models/classification_tokenizer.json");
+        classificationModel->LoadLabels(config.Root +"/models/classification_type_labels.json");
 
         inputHandler = std::make_unique<InputHandler>();
         taskProcessor = std::make_unique<TaskProcessor>(nullptr, *nerModel, *classificationModel);

@@ -30,3 +30,7 @@
 	path = lib/UxPlay
 	url = git@github.com:SebastiaanDenHertog/UxPlay.git
 	branch = master
+[submodule "lib/ggml"]
+    path = lib/ggml
+    url = git@github.com:ggml-org/ggml.git
+    branch = master

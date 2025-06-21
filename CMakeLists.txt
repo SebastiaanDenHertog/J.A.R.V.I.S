@@ -186,30 +186,21 @@ if(BUILD_SERVER)
         include_directories(${LlamaCPP_INCLUDE_DIR})
     endif()
 
-    find_package(tensorflow-lite)
+    # TensorFlow Lite header
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow)  # optional but safe
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/core)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/core/platform)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/kernels)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/delegates/flex)
+    include_directories(
+            ${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/flatbuffers/include
+    )
 
-    if(NOT tensorflow-lite_FOUND)
-        message(WARNING "TensorFlow not found, will build from source.")
-        if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/tensorflow)
-            message(FATAL_ERROR "TensorFlow source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
-        else()
-            set(TFLITE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
 
-            # In-source TFLite typically reads these options in its CMakeLists.txt:
-            set(TFLITE_ENABLE_SELECT_TF_OPS ON CACHE BOOL "Enable Select TF ops in TFLite")
-            set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration in TFLite")
-            set(TFLITE_ENABLE_RESOURCE_VARIABLE ON CACHE BOOL "Enable resource variables in TFLite")
 
-            include_directories(${TFLITE_SOURCE_DIR})
-            include_directories(${TFLITE_SOURCE_DIR}/tools/make/downloads/flatbuffers/include)
-
-            # Add TensorFlow Lite directory to the project
-            add_subdirectory(${TFLITE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/tensorflow-lite EXCLUDE_FROM_ALL)
-        endif()
-    else()
-        message(STATUS "TensorFlow found")
-        include_directories(${TENSORFLOW_INCLUDE_DIR})
-    endif()
 endif()
 
 if(BUILD_CLIENT)
@@ -325,9 +316,44 @@ message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 # Linking libraries
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread i2c ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        # Base server libs
+        target_link_libraries(server PRIVATE
+                ${Boost_LIBRARIES}
+                ${WhisperCPP_LIBRARIES}
+                ${LlamaCPP_LIBRARIES}
+                OpenSSL::SSL
+                OpenSSL::Crypto
+                -lbluetooth -lstdc++ -lm -pthread
+                i2c ${GLIB2_LIBRARIES}
+                -lX11
+                ${OpenCV_LIBS}
+                nlohmann_json::nlohmann_json
+                libhttpserver
+        )
+
+        # Conditionally link Bazel-built TFLite and Flex delegate
+        link_directories(${PROJECT_SOURCE_DIR}/build/tflite_flex_lib)
+        set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+        if(EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so" AND EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
+            message(STATUS "Linking Bazel-built TensorFlow Lite and Flex delegate")
+            target_link_libraries(server PRIVATE
+                    ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
+                    ${FLEX_LIB_DIR}/libtensorflowlite.so
+            )
+        else()
+            message(WARNING "Bazel-built TFLite/Flex libs not found! Flex ops will not work.")
+        endif()
     elseif(BUILD_CLIENT)
-        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -lm -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
+        target_link_libraries(client PRIVATE
+                ${Boost_LIBRARIES}
+                OpenSSL::SSL OpenSSL::Crypto
+                -lbluetooth -lstdc++ -lm -pthread
+                -lpigpio -lrt -lspidev-lib++
+                i2c ${GLIB2_LIBRARIES}
+                renderers airplay
+                -lX11
+                libhttpserver
+        )
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_SERVER)
@@ -345,18 +371,16 @@ if(${TARGET_OS} STREQUAL linux)
         install(TARGETS whisper
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
+                RUNTIME DESTINATION bin
+                PUBLIC_HEADER DESTINATION include)
         if(TARGET ggml)
             install(TARGETS ggml
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         install(TARGETS libhttpserver
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
-        install(TARGETS tensorflow-lite
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
@@ -364,19 +388,22 @@ if(${TARGET_OS} STREQUAL linux)
             install(TARGETS farmhash
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         if(TARGET fft2d_fftsg2d)
             install(TARGETS fft2d_fftsg2d
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         if(TARGET XNNPACK)
             install(TARGETS XNNPACK
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         if(TARGET absl_raw_hash_set)
             install(TARGETS absl_raw_hash_set
@@ -514,13 +541,15 @@ if(${TARGET_OS} STREQUAL linux)
             install(TARGETS pthreadpool
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         if(TARGET cpuinfo)
             install(TARGETS cpuinfo
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system
@@ -531,6 +560,13 @@ if(${TARGET_OS} STREQUAL linux)
                 COMPONENT webfiles
         )
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
+
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/models
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT models
+        )
+        add_definitions(-DMODELS_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/models\")
 
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
@@ -555,6 +591,13 @@ if(${TARGET_OS} STREQUAL linux)
         )
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
+        install(
+                DIRECTORY ${PROJECT_SOURCE_DIR}/models
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT models
+        )
+        add_definitions(-DMODELS_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/models\")
+
         # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
     execute_process(COMMAND systemctl daemon-reload)
@@ -577,11 +620,6 @@ elseif(${TARGET_OS} STREQUAL windows)
                     RUNTIME DESTINATION bin)
         endif()
         install(TARGETS libhttpserver
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
-
-        install(TARGETS tensorflow-lite
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)

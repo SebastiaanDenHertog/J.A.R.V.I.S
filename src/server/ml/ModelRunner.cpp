@@ -22,6 +22,7 @@ ModelRunner::ModelRunner(const std::string &model_path)
         throw std::runtime_error("Failed to load model: " + model_path);
     }
     tflite::ops::builtin::BuiltinOpResolver resolver;
+    resolver.AddCustom("Flex", tflite::ops::flex::RegisterFlexOps());
     tflite::InterpreterBuilder(*model_, resolver)(&interpreter_);
     if (!interpreter_)
     {

@@ -42,22 +42,30 @@ the cmake option `-DNO_X11_DEPS=ON`.
 1. `sudo apt-get install libopenblas-dev && sudo apt-get install libblas-dev`
 
 # How to run
+## Install dependencies
+``
+git submodule init &&
+git submodule update --progress &&
+git submodule foreach git pull origin master
+``
 
-git submodule init
-git submodule update
-git submodule foreach git pull
-
+## Build the project
+``
 Linux: chmod +x build_project.sh
 ./build_project.sh
+``
 
 do this in the lib folder:
+``
 wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
 unzip libtorch-shared-with-deps-latest.zip
 rm libtorch-shared-with-deps-latest.zip
+``
 
-in the mlpackchange cmakefile.txt to 
+in the mlpackchange cmakefile.txt to
+``
 file(READ ${CMAKE_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS) -> file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/mlpack/config.hpp CONFIG_CONTENTS)
-
+``
 for debug mode add -DDEBUG_MODE=ON to the build_project cmake
 
 Building the Project change this in the build_project file you use

@@ -6,6 +6,7 @@
  **/
 
 #include "NetworkManager.h"
+#include "Configuration.h"
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -25,17 +26,17 @@
 NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
     : port(port), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
 {
-
+    Configuration config = ConfigurationManager::getInstance().getConfiguration();
     // WhisperTranscriber setup
     WhisperTranscriber::Params transcriberParams;
     transcriberParams.language = "en";
     transcriberParams.n_threads = 4;                          // Adjust the number of threads
-    transcriberParams.model_path = "models/ggml-base.en.bin"; // Provide the correct model path
+    transcriberParams.model_path = config.Root + "models/ggml-base.en.bin"; // Provide the correct model path
     transcriber.setup(transcriberParams);
 
     if (protocol == TCP)
     {
-        if (serverIp == "")
+        if (serverIp.empty())
         {
             setupServerSocket();
             bindSocket();
