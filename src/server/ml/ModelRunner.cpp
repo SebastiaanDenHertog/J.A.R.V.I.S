@@ -13,25 +13,35 @@
 #include <cstring>
 #include <algorithm>
 #include <nlohmann/json.hpp>
+#include <tensorflow/lite/delegates/flex/delegate.h>
 
-ModelRunner::ModelRunner(const std::string &model_path)
-{
-    model_ = tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
-    if (!model_)
-    {
-        throw std::runtime_error("Failed to load model: " + model_path);
+
+ModelRunner::ModelRunner(const std::string& model_path) {
+    // Load model
+    model = tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
+    if (!model) {
+        throw std::runtime_error("Failed to load model");
     }
+
+    // Build interpreter
     tflite::ops::builtin::BuiltinOpResolver resolver;
-    resolver.AddCustom("Flex", tflite::ops::flex::RegisterFlexOps());
-    tflite::InterpreterBuilder(*model_, resolver)(&interpreter_);
-    if (!interpreter_)
-    {
-        throw std::runtime_error("Failed to build interpreter for model: " + model_path);
+
+    // Required for Flex ops
+    resolver.AddCustom("FlexTensorListReserve", tflite::ops::builtin::BuiltinOpResolver().FindOp("FlexTensorListReserve"));
+
+    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
+    if (!interpreter) {
+        throw std::runtime_error("Failed to construct interpreter");
     }
 
-    if (interpreter_->AllocateTensors() != kTfLiteOk)
-    {
-        throw std::runtime_error("Failed to allocate tensors for model: " + model_path);
+    flex_delegate = tflite::FlexDelegate::Create();
+    if (interpreter->ModifyGraphWithDelegate(flex_delegate) != kTfLiteOk) {
+        throw std::runtime_error("Failed to apply Flex delegate");
+    }
+
+    // Allocate tensors after delegate is applied
+    if (interpreter->AllocateTensors() != kTfLiteOk) {
+        throw std::runtime_error("Failed to allocate tensors");
     }
 }
 

@@ -3,6 +3,7 @@
 # Name of the build directory
 BUILD_DIR="build"
 TFLITE_LIB_DIR="$BUILD_DIR/tflite_flex_lib"
+ALLOWED_OPS_LIB="bazel-bin/tensorflow/compiler/mlir/lite/delegates/flex/liballowlisted_flex_ops_lib.a"
 
 # Check if the build directory exists
 if [ ! -d "$BUILD_DIR" ]; then
@@ -22,13 +23,13 @@ cd "$BUILD_DIR" || { echo "Failed to change directory to $BUILD_DIR"; exit 1; }
 
 cd ../lib/tensorflow || { echo "TensorFlow directory not found!"; exit 1; }
 
-#./configure
+./configure
+
+#bazel clean --expunge || { echo "Bazel clean failed!"; exit 1; }
 
 export TMPDIR=/var/fastnas/temp
 
-bazel --output_user_root=/var/fastnas/bazel_cache build //tensorflow/lite:tensorflowlite --experimental_ui_max_stdouterr_bytes=10000000  --define xnn_enable_avx512fp16=false --define xnn_enable_avx512bf16=false --define xnn_enable_avxvnni=false  --define xnn_enable_avxvnniint8=false --define verbose_failure=1 || { echo "Bazel tensorflowlite build failed!"; exit 1; }
-
-bazel --output_user_root=/var/fastnas/bazel_cache build //tensorflow/lite/delegates/flex:tensorflowlite_flex --config=monolithic --experimental_ui_max_stdouterr_bytes=10000000 --define xnn_enable_avx512amx=false --define xnn_enable_avxvnniint8=false --define xnn_enable_avxvnni=false --define xnn_enable_avx512fp16=false --define verbose_failure=1 || { echo "Bazel tensorflowlite_flex build failed!"; exit 1; }
+bazel --output_user_root=/var/fastnas/bazel_cache build --config opt --config=mkl --config=monolithic --config=nogcp --config=nonccl //tensorflow/lite/delegates/flex:tensorflowlite_flex //tensorflow/lite:tensorflowlite --experimental_ui_max_stdouterr_bytes=10000000 --define=tflite_convert_with_select_tf_ops=true --define=SELECT_TF_OPS=true --define=flex_with_tensorflow_ops=true  --define xnn_enable_avx512amx=false --define xnn_enable_avxvnniint8=false --define xnn_enable_avxvnni=false --define xnn_enable_avx512fp16=false --define verbose_failure=1 || { echo "Bazel tensorflowlite_flex build failed!"; exit 1; }
 
 # Ensure output dir exists
 mkdir -p "../../$TFLITE_LIB_DIR/flatbuffers/include" || { echo "Failed to create flatbuffers include directory"; exit 1; }
@@ -37,10 +38,8 @@ cp -u bazel-bin/tensorflow/lite/libtensorflowlite.so "../../$TFLITE_LIB_DIR/" ||
 echo "✅ libtensorflowlite.so built and copied successfully."
 cp -u bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so "../../$TFLITE_LIB_DIR/" || exit 1
 echo "✅ libtensorflowlite_flex.so built and copied successfully."
-cp -r bazel-bin/external/flatbuffers/_virtual_includes/flatbuffers "../../$TFLITE_LIB_DIR/flatbuffers/include" || exit 1
-echo "✅ flatbuffers built and copied successfully."
-
-# Go back to the build directory
+cp -rf bazel-bin/external/flatbuffers/_virtual_includes/flatbuffers/flatbuffers "../../$TFLITE_LIB_DIR/flatbuffers/include" || exit 1
+echo "✅ flatbuffers headers copied correctly."
 
 cd "../../build" || { echo "Failed to change directory to root"; exit 1; }
 

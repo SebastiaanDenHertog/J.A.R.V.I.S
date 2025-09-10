@@ -8,15 +8,14 @@
 #ifndef MODEL_RUNNER_H
 #define MODEL_RUNNER_H
 
-#include <tensorflow/lite/interpreter.h>
-#include <tensorflow/lite/model.h>
-#include <tensorflow/lite/kernels/register.h>
-#include <tensorflow/lite/op_resolver.h>
-#include <tensorflow/lite/tools/command_line_flags.h>
-#include <tensorflow/lite/tools/list_flex_ops.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/kernels/register.h>
+
+struct TfLiteDelegate;
 
 class ModelRunner
 {
@@ -32,12 +31,13 @@ public:
 private:
     std::vector<int> TokenizeInput(const std::string &input_text);
 
-    std::unique_ptr<tflite::FlatBufferModel> model_;
-    std::unique_ptr<tflite::Interpreter> interpreter_;
+    std::unique_ptr<tflite::FlatBufferModel> model;
+    std::unique_ptr<tflite::Interpreter> interpreter;
     std::unordered_map<int, std::string> labels_;
+    TfLiteDelegate* flex_delegate = nullptr;
     std::unordered_map<int, std::string> tokenizer_index_word_;
     std::unordered_map<std::string, int> tokenizer_word_index_;
-    int max_length_;
+    int max_length_{};
 };
 
 #endif // MODEL_RUNNER_H

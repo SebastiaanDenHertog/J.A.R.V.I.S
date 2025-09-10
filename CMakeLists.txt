@@ -185,21 +185,18 @@ if(BUILD_SERVER)
         message(STATUS "llama.cpp found")
         include_directories(${LlamaCPP_INCLUDE_DIR})
     endif()
+    add_definitions(-DFLEX_ALLOWLIST)
 
-    # TensorFlow Lite header
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow)  # optional but safe
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/core)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/core/platform)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/kernels)
-    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/delegates/flex)
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/flatbuffers/include
-    )
-
-
+#    # TensorFlow Lite header
+#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow)  # optional but safe
+#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow)
+#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
+#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema)
+#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/kernels)
+#    include_directories(
+#            ${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/flatbuffers/include
+#    )
+#    include_directories(${PROJECT_SOURCE_DIR}/build/tflite_flex_lib)
 
 endif()
 
@@ -296,6 +293,29 @@ if(BUILD_SERVER)
 
     # Ensure client sources are not included
     add_executable(server ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
+
+    set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+
+    target_include_directories(server PRIVATE
+            "${FLEX_LIB_DIR}"                          # absl/...
+            "${FLEX_LIB_DIR}/flatbuffers/include"      # flatbuffers/...
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow"     # resolves: tensorflow/...
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow"  # <-- resolves: tsl/...
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin/external/local_xla" # generated TF headers (.pb.h)
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_protobuf/src"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/external/com_google_protobuf/src"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/eigen_archive"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_xla"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_tsl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_absl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_absl/absl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/ml_dtypes_py"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/farmhash_archive/src"
+    )
+
     add_compile_definitions(SERVER_BUILD)
 elseif(BUILD_CLIENT)
     message("Building client code")
@@ -334,11 +354,12 @@ if(${TARGET_OS} STREQUAL linux)
         # Conditionally link Bazel-built TFLite and Flex delegate
         link_directories(${PROJECT_SOURCE_DIR}/build/tflite_flex_lib)
         set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
-        if(EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so" AND EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
+        if(EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so" AND EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so" AND EXISTS "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
             message(STATUS "Linking Bazel-built TensorFlow Lite and Flex delegate")
             target_link_libraries(server PRIVATE
                     ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
                     ${FLEX_LIB_DIR}/libtensorflowlite.so
+                    ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
             )
         else()
             message(WARNING "Bazel-built TFLite/Flex libs not found! Flex ops will not work.")
@@ -374,12 +395,30 @@ if(${TARGET_OS} STREQUAL linux)
                 RUNTIME DESTINATION bin
                 PUBLIC_HEADER DESTINATION include)
         if(TARGET ggml)
+            set_target_properties(ggml PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/lib/ggml/include/ggml.h")
             install(TARGETS ggml
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin
                     PUBLIC_HEADER DESTINATION include)
         endif()
+        if(TARGET ggml-cpu)
+            install(TARGETS ggml-cpu
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include
+            )
+        endif()
+        if(TARGET ggml-base)
+            install(TARGETS ggml-base
+                    LIBRARY DESTINATION lib
+                    ARCHIVE DESTINATION lib
+                    RUNTIME DESTINATION bin
+                    PUBLIC_HEADER DESTINATION include
+            )
+        endif()
+
         install(TARGETS libhttpserver
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
@@ -551,6 +590,16 @@ if(${TARGET_OS} STREQUAL linux)
                     RUNTIME DESTINATION bin
                     PUBLIC_HEADER DESTINATION include)
         endif()
+        install(FILES
+                ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        )
+
+        install(FILES
+                ${FLEX_LIB_DIR}/libtensorflowlite.so
+                ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        )
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system
         )
@@ -773,6 +822,17 @@ elseif(${TARGET_OS} STREQUAL windows)
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin)
         endif()
+        install(FILES
+                ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        )
+
+        install(FILES
+                ${FLEX_LIB_DIR}/libtensorflowlite.so
+                ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        )
+
         install(
                 DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
