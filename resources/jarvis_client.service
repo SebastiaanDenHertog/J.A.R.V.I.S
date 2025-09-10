@@ -6,9 +6,10 @@ After=network.target
 Type=simple
 ExecStart=/usr/local/bin/client >> /var/log/jarvis/client.log 2>&1
 # Optionally set working directory, environment variables, etc.
-# WorkingDirectory=/var/myserver
+# WorkingDirectory=/var/jarvis
 # Environment=MY_ENV_VAR=some_value
-
+LimitCORE=infinity
+KillSignal=SIGABRT
 Restart=on-failure
 
 [Install]

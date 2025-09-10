@@ -11,6 +11,19 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 option(DEBUG_MODE "Enable debug prints" ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_compile_options(-Wall -Wextra -Wpedantic -Wconversion)
+
+#Always keep frame‑pointers so back‑traces are reliable (esp. on ARM)
+add_compile_options(-fno-omit-frame-pointer)
+add_link_options(-fno-omit-frame-pointer)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g3 -O0 -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS)
+endif()
+
+add_link_options(-rdynamic)
+
 cmake_policy(SET CMP0028 NEW)
 cmake_policy(SET CMP0042 NEW)
 
@@ -383,6 +396,9 @@ elseif(${TARGET_OS} STREQUAL windows)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
     endif()
 endif()
+
+configure_file(config.json /usr/local/share/jarvis/  COPYONLY)
+configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
 
 # Compile options
 if(${TARGET_OS} STREQUAL linux)
