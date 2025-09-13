@@ -12,6 +12,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 option(DEBUG_MODE "Enable debug prints" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 add_compile_options(-Wall -Wextra -Wpedantic -Wconversion)
 
 #Always keep frame‑pointers so back‑traces are reliable (esp. on ARM)
@@ -308,6 +309,17 @@ if(BUILD_SERVER)
     add_executable(server ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
 
     set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+    # after setting FLEX_LIB_DIR
+    set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+
+    # Make sure the linker and runtime loader look here first
+    link_directories(${FLEX_LIB_DIR})
+    set_target_properties(server PROPERTIES
+            BUILD_RPATH "${FLEX_LIB_DIR}"
+            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${FLEX_LIB_DIR}"
+            SKIP_BUILD_RPATH OFF
+            SKIP_INSTALL_RPATH OFF
+    )
 
     target_include_directories(server PRIVATE
             "${FLEX_LIB_DIR}"                          # absl/...
@@ -370,8 +382,8 @@ if(${TARGET_OS} STREQUAL linux)
         if(EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so" AND EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so" AND EXISTS "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
             message(STATUS "Linking Bazel-built TensorFlow Lite and Flex delegate")
             target_link_libraries(server PRIVATE
-                    ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
                     ${FLEX_LIB_DIR}/libtensorflowlite.so
+                    ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
                     ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
             )
         else()
