@@ -6,6 +6,8 @@ include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -15,12 +17,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 add_compile_options(-Wall -Wextra -Wpedantic -Wconversion)
 
-#Always keep frame‑pointers so back‑traces are reliable (esp. on ARM)
 add_compile_options(-fno-omit-frame-pointer)
 add_link_options(-fno-omit-frame-pointer)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-g3 -O0 -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS)
+    add_compile_options(-g3 -O0)
 endif()
 
 add_link_options(-rdynamic)
@@ -42,9 +43,8 @@ message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 if((UNIX AND NOT APPLE) OR USE_X11)
     if(NOT NO_X11_DEPS)
         find_package(X11)
-
         if(X11_FOUND)
-            message(STATUS "Will compile using X11 Libraries (use cmake option -DNO_X11_DEPS=ON if X11 dependence is not wanted)")
+            message(STATUS "Will compile using X11 Libraries (use -DNO_X11_DEPS=ON to disable)")
             set(LINK_LIBS ${LINK_LIBS} ${X11_LIBRARIES})
             include_directories(${X11_INCLUDE_DIR})
         else()
@@ -100,7 +100,6 @@ endif()
 
 # Find Boost 1.74+
 find_package(Boost 1.74 REQUIRED COMPONENTS system thread filesystem log log_setup regex date_time chrono atomic)
-
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     add_compile_definitions(BOOST_LOG_DYN_LINK) # Necessary if using dynamic linking for Boost.Log
@@ -110,7 +109,6 @@ endif()
 
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
-
 if(OpenSSL_FOUND)
     message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")
     include_directories(${OpenSSL_INCLUDE_DIR})
@@ -120,12 +118,10 @@ endif()
 
 # Check if nlohmann_json exists and handle accordingly
 find_package(nlohmann_json)
-
 if(NOT nlohmann_json_FOUND)
     message(WARNING "nlohmann_json not found, will build from source.")
-
     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/json)
-        message(FATAL_ERROR "Json source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        message(FATAL_ERROR "Json source directory not found. Run:\n git submodule update --init --recursive")
     else()
         set(JSON_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/json)
         add_subdirectory(${JSON_SOURCE_DIR} ${CMAKE_BINARY_DIR}/json)
@@ -138,17 +134,15 @@ endif()
 
 if(BUILD_SERVER)
     find_package(OpenCV)
-
     if(NOT OpenCV_FOUND)
         message(WARNING "OpenCV not found, will build from source.")
-
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/opencv)
-            message(FATAL_ERROR "OpenCV source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+            message(FATAL_ERROR "OpenCV source directory not found. Run:\n git submodule update --init --recursive")
         else()
             set(OPENCV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/opencv)
             add_subdirectory(${OPENCV_SOURCE_DIR} ${CMAKE_BINARY_DIR}/opencv)
             include_directories(${OPENCV_SOURCE_DIR}/include)
-            set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui) # Add other required OpenCV modules here
+            set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui) # adjust as needed
         endif()
     else()
         message(STATUS "OpenCV found: ${OpenCV_VERSION}")
@@ -156,69 +150,44 @@ if(BUILD_SERVER)
     endif()
 
     find_package(Whisper)
-
     if(NOT Whisper_FOUND)
         message(WARNING "Whisper.cpp not found, will build from source.")
-
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
-            message(FATAL_ERROR "Whisper.cpp source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+            message(FATAL_ERROR "Whisper.cpp source directory not found. Run:\n git submodule update --init --recursive")
         else()
-            # Set Whisper source directory
             set(WHISPER_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/whisper.cpp)
-
-            # Add Whisper.cpp directory to the project
             add_subdirectory(${WHISPER_SOURCE_DIR} ${CMAKE_BINARY_DIR}/whisper EXCLUDE_FROM_ALL)
-
-            # Include Whisper headers
             include_directories(${WHISPER_SOURCE_DIR})
-
-            # Link the Whisper library
             set(WhisperCPP_LIBRARIES whisper)
         endif()
     else()
         message(STATUS "Whisper.cpp found")
         include_directories(${WhisperCPP_INCLUDE_DIR})
     endif()
+
     set(BUILD_SHARED_LIBS_DEFAULT OFF)
     find_package(LlamaCPP)
-
     if(NOT LlamaCPP_FOUND)
         message(WARNING "llama.cpp not found, will build from source.")
-
         if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/llama.cpp)
-            message(FATAL_ERROR "llama.cpp source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+            message(FATAL_ERROR "llama.cpp source directory not found. Run:\n git submodule update --init --recursive")
         else()
-            # Set llama.cpp source directory
             set(LLAMA_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/llama.cpp)
             include_directories(${LLAMA_SOURCE_DIR})
-
-            # Add llama.cpp directory to the project
             add_subdirectory(${LLAMA_SOURCE_DIR} ${CMAKE_BINARY_DIR}/llama EXCLUDE_FROM_ALL)
         endif()
     else()
         message(STATUS "llama.cpp found")
         include_directories(${LlamaCPP_INCLUDE_DIR})
     endif()
+
     add_definitions(-DFLEX_ALLOWLIST)
-
-#    # TensorFlow Lite header
-#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow)  # optional but safe
-#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow)
-#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite)
-#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema)
-#    include_directories(${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/kernels)
-#    include_directories(
-#            ${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/flatbuffers/include
-#    )
-#    include_directories(${PROJECT_SOURCE_DIR}/build/tflite_flex_lib)
-
 endif()
 
 if(BUILD_CLIENT)
-    # Find GLIB using pkg-config
+    # GLib via pkg-config
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLIB2 REQUIRED glib-2.0)
-
     include_directories(${GLIB2_INCLUDE_DIRS})
     link_directories(${GLIB2_LIBRARY_DIRS})
     add_definitions(${GLIB2_CFLAGS_OTHER})
@@ -237,80 +206,83 @@ if(BUILD_CLIENT)
     if(GST_MACOS)
         add_definitions(-DGST_MACOS)
         message(STATUS "define GST_MACOS")
-
         if(GST_124)
             add_definitions(-DGST_124)
             message(STATUS "define GST_124")
         endif()
-
         set(AIRPLAYSERVER_PATH -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -lglib-2.0 -lgobject-2.0)
     endif()
 endif()
 
-# Find the httpserver package
+# LibHTTPServer
 find_package(httpserver)
-
 if(NOT httpserver_FOUND)
     message(WARNING "LibHTTPServer not found, will build from source.")
-
     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
-        message(FATAL_ERROR "LibHTTPServer source directory not found. Please ensure that submodules are downloaded. Run:\n git submodule update --init --recursive")
+        message(FATAL_ERROR "LibHTTPServer source directory not found. Run:\n git submodule update --init --recursive")
     else()
         set(LibHttpServer_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/libhttpserver)
-        include_directories(${LibHttpServer_SOURCE_DIR}/src) # Ensure the src folder is included
-        include_directories(${CMAKE_BINARY_DIR}/httpserver) 
+        include_directories(${LibHttpServer_SOURCE_DIR}/src)
+        include_directories(${CMAKE_BINARY_DIR}/httpserver)
         include_directories(${CMAKE_BINARY_DIR}/httpserver/include/details)
-        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils) # This might change depending on your structure
+        include_directories(${CMAKE_BINARY_DIR}/httpserver/include/utils)
         add_subdirectory(${LibHttpServer_SOURCE_DIR} ${CMAKE_BINARY_DIR}/httpserver EXCLUDE_FROM_ALL)
     endif()
 else()
     message(STATUS "LibHTTPServer found")
-    include_directories(${LibHttpServer_INCLUDE_DIR}) # Make sure this points to the correct path
+    include_directories(${LibHttpServer_INCLUDE_DIR})
 endif()
+
+find_package(OpenMP REQUIRED)
 
 message(STATUS "buildstatus ${BUILD_SERVER} ${BUILD_CLIENT}")
 
-# Include directories for the project
+# Project include dirs
 include_directories(
-    ${PROJECT_SOURCE_DIR}/include/additions
-    ${PROJECT_SOURCE_DIR}/include/ac10x
-    ${PROJECT_SOURCE_DIR}/include/bluethoothcomm
-    ${PROJECT_SOURCE_DIR}/include/ml
-    ${PROJECT_SOURCE_DIR}/include/networkmanager
-    ${PROJECT_SOURCE_DIR}/include/mediaplayer
-    ${PROJECT_SOURCE_DIR}/include/AirPlayServer
-    ${PROJECT_SOURCE_DIR}/include/hardwareinterface
-    ${PROJECT_SOURCE_DIR}/include/task
-    ${PROJECT_SOURCE_DIR}/include/taskprocessor
-    ${PROJECT_SOURCE_DIR}/include/inputhandler
-    ${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI
-    ${PROJECT_SOURCE_DIR}/include/Tokenizer
-    ${PROJECT_SOURCE_DIR}/include/ClientInfo
-    ${PROJECT_SOURCE_DIR}/include/prometheus
-    ${PROJECT_SOURCE_DIR}/include/webServer
-    ${PROJECT_SOURCE_DIR}/include/whisperTranscriber
-    ${PROJECT_SOURCE_DIR}/include/dataStructures
-    ${PROJECT_SOURCE_DIR}/include/WatchDog
-    ${PROJECT_SOURCE_DIR}/include/Configuration
+        ${PROJECT_SOURCE_DIR}/include/additions
+        ${PROJECT_SOURCE_DIR}/include/ac10x
+        ${PROJECT_SOURCE_DIR}/include/bluethoothcomm
+        ${PROJECT_SOURCE_DIR}/include/ml
+        ${PROJECT_SOURCE_DIR}/include/networkmanager
+        ${PROJECT_SOURCE_DIR}/include/mediaplayer
+        ${PROJECT_SOURCE_DIR}/include/AirPlayServer
+        ${PROJECT_SOURCE_DIR}/include/hardwareinterface
+        ${PROJECT_SOURCE_DIR}/include/task
+        ${PROJECT_SOURCE_DIR}/include/taskprocessor
+        ${PROJECT_SOURCE_DIR}/include/inputhandler
+        ${PROJECT_SOURCE_DIR}/include/HomeAssistantAPI
+        ${PROJECT_SOURCE_DIR}/include/Tokenizer
+        ${PROJECT_SOURCE_DIR}/include/ClientInfo
+        ${PROJECT_SOURCE_DIR}/include/prometheus
+        ${PROJECT_SOURCE_DIR}/include/webServer
+        ${PROJECT_SOURCE_DIR}/include/whisperTranscriber
+        ${PROJECT_SOURCE_DIR}/include/dataStructures
+        ${PROJECT_SOURCE_DIR}/include/WatchDog
+        ${PROJECT_SOURCE_DIR}/include/Configuration
 )
 
-# Source files
 if(BUILD_SERVER)
     message("Building server code")
-
-    # Common (default) sources
     file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
     file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
-
-    # Server-specific sources (no client sources)
     file(GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/src/server/*/*.cpp)
-
-    # Ensure client sources are not included
     add_executable(server ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
 
+    # --- TFLite/Flex from Bazel build (REQUIRED: .so; OPTIONAL: allowlisted .a) ---
     set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
-    # after setting FLEX_LIB_DIR
-    set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+
+    if(NOT EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so")
+        message(FATAL_ERROR "Missing ${FLEX_LIB_DIR}/libtensorflowlite.so")
+    endif()
+    if(NOT EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
+        message(FATAL_ERROR "Missing ${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
+    endif()
+    if(NOT EXISTS "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
+        message(WARNING "Optional ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a not found — continuing without it.")
+        set(HAVE_TFLITE_FLEX_ALLOWLIST 0)
+    else()
+        set(HAVE_TFLITE_FLEX_ALLOWLIST 1)
+    endif()
 
     # Make sure the linker and runtime loader look here first
     link_directories(${FLEX_LIB_DIR})
@@ -321,47 +293,45 @@ if(BUILD_SERVER)
             SKIP_INSTALL_RPATH OFF
     )
 
+    # TF/TFLite/Flex headers (source + generated)
     target_include_directories(server PRIVATE
-            "${FLEX_LIB_DIR}"                          # absl/...
-            "${FLEX_LIB_DIR}/flatbuffers/include"      # flatbuffers/...
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow"     # resolves: tensorflow/...
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow"  # <-- resolves: tsl/...
+            "${FLEX_LIB_DIR}"
+            "${FLEX_LIB_DIR}/flatbuffers/include"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite/schema"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin/external/local_xla" # generated TF headers (.pb.h)
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_protobuf/src"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/external/com_google_protobuf/src"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/eigen_archive"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_xla"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_tsl"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_absl"
-            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_absl/absl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/com_google_protobuf/src"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_xla"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin/external/local_xla"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/local_tsl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-bin/external/local_tsl"
+            "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/eigen_archive"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/ml_dtypes_py"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/bazel-tensorflow/external/farmhash_archive/src"
     )
 
+    # Ensure the linker keeps dependent libs
+    target_link_options(server PRIVATE -Wl,--no-as-needed)
+
     add_compile_definitions(SERVER_BUILD)
+
 elseif(BUILD_CLIENT)
     message("Building client code")
-
-    # Common (default) sources
     file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
     file(GLOB DEFAULT_SOURCESS ${PROJECT_SOURCE_DIR}/src/default/*/*/*.cpp)
-
-    # Client-specific sources (no server sources)
     file(GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/src/client/*/*.cpp)
-
     add_executable(client ${PROJECT_SOURCE_DIR}/src/main.cpp ${CLIENT_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
     add_compile_definitions(CLIENT_BUILD)
 endif()
 
 message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
-# Linking libraries
+# Linking
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
-        # Base server libs
         target_link_libraries(server PRIVATE
                 ${Boost_LIBRARIES}
                 ${WhisperCPP_LIBRARIES}
@@ -374,21 +344,25 @@ if(${TARGET_OS} STREQUAL linux)
                 ${OpenCV_LIBS}
                 nlohmann_json::nlohmann_json
                 libhttpserver
+                OpenMP::OpenMP_CXX
+                dl
         )
 
-        # Conditionally link Bazel-built TFLite and Flex delegate
-        link_directories(${PROJECT_SOURCE_DIR}/build/tflite_flex_lib)
-        set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
-        if(EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so" AND EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so" AND EXISTS "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
-            message(STATUS "Linking Bazel-built TensorFlow Lite and Flex delegate")
-            target_link_libraries(server PRIVATE
-                    ${FLEX_LIB_DIR}/libtensorflowlite.so
-                    ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
-                    ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
-            )
-        else()
-            message(WARNING "Bazel-built TFLite/Flex libs not found! Flex ops will not work.")
+        # Force link Bazel-built TFLite & Flex (so files are REQUIRED)
+        target_link_libraries(server PRIVATE
+                "${FLEX_LIB_DIR}/libtensorflowlite.so"        # TFLite first
+                "${FLEX_LIB_DIR}/libtensorflowlite_flex.so"   # Flex second
+                dl
+        )
+
+        # Optionally link allowlisted flex ops lib if present
+        if(HAVE_TFLITE_FLEX_ALLOWLIST)
+            target_link_libraries(server PRIVATE "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
         endif()
+
+        # Explicitly avoid _GLIBCXX_DEBUG for this target
+        target_compile_definitions(server PRIVATE $<$<CONFIG:Release>:NDEBUG>)
+
     elseif(BUILD_CLIENT)
         target_link_libraries(client PRIVATE
                 ${Boost_LIBRARIES}
@@ -401,10 +375,13 @@ if(${TARGET_OS} STREQUAL linux)
                 libhttpserver
         )
     endif()
+
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_SERVER)
+        target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
         target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
     elseif(BUILD_CLIENT)
+        target_compile_options(client PRIVATE -Wall -g -pthread)
         target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
     endif()
 endif()
@@ -412,16 +389,18 @@ endif()
 configure_file(config.json /usr/local/share/jarvis/  COPYONLY)
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
 
-# Compile options
+# Compile options & install
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
         target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
         install(TARGETS server RUNTIME DESTINATION bin)
+
         install(TARGETS whisper
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin
                 PUBLIC_HEADER DESTINATION include)
+
         if(TARGET ggml)
             set_target_properties(ggml PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/lib/ggml/include/ggml.h")
             install(TARGETS ggml
@@ -435,221 +414,49 @@ if(${TARGET_OS} STREQUAL linux)
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include
-            )
+                    PUBLIC_HEADER DESTINATION include)
         endif()
         if(TARGET ggml-base)
             install(TARGETS ggml-base
                     LIBRARY DESTINATION lib
                     ARCHIVE DESTINATION lib
                     RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include
-            )
+                    PUBLIC_HEADER DESTINATION include)
         endif()
 
         install(TARGETS libhttpserver
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        if(TARGET farmhash)
-            install(TARGETS farmhash
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include)
-        endif()
-        if(TARGET fft2d_fftsg2d)
-            install(TARGETS fft2d_fftsg2d
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include)
-        endif()
-        if(TARGET XNNPACK)
-            install(TARGETS XNNPACK
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include)
-        endif()
-        if(TARGET absl_raw_hash_set)
-            install(TARGETS absl_raw_hash_set
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_raw_hash_set)
-            install(TARGETS absl_raw_hash_set
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_hash)
-            install(TARGETS absl_hash
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_synchronization)
-            install(TARGETS absl_synchronization
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_strings)
-            install(TARGETS absl_strings
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_raw_logging_internal)
-            install(TARGETS absl_raw_logging_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_city)
-            install(TARGETS absl_city
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_low_level_hash)
-            install(TARGETS absl_low_level_hash
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_graphcycles_internal)
-            install(TARGETS absl_graphcycles_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_kernel_timeout_internal)
-            install(TARGETS absl_kernel_timeout_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_stacktrace)
-            install(TARGETS absl_stacktrace
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_symbolize)
-            install(TARGETS absl_symbolize
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_time)
-            install(TARGETS absl_time
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_malloc_internal)
-            install(TARGETS absl_malloc_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_base)
-            install(TARGETS absl_base
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_spinlock_wait)
-            install(TARGETS absl_spinlock_wait
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_strings_internal)
-            install(TARGETS absl_strings_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_debugging_internal)
-            install(TARGETS absl_debugging_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_demangle_internal)
-            install(TARGETS absl_demangle_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_time_zone)
-            install(TARGETS absl_time_zone
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_int128)
-            install(TARGETS absl_int128
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif ()
-        if(TARGET fft2d_fftsg)
-            install(TARGETS fft2d_fftsg
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET pthreadpool)
-            install(TARGETS pthreadpool
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include)
-        endif()
-        if(TARGET cpuinfo)
-            install(TARGETS cpuinfo
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    PUBLIC_HEADER DESTINATION include)
-        endif()
-        install(FILES
-                ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
 
+        # Optional TF lite/flex artifacts
+        if(HAVE_TFLITE_FLEX_ALLOWLIST)
+            install(FILES ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
+                    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+        endif()
         install(FILES
                 ${FLEX_LIB_DIR}/libtensorflowlite.so
                 ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
         install(FILES resources/jarvis_server.service
-                DESTINATION /lib/systemd/system
-        )
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION /lib/systemd/system)
+
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT webfiles
-        )
+                COMPONENT webfiles)
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/models
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/models
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT models
-        )
+                COMPONENT models)
         add_definitions(-DMODELS_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/models\")
 
-        # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
-    execute_process(COMMAND systemctl daemon-reload)
-    execute_process(COMMAND systemctl enable jarvis_server.service)
-")
+            execute_process(COMMAND systemctl daemon-reload)
+            execute_process(COMMAND systemctl enable jarvis_server.service)
+        ")
+
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
         install(TARGETS client RUNTIME DESTINATION bin)
@@ -657,259 +464,52 @@ if(${TARGET_OS} STREQUAL linux)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        # Install the systemd service file into /lib/systemd/system (or /etc/systemd/system)
+
         install(FILES resources/jarvis_client.service
-                DESTINATION /lib/systemd/system
-        )
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+                DESTINATION /lib/systemd/system)
+
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT webfiles
-        )
+                COMPONENT webfiles)
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
 
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/models
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/models
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT models
-        )
+                COMPONENT models)
         add_definitions(-DMODELS_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/models\")
 
-        # Optionally run systemctl commands after install (requires root privileges!):
         install(CODE "
-    execute_process(COMMAND systemctl daemon-reload)
-    execute_process(COMMAND systemctl enable jarvis_client.service)
-")
+            execute_process(COMMAND systemctl daemon-reload)
+            execute_process(COMMAND systemctl enable jarvis_client.service)
+        ")
     endif()
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_SERVER)
         target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
-        # Install the executable to bin/
         install(TARGETS server RUNTIME DESTINATION bin)
         install(TARGETS whisper
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        if(TARGET ggml)
-            install(TARGETS ggml
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        install(TARGETS libhttpserver
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
-        if(TARGET farmhash)
-            install(TARGETS farmhash
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET fft2d_fftsg2d)
-            install(TARGETS fft2d_fftsg2d
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET XNNPACK)
-            install(TARGETS XNNPACK
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_raw_hash_set)
-            install(TARGETS absl_raw_hash_set
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_hash)
-            install(TARGETS absl_hash
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_synchronization)
-            install(TARGETS absl_synchronization
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_strings)
-            install(TARGETS absl_strings
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_raw_logging_internal)
-            install(TARGETS absl_raw_logging_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_city)
-            install(TARGETS absl_city
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_low_level_hash)
-            install(TARGETS absl_low_level_hash
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_graphcycles_internal)
-            install(TARGETS absl_graphcycles_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_kernel_timeout_internal)
-            install(TARGETS absl_kernel_timeout_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_stacktrace)
-            install(TARGETS absl_stacktrace
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_symbolize)
-            install(TARGETS absl_symbolize
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_time)
-            install(TARGETS absl_time
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_malloc_internal)
-            install(TARGETS absl_malloc_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_base)
-            install(TARGETS absl_base
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_spinlock_wait)
-            install(TARGETS absl_spinlock_wait
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_strings_internal)
-            install(TARGETS absl_strings_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_debugging_internal)
-            install(TARGETS absl_debugging_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_demangle_internal)
-            install(TARGETS absl_demangle_internal
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET absl_time_zone)
-            install(TARGETS absl_time_zone
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET fft2d_fftsg)
-            install(TARGETS fft2d_fftsg
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET pthreadpool)
-            install(TARGETS pthreadpool
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        if(TARGET cpuinfo)
-            install(TARGETS cpuinfo
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin)
-        endif()
-        install(FILES
-                ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
-
-        install(FILES
-                ${FLEX_LIB_DIR}/libtensorflowlite.so
-                ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
-
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT webfiles
-        )
-        add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
-
-        # Now run `sc create` to register the service
-        # (this requires Administrator privileges)
-        install(CODE "
-        execute_process(
-            COMMAND sc create JarvisServerService
-            binPath= \"\${CMAKE_INSTALL_PREFIX}/bin/server.exe\"
-            start= auto
-        )
-    ")
-
-        # Optional: start the service immediately after creation
-        install(CODE "
-            execute_process(
-                COMMAND sc start JarvisServerService
-            )
-        ")
-
+        # (Windows-specific TF/TFLite linking omitted)
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
-
         install(TARGETS client RUNTIME DESTINATION bin)
         install(TARGETS libhttpserver
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 RUNTIME DESTINATION bin)
-        install(
-                DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
-                COMPONENT webfiles
-        )
+                COMPONENT webfiles)
         add_definitions(-DWEBSERVER_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/webserver\")
-
-        # Now run `sc create` to register the service
-        # (this requires Administrator privileges)
         install(CODE "
-        execute_process(
-            COMMAND sc create JarvisServerService
-            binPath= \"\${CMAKE_INSTALL_PREFIX}/bin/client.exe\"
-            start= auto
-        )
-    ")
-        # Optional: start the service immediately after creation
+            execute_process(
+                COMMAND sc create JarvisServerService
+                binPath= \"\${CMAKE_INSTALL_PREFIX}/bin/client.exe\"
+                start= auto
+            )
+        ")
         install(CODE "
             execute_process(
                 COMMAND sc start JarvisServerService
