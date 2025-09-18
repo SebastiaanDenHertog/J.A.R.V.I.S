@@ -4,14 +4,12 @@
 #include <cstddef>
 #include <vector>
 
-#include "ckms_quantiles.h" // IWYU pragma: export
-#include "detail/core_export.h"
+#include "ckms_quantiles.h"
+#include "core_export.h"
 
 // IWYU pragma: private, include "summary.h"
 
-namespace prometheus
-{
-  namespace detail
+  namespace prometheus::detail
   {
 
     class PROMETHEUS_EXPORT TimeWindowQuantiles
@@ -19,8 +17,9 @@ namespace prometheus
       using Clock = std::chrono::steady_clock;
 
     public:
+      using Duration = std::chrono::milliseconds;
       TimeWindowQuantiles(const std::vector<CKMSQuantiles::Quantile> &quantiles,
-                          Clock::duration max_age_seconds, int age_buckets);
+                          Duration max_age_milliseconds, int age_buckets);
 
       double get(double q) const;
       void insert(double value);
@@ -36,5 +35,5 @@ namespace prometheus
       const Clock::duration rotation_interval_;
     };
 
-  } // namespace detail
-} // namespace prometheus
+  } // namespace prometheus::detail
+

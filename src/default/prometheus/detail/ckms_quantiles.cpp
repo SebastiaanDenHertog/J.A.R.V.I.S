@@ -1,4 +1,4 @@
-#include "detail/ckms_quantiles.h"  // IWYU pragma: export
+#include "ckms_quantiles.h"
 
 #include <algorithm>
 #include <cmath>

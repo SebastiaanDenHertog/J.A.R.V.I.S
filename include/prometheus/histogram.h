@@ -5,7 +5,7 @@
 
 #include "client_metric.h"
 #include "counter.h"
-#include "detail/builder.h" // IWYU pragma: export
+#include "builder.h"
 
 #include "gauge.h"
 #include "metric_type.h"

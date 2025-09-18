@@ -6,7 +6,7 @@
 #include <tuple>
 
 #include "counter.h"
-#include "detail/future_std.h"
+#include "../../../include/prometheus/future_std.h"
 #include "gauge.h"
 #include "histogram.h"
 #include "info.h"

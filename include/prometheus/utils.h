@@ -2,12 +2,10 @@
 
 #include <cstddef>
 
-#include "detail/core_export.h"
+#include "core_export.h"
 #include "labels.h"
 
-namespace prometheus
-{
-  namespace detail
+  namespace prometheus::detail
   {
 
     /// \brief Label hasher for use in STL containers.
@@ -21,5 +19,4 @@ namespace prometheus
       std::size_t operator()(const Labels &labels) const;
     };
 
-  } // namespace detail
-} // namespace prometheus
+  } // namespace prometheus::detail

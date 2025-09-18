@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-#include "detail/core_export.h"
+#include "core_export.h"
 
 // IWYU pragma: private, include "summary.h"
 

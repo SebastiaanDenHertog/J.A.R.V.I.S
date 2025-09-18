@@ -237,6 +237,17 @@ find_package(OpenMP REQUIRED)
 
 message(STATUS "buildstatus ${BUILD_SERVER} ${BUILD_CLIENT}")
 
+# --- TFLite/Flex from Bazel build (REQUIRED: .so; OPTIONAL: allowlisted .a) ---
+set(TF_LIB_DIR  "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+
+# Probe libs (both cases)
+file(GLOB TF_CC_CANDS  "${TF_LIB_DIR}/libtensorflow_cc.so*")
+file(GLOB TF_FW_CANDS  "${TF_LIB_DIR}/libtensorflow_framework.so*")
+file(GLOB TSL_CANDS    "${TF_LIB_DIR}/libtsl.so*")
+file(GLOB TFLITE_CANDS "${TF_LIB_DIR}/libtensorflowlite.so*")
+file(GLOB FLEX_CANDS   "${TF_LIB_DIR}/libtensorflowlite_flex.so*")
+set(TF_SRC_DIR "${CMAKE_SOURCE_DIR}/lib/tensorflow")
+
 # Project include dirs
 include_directories(
         ${PROJECT_SOURCE_DIR}/include/additions
@@ -260,7 +271,6 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/include/WatchDog
         ${PROJECT_SOURCE_DIR}/include/Configuration
 )
-
 if(BUILD_SERVER)
     message("Building server code")
     file(GLOB DEFAULT_SOURCES ${PROJECT_SOURCE_DIR}/src/default/*/*.cpp)
@@ -268,35 +278,44 @@ if(BUILD_SERVER)
     file(GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/src/server/*/*.cpp)
     add_executable(server ${PROJECT_SOURCE_DIR}/src/main.cpp ${SERVER_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
 
-    # --- TFLite/Flex from Bazel build (REQUIRED: .so; OPTIONAL: allowlisted .a) ---
-    set(FLEX_LIB_DIR "${CMAKE_SOURCE_DIR}/build/tflite_flex_lib")
+    if(NOT TF_CC_CANDS OR NOT TF_FW_CANDS)
+        message(FATAL_ERROR "Server build expects full TF: libtensorflow_cc.so and libtensorflow_framework.so not found in ${TF_LIB_DIR}")
+    endif()
+    list(GET TF_CC_CANDS 0 TF_CC_LIB)
+    list(GET TF_FW_CANDS 0 TF_FW_LIB)
+    if(TSL_CANDS)
+        list(GET TSL_CANDS 0 TSL_LIB)
+    endif()
 
-    if(NOT EXISTS "${FLEX_LIB_DIR}/libtensorflowlite.so")
-        message(FATAL_ERROR "Missing ${FLEX_LIB_DIR}/libtensorflowlite.so")
+    file(GLOB TF_FW_CANDS "${FLEX_LIB_DIR}/libtensorflow_framework.so*")
+    file(GLOB TSL_CANDS   "${FLEX_LIB_DIR}/libtsl.so*")
+    if(TF_FW_CANDS)
+        list(GET TF_FW_CANDS 0 TF_FRAMEWORK_LIB)
     endif()
-    if(NOT EXISTS "${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
-        message(FATAL_ERROR "Missing ${FLEX_LIB_DIR}/libtensorflowlite_flex.so")
-    endif()
-    if(NOT EXISTS "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
-        message(WARNING "Optional ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a not found — continuing without it.")
-        set(HAVE_TFLITE_FLEX_ALLOWLIST 0)
-    else()
-        set(HAVE_TFLITE_FLEX_ALLOWLIST 1)
+    if(TSL_CANDS)
+        list(GET TSL_CANDS 0 TSL_LIB)
     endif()
 
     # Make sure the linker and runtime loader look here first
-    link_directories(${FLEX_LIB_DIR})
+    link_directories(${TF_LIB_DIR})
+
+    include_directories(
+            ${TF_SRC_DIR}
+            ${TF_SRC_DIR}/bazel-bin
+            ${TF_SRC_DIR}/bazel-bin/tensorflow
+            ${TF_SRC_DIR}/bazel-out
+    )
+
     set_target_properties(server PROPERTIES
-            BUILD_RPATH "${FLEX_LIB_DIR}"
-            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${FLEX_LIB_DIR}"
+            BUILD_RPATH "${TF_LIB_DIR}"
+            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${TF_LIB_DIR}"
             SKIP_BUILD_RPATH OFF
             SKIP_INSTALL_RPATH OFF
     )
 
-    # TF/TFLite/Flex headers (source + generated)
     target_include_directories(server PRIVATE
-            "${FLEX_LIB_DIR}"
-            "${FLEX_LIB_DIR}/flatbuffers/include"
+            "${TF_LIB_DIR}"
+            "${TF_LIB_DIR}/flatbuffers/include"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow"
             "${PROJECT_SOURCE_DIR}/lib/tensorflow/tensorflow/lite"
@@ -325,9 +344,27 @@ elseif(BUILD_CLIENT)
     file(GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/src/client/*/*.cpp)
     add_executable(client ${PROJECT_SOURCE_DIR}/src/main.cpp ${CLIENT_SOURCES} ${DEFAULT_SOURCES} ${DEFAULT_SOURCESS})
     add_compile_definitions(CLIENT_BUILD)
-endif()
 
-message(STATUS "PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+    file(GLOB TFLITE_CANDS "${TF_LIB_DIR}/libtensorflowlite.so*")
+    file(GLOB FLEX_CANDS   "${TF_LIB_DIR}/libtensorflowlite_flex.so*")
+    if(NOT TFLITE_CANDS OR NOT FLEX_CANDS)
+        message(FATAL_ERROR "Client build expects TFLite libs in ${TF_LIB_DIR}")
+    endif()
+    list(GET TFLITE_CANDS 0 TFLITE_LIB)
+    list(GET FLEX_CANDS   0 FLEX_LIB)
+    set(ALLOWLIST_A "${TF_LIB_DIR}/liballowlisted_flex_ops_lib.a")
+    if(EXISTS "${ALLOWLIST_A}")
+        set(HAVE_TFLITE_FLEX_ALLOWLIST 1)
+    else()
+        set(HAVE_TFLITE_FLEX_ALLOWLIST 0)
+    endif()
+    link_directories(${TF_LIB_DIR})
+    set_target_properties(client PROPERTIES
+        BUILD_RPATH "${TF_LIB_DIR}"
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${TF_LIB_DIR}"
+    )
+
+endif()
 
 # Linking
 if(${TARGET_OS} STREQUAL linux)
@@ -345,19 +382,12 @@ if(${TARGET_OS} STREQUAL linux)
                 nlohmann_json::nlohmann_json
                 libhttpserver
                 OpenMP::OpenMP_CXX
+                ${TF_CC_LIB}
+                ${TF_FW_LIB}
                 dl
         )
-
-        # Force link Bazel-built TFLite & Flex (so files are REQUIRED)
-        target_link_libraries(server PRIVATE
-                "${FLEX_LIB_DIR}/libtensorflowlite.so"        # TFLite first
-                "${FLEX_LIB_DIR}/libtensorflowlite_flex.so"   # Flex second
-                dl
-        )
-
-        # Optionally link allowlisted flex ops lib if present
         if(HAVE_TFLITE_FLEX_ALLOWLIST)
-            target_link_libraries(server PRIVATE "${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a")
+            target_link_libraries(server PRIVATE "${ALLOWLIST_A}")
         endif()
 
         # Explicitly avoid _GLIBCXX_DEBUG for this target
@@ -373,16 +403,61 @@ if(${TARGET_OS} STREQUAL linux)
                 renderers airplay
                 -lX11
                 libhttpserver
+                OpenMP::OpenMP_CXX
+                ${TFLITE_LIB}
+                ${FLEX_LIB}
+                dl
         )
+        if(HAVE_TFLITE_FLEX_ALLOWLIST)
+            target_link_libraries(client PRIVATE "${ALLOWLIST_A}")
+        endif()
     endif()
 
 elseif(${TARGET_OS} STREQUAL windows)
     if(BUILD_SERVER)
         target_compile_options(server PRIVATE -Wall -g -pthread -DSERVER_MODE)
-        target_link_libraries(server PRIVATE ${Boost_LIBRARIES} ${WhisperCPP_LIBRARIES} ${LlamaCPP_LIBRARIES} tensorflow-lite OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread ${GLIB2_LIBRARIES} -lX11 ${OpenCV_LIBS} nlohmann_json::nlohmann_json libhttpserver)
+        target_link_libraries(server PRIVATE
+                ${Boost_LIBRARIES}
+                ${WhisperCPP_LIBRARIES}
+                ${LlamaCPP_LIBRARIES}
+                OpenSSL::SSL
+                OpenSSL::Crypto
+                -lbluetooth -lstdc++ -lm -pthread
+                i2c ${GLIB2_LIBRARIES}
+                -lX11
+                ${OpenCV_LIBS}
+                nlohmann_json::nlohmann_json
+                libhttpserver
+                OpenMP::OpenMP_CXX
+                ${TF_CC_LIB}
+                ${TF_FW_LIB}
+                dl
+        )
+        if(HAVE_TFLITE_FLEX_ALLOWLIST)
+            target_link_libraries(server PRIVATE "${ALLOWLIST_A}")
+        endif()
+
+        # Explicitly avoid _GLIBCXX_DEBUG for this target
+        target_compile_definitions(server PRIVATE $<$<CONFIG:Release>:NDEBUG>)
     elseif(BUILD_CLIENT)
         target_compile_options(client PRIVATE -Wall -g -pthread)
-        target_link_libraries(client PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto -lbluetooth -lstdc++ -pthread -lpigpio -lrt -lspidev-lib++ i2c ${GLIB2_LIBRARIES} renderers airplay -lX11 libhttpserver)
+        target_link_libraries(client PRIVATE
+                ${Boost_LIBRARIES}
+                OpenSSL::SSL OpenSSL::Crypto
+                -lbluetooth -lstdc++ -lm -pthread
+                -lpigpio -lrt -lspidev-lib++
+                i2c ${GLIB2_LIBRARIES}
+                renderers airplay
+                -lX11
+                libhttpserver
+                OpenMP::OpenMP_CXX
+                ${TFLITE_LIB}
+                ${FLEX_LIB}
+                dl
+        )
+        if(HAVE_TFLITE_FLEX_ALLOWLIST)
+            target_link_libraries(client PRIVATE "${ALLOWLIST_A}")
+        endif()
     endif()
 endif()
 
@@ -434,10 +509,15 @@ if(${TARGET_OS} STREQUAL linux)
             install(FILES ${FLEX_LIB_DIR}/liballowlisted_flex_ops_lib.a
                     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
         endif()
+
         install(FILES
-                ${FLEX_LIB_DIR}/libtensorflowlite.so
-                ${FLEX_LIB_DIR}/libtensorflowlite_flex.so
+                ${TF_LIB_DIR}/libtensorflow_cc.so
+                ${TF_LIB_DIR}/libtensorflow_framework.so
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
+        if(TSL_LIB)
+            install(FILES ${TSL_LIB} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+        endif()
 
         install(FILES resources/jarvis_server.service
                 DESTINATION /lib/systemd/system)

@@ -1,4 +1,4 @@
-#include "detail/builder.h"
+#include "builder.h"
 
 #include "counter.h"
 #include "gauge.h"

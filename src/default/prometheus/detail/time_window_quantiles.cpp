@@ -1,19 +1,18 @@
-#include "detail/time_window_quantiles.h"  // IWYU pragma: export
+#include "time_window_quantiles.h"
 
 #include <memory>
 #include <ratio>
 
-namespace prometheus {
-namespace detail {
+namespace prometheus::detail {
 
 TimeWindowQuantiles::TimeWindowQuantiles(
     const std::vector<CKMSQuantiles::Quantile>& quantiles,
-    const Clock::duration max_age, const int age_buckets)
+    const std::chrono::milliseconds max_age_milliseconds, const int age_buckets)
     : quantiles_(quantiles),
       ckms_quantiles_(age_buckets, CKMSQuantiles(quantiles_)),
       current_bucket_(0),
       last_rotation_(Clock::now()),
-      rotation_interval_(max_age / age_buckets) {}
+      rotation_interval_(max_age_milliseconds / age_buckets) {}
 
 double TimeWindowQuantiles::get(double q) const {
   CKMSQuantiles& current_bucket = rotate();
@@ -42,5 +41,4 @@ CKMSQuantiles& TimeWindowQuantiles::rotate() const {
   return ckms_quantiles_[current_bucket_];
 }
 
-}  // namespace detail
-}  // namespace prometheus
+} // namespace prometheus::detail

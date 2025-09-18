@@ -8,9 +8,9 @@
 
 #include "client_metric.h"
 #include "collectable.h"
-#include "detail/core_export.h"
-#include "detail/future_std.h"
-#include "detail/utils.h"
+#include "core_export.h"
+#include "future_std.h"
+#include "utils.h"
 #include "labels.h"
 #include "metric_family.h"
 

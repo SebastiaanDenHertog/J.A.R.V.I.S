@@ -1,8 +1,8 @@
 #pragma once
 
 #include "client_metric.h"
-#include "detail/builder.h" // IWYU pragma: export
-#include "detail/core_export.h"
+#include "builder.h"
+#include "core_export.h"
 #include "gauge.h"
 #include "metric_type.h"
 

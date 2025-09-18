@@ -6,10 +6,10 @@
 #include <vector>
 
 #include "client_metric.h"
-#include "detail/builder.h" // IWYU pragma: export
-#include "detail/ckms_quantiles.h"
+#include "builder.h"
+#include "ckms_quantiles.h"
 
-#include "detail/time_window_quantiles.h"
+#include "time_window_quantiles.h"
 #include "metric_type.h"
 
 namespace prometheus

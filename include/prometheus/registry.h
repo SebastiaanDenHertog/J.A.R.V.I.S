@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "collectable.h"
-#include "detail/core_export.h"
+#include "core_export.h"
 #include "family.h"
 #include "labels.h"
 #include "metric_family.h"

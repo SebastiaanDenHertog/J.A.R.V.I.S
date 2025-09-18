@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 
-#include "detail/core_export.h"
+#include "core_export.h"
 
 namespace prometheus
 {
