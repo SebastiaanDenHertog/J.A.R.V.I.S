@@ -511,8 +511,8 @@ if(${TARGET_OS} STREQUAL linux)
         endif()
 
         install(FILES
-                ${TF_LIB_DIR}/libtensorflow_cc.so
-                ${TF_LIB_DIR}/libtensorflow_framework.so
+                ${TF_LIB_DIR}/libtensorflow_cc.so.2
+                ${TF_LIB_DIR}/libtensorflow_framework.so.2
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
         if(TSL_LIB)

@@ -55,7 +55,7 @@ private:
 
     // SavedModel bundle and session
     tensorflow::SavedModelBundleLite bundle_;
-    std::unique_ptr<tensorflow::Session>& session_; // alias to bundle_.GetSession() for convenience
+    tensorflow::Session* session_{nullptr};
 
     // IO op names
     std::string input_op_;

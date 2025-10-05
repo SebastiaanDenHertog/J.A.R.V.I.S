@@ -1,5 +1,12 @@
 #!/bin/bash
 
+clear
+
+if [ "$EUID" -ne 0 ]; then
+   echo "Re-running with sudo..."
+   exec sudo "$0" "$@"
+fi
+
 # Name of the build directory
 BUILD_DIR="build"
 TFLITE_LIB_DIR="$BUILD_DIR/tflite_flex_lib"
@@ -45,9 +52,11 @@ if [ ! -f "./build/tflite_flex_lib/libtensorflow_cc.so" ] || [ ! -f "./build/tfl
           --define xnn_enable_avxvnni=false \
           --define xnn_enable_avx512fp16=false \
           || { echo "Bazel TF/TFLite build failed!"; exit 1; }
-    cd ../
-    cp -u ./lib/tensorflow/bazel-bin/tensorflow/libtensorflow_cc.so*              "./build/tflite_flex_lib/" || exit 1
-    cp -u ./lib/tensorflow/bazel-bin/tensorflow/libtensorflow_framework.so*    "./build/tflite_flex_lib/" || exit 1
+    cd ../../
+    # echo current path
+    echo "Current path: $(pwd)"
+    cp -u lib/tensorflow/bazel-bin/tensorflow/libtensorflow_cc.so*              "./build/tflite_flex_lib/" || exit 1
+    cp -u lib/tensorflow/bazel-bin/tensorflow/libtensorflow_framework.so*    "./build/tflite_flex_lib/" || exit 1
     # (optional) if your TF emits libtsl.so
     find bazel-bin -type f -name "libtsl.so*" -exec cp -u {} "1./$TFLITE_LIB_DIR/" \; 2>/dev/null || true
 else

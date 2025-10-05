@@ -53,7 +53,7 @@ public:
         Info,
         ERROR
     };
-
+    int taskNumber;
     std::string description;
     int priority;
     TaskType type;
@@ -70,11 +70,10 @@ public:
     UserCommand userCommand;
 
     // Constructors
-    Task(const std::string &description, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
+    Task(int taskNumber, const std::string &description, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
 
-    Task(const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
+    Task(int taskNumber, const std::string &description, const std::string &entityId, const std::string &service, const std::string &newState, int priority, const ClientInfo &device, TaskType type, UserCommand &userCommand, const std::vector<std::vector<std::string>> &entities = {});
 
-private:
 };
 
 #endif // TASK_H_

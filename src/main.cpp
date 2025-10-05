@@ -60,6 +60,8 @@ std::unique_ptr<ModelRunner> classificationModel;
 std::unique_ptr<TaskProcessor> taskProcessor;
 std::unique_ptr<InputHandler> inputHandler;
 NetworkManager *serverNetworkManager = nullptr;
+const std::string input_op  = "serving_default_input_ids:0";
+const std::string output_op = "StatefulPartitionedCall:0";
 #else
 std::unique_ptr<NetworkManager> clientNetworkManager;
 #endif
@@ -204,7 +206,7 @@ void terminalInputFunction(ModelRunner &nerModelObj, ModelRunner &classification
         std::cout << "Intent: " << sentence_label << std::endl;
         UserCommand user_command(user_input, sentence_entities, sentence_label, predicted_entities);
         Task::TaskType taskType = stringToTaskType(sentence_label);
-        Task task(user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
+        Task task(TaskProcessor::createTaskNumber(),user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
         inputHandlerObj.addTask(task);
         taskProcessorObj.processTask(task);
     }
@@ -294,8 +296,8 @@ void initialize_models_and_task_processor()
     try
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
-        nerModel = std::make_unique<ModelRunner>(config.Root +"/models/ner_model.tflite");
-        classificationModel = std::make_unique<ModelRunner>(config.Root +"/models/classification_model.tflite");
+        nerModel = std::make_unique<ModelRunner>(config.Root +"/models/ner_model.tflite",input_op, output_op);
+        classificationModel = std::make_unique<ModelRunner>(config.Root +"/models/classification_model.tflite",input_op, output_op);
 
         nerModel->LoadTokenizer(config.Root +"/models/ner_tokenizer.json");
         nerModel->LoadLabels(config.Root +"/models/ner_labels.json");

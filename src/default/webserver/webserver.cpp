@@ -258,14 +258,16 @@ public:
             json response_json = {
                 {"status", "success"},
                 {"message", "Configuration updated and saved"}};
-            return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
+            std::cerr << response_json.dump() << std::endl;
+            return std::make_shared<httpserver::string_response>(response_json, 200, "application/json");
         }
         catch (const std::exception &e)
         {
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
-            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+
+            return std::make_shared<httpserver::string_response>(response_json, 400, "application/json");
         }
     }
 };
@@ -295,6 +297,42 @@ public:
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
         std::ifstream html_file(config.Root +"webserver/private/server/pages/config_page.html");
+        if (!html_file.is_open())
+        {
+            return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
+        }
+
+        std::stringstream buffer;
+        buffer << html_file.rdbuf();
+        return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
+    }
+};
+
+class ScriptsFileResourceServer : public httpserver::http_resource
+{
+public:
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
+    {
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.Root +"webserver/public/scripts.js");
+        if (!html_file.is_open())
+        {
+            return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
+        }
+
+        std::stringstream buffer;
+        buffer << html_file.rdbuf();
+        return std::make_shared<httpserver::string_response>(buffer.str(), 200, "text/html");
+    }
+};
+
+class CssFileResourceServer : public httpserver::http_resource
+{
+public:
+    std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override
+    {
+        Configuration config = ConfigurationManager::getInstance().getConfiguration();
+        std::ifstream html_file(config.Root +"webserver/public/styles.css");
         if (!html_file.is_open())
         {
             return std::make_shared<httpserver::string_response>("Config page not found.", 404, "text/plain");
@@ -417,6 +455,49 @@ public:
         }
     }
 };
+
+/**
+* @brief post query to the from the webpage to the server
+*/
+
+class PostQueryResource : public httpserver::http_resource
+{
+public:
+    std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req) override
+    {
+        try
+        {
+            json j = json::parse(req.get_content());
+            if (j.contains("query") && j["query"].is_string())
+            {
+                std::string query = j["query"].get<std::string>();
+                std::cout << "Received query: " << query << std::endl;
+
+                // Here you would process the query and get a response
+                std::string response_message = "Processed query: " + query;
+
+                json response_json = {
+                    {"status", "success"},
+                    {"response", response_message}};
+
+                std::cerr << response_json.dump() << std::endl;
+                return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
+            }
+            else
+            {
+                return std::make_shared<httpserver::string_response>("Invalid request: 'query' field is required.", 400, "application/json");
+            }
+        }
+        catch (const std::exception &e)
+        {
+            json error_json = {
+                {"status", "error"},
+                {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
+            return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
+        }
+    }
+}
 
 /**
  * @brief Resource to retrieve and update client-specific configurations.
@@ -616,6 +697,7 @@ public:
             json response_json = {
                 {"status", "success"},
                 {"message", "Configuration updated and saved"}};
+            std::cerr << response_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
         }
         catch (const std::exception &e)
@@ -623,6 +705,7 @@ public:
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
+            std::cerr << error_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
@@ -656,6 +739,7 @@ public:
             json response_json = {
                 {"status", "success"},
                 {"message", "Client configuration updated and saved"}};
+            std::cerr << response_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
         }
         catch (const std::exception &e)
@@ -692,6 +776,7 @@ public:
             json response_json = {
                 {"status", "success"},
                 {"message", "Client configuration updated and saved"}};
+            std::cerr << response_json.dump() << std::endl;
             return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
         }
         catch (const std::exception &e)
@@ -736,8 +821,14 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         ws.register_resource("/", homePage.get(), true);
         auto configPage = std::make_unique<ConfigPageResourceServer>();
         ws.register_resource("/config", configPage.get(), true);
+        auto cssFile = std::make_unique<CssFileResourceServer>();
+        ws.register_resource("/public/styles.css", configPage.get(), true);
+        auto scriptsFile = std::make_unique<ScriptsFileResourceServer>();
+        ws.register_resource("/public/scripts.js", configPage.get(), true);
         auto getServerConfig = std::make_unique<GetServerConfigResource>();
         ws.register_resource("/api/server/config", getServerConfig.get(), true);
+        auto postQuery = std::make_unique<PostQueryResource>();
+        ws.register_resource("/api/server/query", postQuery.get(), true);
         auto updateServerConfig = std::make_unique<UpdateServerConfigResource>();
         ws.register_resource("/api/server/config/update", updateServerConfig.get(), true);
         auto listClients = std::make_unique<ListClientsResource>();
