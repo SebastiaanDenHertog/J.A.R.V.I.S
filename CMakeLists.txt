@@ -270,6 +270,8 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/include/dataStructures
         ${PROJECT_SOURCE_DIR}/include/WatchDog
         ${PROJECT_SOURCE_DIR}/include/Configuration
+        ${PROJECT_SOURCE_DIR}/include/IntentRouter
+
 )
 if(BUILD_SERVER)
     message("Building server code")
@@ -461,9 +463,6 @@ elseif(${TARGET_OS} STREQUAL windows)
     endif()
 endif()
 
-configure_file(config.json /usr/local/share/jarvis/  COPYONLY)
-configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
-
 # Compile options & install
 if(${TARGET_OS} STREQUAL linux)
     if(BUILD_SERVER)
@@ -531,7 +530,10 @@ if(${TARGET_OS} STREQUAL linux)
                 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
                 COMPONENT models)
         add_definitions(-DMODELS_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/models\")
-
+        install(DIRECTORY ${PROJECT_SOURCE_DIR}/config
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/share/jarvis
+                COMPONENT config)
+        add_definitions(-DCONFIG_RESOURCE_PATH=\"${CMAKE_INSTALL_PREFIX}/share/jarvis/config\")
         install(CODE "
             execute_process(COMMAND systemctl daemon-reload)
             execute_process(COMMAND systemctl enable jarvis_server.service)

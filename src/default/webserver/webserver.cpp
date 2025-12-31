@@ -112,7 +112,7 @@ public:
             json j = json::parse(req.get_content());
             std::cout << "Received JSON: " << j.dump(4) << std::endl;
             Configuration current_config = ConfigurationManager::getInstance().getConfiguration();
-#ifdef SERVER_BUILD
+            #ifdef SERVER_BUILD
 
             std::vector<std::pair<std::string, std::function<void(const json &)>>> server_mappings = {
                 {"web_server_port", [&](const json &val)
@@ -149,8 +149,8 @@ public:
                     updateFunc(j[key]);
                 }
             }
-#endif
-#ifdef CLIENT_BUILD
+            #endif
+            #ifdef CLIENT_BUILD
             std::vector<std::pair<std::string, std::function<void(const json &)>>> client_mappings = {
                 {"client_id", [&](const json &val)
                  { current_config.client_id = val.get<std::string>(); }},
@@ -250,7 +250,7 @@ public:
                     updateFunc(j[key]);
                 }
             }
-#endif
+            #endif
 
             ConfigurationManager::getInstance().updateConfiguration(current_config);
             ConfigurationManager::getInstance().saveConfiguration(current_config.configFilePath);
@@ -266,8 +266,7 @@ public:
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
-
-            return std::make_shared<httpserver::string_response>(response_json, 400, "application/json");
+            return std::make_shared<httpserver::string_response>(error_json, 400, "application/json");
         }
     }
 };
@@ -497,7 +496,7 @@ public:
             return std::make_shared<httpserver::string_response>(error_json.dump(), 400, "application/json");
         }
     }
-}
+};
 
 /**
  * @brief Resource to retrieve and update client-specific configurations.

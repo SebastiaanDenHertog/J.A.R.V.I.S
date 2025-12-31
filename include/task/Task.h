@@ -18,8 +18,8 @@ class Task
 public:
     enum TaskType
     {
-        // All the task types
         Book,
+        Browse,
         Calculate,
         Calendar,
         Call,

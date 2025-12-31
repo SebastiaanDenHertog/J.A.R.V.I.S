@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "intents": [
+    {
+      "label": "WeatherQuery",
+      "priority": 100,
+      "any_keywords": ["weather", "forecast", "temperature", "rain", "wind", "humidity", "uv", "air quality", "pollen", "thunderstorm", "fog"],
+      "regex": [
+        ".*\\b(weather|forecast)\\b.*",
+        ".*\\b(temperature)\\b.*",
+        ".*\\b(uv index|air quality|aqi|pollen count|humidity|wind speed)\\b.*",
+        ".*\\b(rain|thunderstorm|fog|severe weather alert|storm)\\b.*"
+      ]
+    },
+    {
+      "label": "NewsQuery",
+      "priority": 95,
+      "any_keywords": ["news", "headlines", "breaking", "latest", "top stories", "sports news", "business", "political", "tech", "world news", "entertainment"],
+      "regex": [
+        ".*\\b(news|headlines|breaking)\\b.*",
+        ".*\\b(latest|top)\\b.*\\b(news|stories|headlines)\\b.*",
+        ".*\\b(sports news|business news|tech news|political news|world news|entertainment news|science news)\\b.*"
+      ]
+    },
+    {
+      "label": "Navigate",
+      "priority": 92,
+      "any_keywords": ["directions", "route", "traffic", "eta", "travel time", "delay", "quickest", "fastest", "drive", "driving", "walk", "bike", "commute"],
+      "regex": [
+        ".*\\b(directions|navigate)\\b.*",
+        ".*\\b(best route|quickest route|fastest route)\\b.*",
+        ".*\\b(traffic|road closures|traffic jam)\\b.*",
+        ".*\\b(travel time|estimated travel time|delay|eta)\\b.*",
+        ".*\\b(how long does it take to get to)\\b.*"
+      ]
+    },
+    {
+      "label": "SetTimer",
+      "priority": 91,
+      "any_keywords": ["timer", "countdown", "minutes", "seconds", "hours"],
+      "regex": [
+        ".*\\b(set|start)\\b.*\\b(timer|countdown)\\b.*",
+        ".*\\b(timer|countdown)\\b.*\\b(for)\\b.*\\b(\\d+)\\b.*\\b(second|seconds|minute|minutes|hour|hours)\\b.*"
+      ]
+    },
+    {
+      "label": "SetAlarm",
+      "priority": 91,
+      "any_keywords": ["alarm", "wake", "weekday", "weekdays", "tomorrow"],
+      "regex": [
+        ".*\\b(set)\\b.*\\b(alarm)\\b.*",
+        ".*\\b(wake me up)\\b.*",
+        ".*\\b(alarm)\\b.*\\b(weekdays|every day|daily|tomorrow)\\b.*"
+      ]
+    },
+    {
+      "label": "SetVolume",
+      "priority": 90,
+      "any_keywords": ["volume", "louder", "quieter", "mute", "unmute", "silent"],
+      "regex": [
+        ".*\\b(volume)\\b.*\\b(to|at)\\b.*\\b\\d+%\\b.*",
+        ".*\\b(set|adjust|increase|decrease|lower|raise)\\b.*\\b(volume)\\b.*",
+        ".*\\b(louder|quieter|mute|unmute|silent mode)\\b.*"
+      ]
+    },
+    {
+      "label": "Connect",
+      "priority": 89,
+      "any_keywords": ["bluetooth", "pair", "connect", "link", "wireless"],
+      "regex": [
+        ".*\\b(connect|pair|link)\\b.*\\b(bluetooth)\\b.*",
+        ".*\\b(bluetooth)\\b.*\\b(connect|pair|link)\\b.*"
+      ]
+    },
+    {
+      "label": "ControlLight",
+      "priority": 88,
+      "any_keywords": ["light", "lights", "lamp", "brightness", "dim", "brighten", "illuminate", "chandelier", "led", "floodlight", "porch", "patio"],
+      "regex": [
+        ".*\\b(turn on|turn off|switch on|switch off|activate|deactivate)\\b.*\\b(light|lights|lamp|lamps|led|chandelier|floodlight|floodlights)\\b.*",
+        ".*\\b(dim|brighten|lower|raise|adjust)\\b.*\\b(brightness|light|lights|lamp|lamps)\\b.*",
+        ".*\\b(set)\\b.*\\b(light|lights|lamp|lamps)\\b.*\\b(to)\\b.*\\b(\\d+%|maximum|minimum)\\b.*",
+        ".*\\b(set)\\b.*\\b(light|lights)\\b.*\\b(to)\\b.*\\b(blue|red|green|warm|cool|night mode|evening mode|party mode|reading mode|bright mode|cooking mode)\\b.*"
+      ]
+    },
+    {
+      "label": "ControlHeating",
+      "priority": 88,
+      "any_keywords": ["temperature", "thermostat", "heater", "heating", "ac", "air conditioner", "cooling", "fan", "humidifier"],
+      "regex": [
+        ".*\\b(set|increase|decrease|lower|raise|switch)\\b.*\\b(temperature|thermostat)\\b.*",
+        ".*\\b(turn on|turn off|switch on|switch off)\\b.*\\b(heater|heating|ac|air conditioner|fan|humidifier)\\b.*",
+        ".*\\b(thermostat)\\b.*\\b(to|at)\\b.*\\b(\\d+)\\b.*\\b(degree|degrees)\\b.*",
+        ".*\\b(cooling mode|heating mode|eco-friendly mode|eco mode)\\b.*"
+      ]
+    },
+    {
+      "label": "PlayVideo",
+      "priority": 84,
+      "any_keywords": ["movie", "video", "tv", "netflix", "disney", "youtube", "showtimes", "channel", "projector"],
+      "regex": [
+        ".*\\b(play|stream)\\b.*\\b(movie|video)\\b.*",
+        ".*\\b(stream)\\b.*\\b(disney\\+|netflix|youtube)\\b.*",
+        ".*\\b(switch)\\b.*\\b(tv)\\b.*\\b(to channel)\\b.*",
+        ".*\\b(show me)\\b.*\\b(video|movie showtimes|movies on netflix)\\b.*"
+      ]
+    },
+    {
+      "label": "PauseVideo",
+      "priority": 83,
+      "any_keywords": ["pause", "tv", "movie", "video"],
+      "regex": [
+        ".*\\b(pause)\\b.*\\b(tv|movie|video)\\b.*",
+        ".*\\b(pause)\\b.*"
+      ]
+    },
+    {
+      "label": "ResumeVideo",
+      "priority": 83,
+      "any_keywords": ["resume", "continue", "movie", "video"],
+      "regex": [
+        ".*\\b(resume|continue)\\b.*\\b(movie|video|tv)\\b.*",
+        ".*\\b(resume|continue)\\b.*"
+      ]
+    },
+    {
+      "label": "PlayMusic",
+      "priority": 82,
+      "any_keywords": ["music", "song", "songs", "playlist", "radio", "podcast", "album", "audiobook", "audio book", "play", "stream"],
+      "regex": [
+        ".*\\b(play|stream|start)\\b.*\\b(music|song|songs|playlist|radio|podcast|album|audiobook|audio book)\\b.*",
+        ".*\\b(play)\\b.*\\b('.*')\\b.*",
+        ".*\\b(play)\\b.*\\b(jazz|rock|classical|blues|hip-hop|pop)\\b.*\\b(music)\\b.*"
+      ]
+    },
+    {
+      "label": "PauseMusic",
+      "priority": 81,
+      "any_keywords": ["pause", "stop", "turn off", "music", "song", "playlist", "radio", "podcast"],
+      "regex": [
+        ".*\\b(pause|stop|turn off)\\b.*\\b(music|song|playlist|radio|podcast)\\b.*",
+        ".*\\b(turn off the music)\\b.*"
+      ]
+    },
+    {
+      "label": "ShoppingList",
+      "priority": 80,
+      "any_keywords": ["shopping list", "grocery list", "add", "list"],
+      "regex": [
+        ".*\\b(add)\\b.*\\b(to)\\b.*\\b(shopping list|grocery list)\\b.*",
+        ".*\\b(show me)\\b.*\\b(shopping list|grocery list)\\b.*",
+        ".*\\b(transmit)\\b.*\\b(shopping list|grocery list)\\b.*"
+      ]
+    },
+    {
+      "label": "OrderItem",
+      "priority": 79,
+      "any_keywords": ["order", "buy", "purchase", "from", "pizza", "groceries", "dinner", "coffee", "gift"],
+      "regex": [
+        ".*\\b(order|buy|purchase)\\b.*",
+        ".*\\b(order)\\b.*\\b(pizza|groceries|dinner|coffee)\\b.*",
+        ".*\\b(buy)\\b.*\\b(gift)\\b.*"
+      ]
+    },
+    {
+      "label": "Book",
+      "priority": 78,
+      "any_keywords": ["book", "booking", "reserve", "reservation", "appointment", "table", "hotel", "cab"],
+      "regex": [
+        ".*\\b(book|reserve|make a reservation|reservation)\\b.*",
+        ".*\\b(book)\\b.*\\b(table|hotel|cab|appointment)\\b.*"
+      ]
+    },
+    {
+      "label": "Call",
+      "priority": 77,
+      "any_keywords": ["call", "phone", "dial", "ring"],
+      "regex": [
+        ".*\\b(call|phone|dial|ring)\\b.*",
+        ".*\\b(make a call)\\b.*"
+      ]
+    },
+    {
+      "label": "Message",
+      "priority": 77,
+      "any_keywords": ["message", "text", "sms", "send a text", "send a text message"],
+      "regex": [
+        ".*\\b(message|text|sms)\\b.*",
+        ".*\\b(send)\\b.*\\b(text|message)\\b.*"
+      ]
+    },
+    {
+      "label": "Email",
+      "priority": 76,
+      "any_keywords": ["email", "mail", "inbox"],
+      "regex": [
+        ".*\\b(send)\\b.*\\b(email|mail)\\b.*",
+        ".*\\b(show me)\\b.*\\b(emails|email)\\b.*"
+      ]
+    },
+    {
+      "label": "Calendar",
+      "priority": 75,
+      "any_keywords": ["calendar", "schedule", "meeting", "appointments", "event", "reminder", "to-do", "todo", "remind"],
+      "regex": [
+        ".*\\b(calendar|schedule)\\b.*",
+        ".*\\b(set a reminder|remind me)\\b.*",
+        ".*\\b(schedule a meeting|cancel my meeting|cancel my .* meeting)\\b.*",
+        ".*\\b(my next calendar event|check my calendar)\\b.*",
+        ".*\\b(to-do list|todo list|reminders for today)\\b.*"
+      ]
+    },
+    {
+      "label": "GetRecipe",
+      "priority": 74,
+      "any_keywords": ["recipe", "cook", "cooking", "bake", "how to cook", "how to bake"],
+      "regex": [
+        ".*\\b(recipe)\\b.*",
+        ".*\\b(find me a recipe|show me a recipe|show me the recipe)\\b.*",
+        ".*\\b(how to cook|how do i cook|how to bake|show me how to cook|show me how to bake)\\b.*"
+      ]
+    },
+    {
+      "label": "GetShippingInfo",
+      "priority": 73,
+      "any_keywords": ["track", "shipping", "shipped", "delivery", "package", "order status", "flight status", "status of my flight"],
+      "regex": [
+        ".*\\b(track)\\b.*\\b(order|package)\\b.*",
+        ".*\\b(package)\\b.*\\b(shipped|shipping|delivery)\\b.*",
+        ".*\\b(check)\\b.*\\b(package)\\b.*\\b(shipped)\\b.*",
+        ".*\\b(status of my flight|check the status of my flight)\\b.*"
+      ]
+    },
+    {
+      "label": "Recommend",
+      "priority": 72,
+      "any_keywords": ["recommend", "best", "good", "top", "nearby"],
+      "regex": [
+        ".*\\b(recommend)\\b.*",
+        ".*\\b(what's the best|what is the best)\\b.*",
+        ".*\\b(find a good)\\b.*"
+      ]
+    },
+    {
+      "label": "Translate",
+      "priority": 71,
+      "any_keywords": ["translate", "to french", "to german", "to spanish", "to italian"],
+      "regex": [
+        ".*\\b(translate)\\b.*\\b(to)\\b.*"
+      ]
+    },
+    {
+      "label": "Define",
+      "priority": 70,
+      "any_keywords": ["definition", "define", "spell", "meaning"],
+      "regex": [
+        ".*\\b(what's the definition of|what is the definition of|define)\\b.*",
+        ".*\\b(how do you spell|spell)\\b.*",
+        ".*\\b(what does .* mean)\\b.*"
+      ]
+    },
+    {
+      "label": "Calculate",
+      "priority": 69,
+      "any_keywords": ["how many", "how much", "calories", "kilocalories", "grams", "exchange rate", "days until", "teaspoons", "tablespoons", "distance", "steps"],
+      "regex": [
+        ".*\\b(how many|how much)\\b.*",
+        ".*\\b(calories|kilocalories|grams|teaspoons|tablespoons)\\b.*",
+        ".*\\b(exchange rate)\\b.*",
+        ".*\\b(days until)\\b.*",
+        ".*\\b(how far)\\b.*"
+      ]
+    },
+    {
+      "label": "Locate",
+      "priority": 68,
+      "any_keywords": ["locate", "where is", "find my", "current location"],
+      "regex": [
+        ".*\\b(find my|locate my|where is my)\\b.*",
+        ".*\\b(what's my current location|what is my current location|where am i)\\b.*"
+      ]
+    },
+    {
+      "label": "Find",
+      "priority": 40,
+      "any_keywords": ["what's", "what is", "tell me", "show me", "find", "capital", "population", "history", "fun fact", "joke", "battery", "status"],
+      "regex": [
+        ".*\\b(what's|what is)\\b.*",
+        ".*\\b(tell me about|tell me something)\\b.*",
+        ".*\\b(what's the capital|what is the capital|population of)\\b.*",
+        ".*\\b(battery percentage|battery level|battery status)\\b.*",
+        ".*\\b(check the status of)\\b.*"
+      ]
+    },
+    {
+      "label": "Browse",
+      "priority": 39,
+      "any_keywords": ["show me", "photos", "netflix", "movie showtimes", "podcast", "videos"],
+      "regex": [
+        ".*\\b(show me)\\b.*\\b(photos|movie showtimes|videos|movies on netflix|podcast)\\b.*",
+        ".*\\b(show me)\\b.*"
+      ]
+    },
+    {
+      "label": "Read",
+      "priority": 38,
+      "any_keywords": ["read", "read me", "read my", "poem", "story", "messages", "latest email"],
+      "regex": [
+        ".*\\b(read)\\b.*",
+        ".*\\b(read me)\\b.*",
+        ".*\\b(read my)\\b.*",
+        ".*\\b(read me a poem|tell me a bedtime story|play a bedtime story)\\b.*",
+        ".*\\b(read my messages|read my latest email)\\b.*"
+      ]
+    },
+    {
+      "label": "Summarize",
+      "priority": 37,
+      "any_keywords": ["summarize", "summary", "tl;dr", "tldr"],
+      "regex": [
+        ".*\\b(summarize|summary|tl;dr|tldr)\\b.*"
+      ]
+    },
+
+    {
+      "label": "PauseMusic",
+      "priority": 36,
+      "any_keywords": ["pause", "stop", "music"],
+      "regex": [
+        ".*\\b(pause|stop)\\b.*\\b(music)\\b.*"
+      ]
+    },
+    {
+      "label": "PauseVideo",
+      "priority": 36,
+      "any_keywords": ["pause", "tv", "video", "movie"],
+      "regex": [
+        ".*\\b(pause)\\b.*\\b(tv|video|movie)\\b.*"
+      ]
+    },
+    {
+      "label": "PlayMusic",
+      "priority": 36,
+      "any_keywords": ["play", "music", "song", "playlist"],
+      "regex": [
+        ".*\\b(play)\\b.*\\b(music|song|playlist)\\b.*"
+      ]
+    },
+    {
+      "label": "PlayVideo",
+      "priority": 36,
+      "any_keywords": ["play", "movie", "video", "tv"],
+      "regex": [
+        ".*\\b(play)\\b.*\\b(movie|video|tv)\\b.*"
+      ]
+    },
+    {
+      "label": "ResumeVideo",
+      "priority": 36,
+      "any_keywords": ["resume", "continue", "movie", "video"],
+      "regex": [
+        ".*\\b(resume|continue)\\b.*\\b(movie|video|tv)\\b.*"
+      ]
+    },
+
+    {
+      "label": "Book",
+      "priority": 35,
+      "any_keywords": ["book", "reserve", "reservation"],
+      "regex": [".*\\b(book|reserve|reservation)\\b.*"]
+    },
+    {
+      "label": "Browse",
+      "priority": 35,
+      "any_keywords": ["browse", "show me"],
+      "regex": [".*\\b(browse|show me)\\b.*"]
+    },
+    {
+      "label": "Calculate",
+      "priority": 35,
+      "any_keywords": ["calculate", "convert"],
+      "regex": [".*\\b(calculate|convert)\\b.*"]
+    },
+    {
+      "label": "Calendar",
+      "priority": 35,
+      "any_keywords": ["calendar", "schedule", "reminder", "meeting"],
+      "regex": [".*\\b(calendar|schedule|reminder|meeting)\\b.*"]
+    },
+    {
+      "label": "Call",
+      "priority": 35,
+      "any_keywords": ["call", "phone"],
+      "regex": [".*\\b(call|phone)\\b.*"]
+    },
+    {
+      "label": "Connect",
+      "priority": 35,
+      "any_keywords": ["connect", "bluetooth", "pair"],
+      "regex": [".*\\b(connect|bluetooth|pair)\\b.*"]
+    },
+    {
+      "label": "ControlHeating",
+      "priority": 35,
+      "any_keywords": ["thermostat", "temperature", "heater", "ac", "air conditioner", "fan"],
+      "regex": [".*\\b(thermostat|temperature|heater|ac|air conditioner|fan|humidifier)\\b.*"]
+    },
+    {
+      "label": "ControlLight",
+      "priority": 35,
+      "any_keywords": ["light", "lights", "lamp", "brightness", "dim", "brighten"],
+      "regex": [".*\\b(light|lights|lamp|brightness|dim|brighten|illuminate)\\b.*"]
+    },
+    {
+      "label": "Define",
+      "priority": 35,
+      "any_keywords": ["define", "definition", "spell"],
+      "regex": [".*\\b(define|definition|spell)\\b.*"]
+    },
+    {
+      "label": "Email",
+      "priority": 35,
+      "any_keywords": ["email", "mail"],
+      "regex": [".*\\b(email|mail)\\b.*"]
+    },
+    {
+      "label": "Find",
+      "priority": 35,
+      "any_keywords": ["find", "what is", "what's"],
+      "regex": [".*\\b(find|what is|what's)\\b.*"]
+    },
+    {
+      "label": "GetRecipe",
+      "priority": 35,
+      "any_keywords": ["recipe", "cook", "bake"],
+      "regex": [".*\\b(recipe|cook|bake)\\b.*"]
+    },
+    {
+      "label": "GetShippingInfo",
+      "priority": 35,
+      "any_keywords": ["track", "shipping", "shipped", "delivery", "package"],
+      "regex": [".*\\b(track|shipping|shipped|delivery|package)\\b.*"]
+    },
+    {
+      "label": "Locate",
+      "priority": 35,
+      "any_keywords": ["locate", "find my", "current location", "where am i"],
+      "regex": [".*\\b(locate|find my|current location|where am i)\\b.*"]
+    },
+    {
+      "label": "Message",
+      "priority": 35,
+      "any_keywords": ["message", "text", "sms"],
+      "regex": [".*\\b(message|text|sms)\\b.*"]
+    },
+    {
+      "label": "Navigate",
+      "priority": 35,
+      "any_keywords": ["directions", "route", "traffic", "eta", "travel time"],
+      "regex": [".*\\b(directions|route|traffic|eta|travel time)\\b.*"]
+    },
+    {
+      "label": "NewsQuery",
+      "priority": 35,
+      "any_keywords": ["news", "headlines"],
+      "regex": [".*\\b(news|headlines)\\b.*"]
+    },
+    {
+      "label": "OrderItem",
+      "priority": 35,
+      "any_keywords": ["order", "buy", "purchase"],
+      "regex": [".*\\b(order|buy|purchase)\\b.*"]
+    },
+    {
+      "label": "Read",
+      "priority": 35,
+      "any_keywords": ["read"],
+      "regex": [".*\\b(read)\\b.*"]
+    },
+    {
+      "label": "Recommend",
+      "priority": 35,
+      "any_keywords": ["recommend", "best"],
+      "regex": [".*\\b(recommend|best)\\b.*"]
+    },
+    {
+      "label": "SetAlarm",
+      "priority": 35,
+      "any_keywords": ["alarm"],
+      "regex": [".*\\b(alarm)\\b.*"]
+    },
+    {
+      "label": "SetTimer",
+      "priority": 35,
+      "any_keywords": ["timer", "countdown"],
+      "regex": [".*\\b(timer|countdown)\\b.*"]
+    },
+    {
+      "label": "SetVolume",
+      "priority": 35,
+      "any_keywords": ["volume", "louder", "quieter", "mute", "silent"],
+      "regex": [".*\\b(volume|louder|quieter|mute|silent)\\b.*"]
+    },
+    {
+      "label": "ShoppingList",
+      "priority": 35,
+      "any_keywords": ["shopping list", "grocery list"],
+      "regex": [".*\\b(shopping list|grocery list)\\b.*"]
+    },
+    {
+      "label": "Summarize",
+      "priority": 35,
+      "any_keywords": ["summarize", "summary"],
+      "regex": [".*\\b(summarize|summary)\\b.*"]
+    },
+    {
+      "label": "Translate",
+      "priority": 35,
+      "any_keywords": ["translate"],
+      "regex": [".*\\b(translate)\\b.*"]
+    },
+    {
+      "label": "WeatherQuery",
+      "priority": 35,
+      "any_keywords": ["weather", "forecast"],
+      "regex": [".*\\b(weather|forecast)\\b.*"]
+    }
+  ]
+}

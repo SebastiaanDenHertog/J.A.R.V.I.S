@@ -4,19 +4,18 @@
 #include <thread>
 #include <atomic>
 #include <functional>
-#include <unordered_map>
 #include <memory>
 #include <mutex>
 #include <condition_variable>
 #include <string>
-#include <iostream>
 
 #include "BluetoothComm.h"
 #include "webServer.h"
 #include "HomeAssistantAPI.h"
-#include "Configuration.h"
+#include "IntentRouter.h"
+
 #ifdef SERVER_BUILD
-#include "TaskProcessor.h"      
+#include "TaskProcessor.h"
 #include "InputHandler.h"
 #endif
 #ifdef CLIENT_BUILD

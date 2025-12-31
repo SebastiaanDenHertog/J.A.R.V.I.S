@@ -34,7 +34,6 @@
 #endif
 
 #ifdef SERVER_BUILD
-// Server-specific headers
 #include <unordered_set>
 #include <cstdlib>
 #include <boost/make_shared.hpp>
@@ -46,11 +45,11 @@
 #include "InputHandler.h"
 #include "TaskProcessor.h"
 #include "HomeAssistantAPI.h"
+#include "IntentRouter.h"
 #include "counter.h"
 #include "registry.h"
 #endif
 
-// For JSON parsing
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -59,6 +58,7 @@ std::unique_ptr<ModelRunner> nerModel;
 std::unique_ptr<ModelRunner> classificationModel;
 std::unique_ptr<TaskProcessor> taskProcessor;
 std::unique_ptr<InputHandler> inputHandler;
+std::unique_ptr<IntentRouter> intentRouter;
 NetworkManager *serverNetworkManager = nullptr;
 const std::string input_op  = "serving_default_input_ids:0";
 const std::string output_op = "StatefulPartitionedCall:0";
@@ -66,17 +66,17 @@ const std::string output_op = "StatefulPartitionedCall:0";
 std::unique_ptr<NetworkManager> clientNetworkManager;
 #endif
 
-// Debug print macro
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) std::cout << x << std::endl
 #else
 #define DEBUG_PRINT(x)
 #endif
 
-// Global running flag
 std::atomic<bool> global_running(true);
 
-// Signal handler to graceful shutdown
+/**
+ * @brief Signal handler to gracefully shutdown the application.
+ */
 void signal_handler(int signal)
 {
     if (signal == SIGINT || signal == SIGTERM)
@@ -86,7 +86,10 @@ void signal_handler(int signal)
     }
 }
 
-// Function to get the local IP address of the server
+/**
+ * @brief Get the local IP address of the machine.
+ * @return Local IP address as a string.
+ */
 const char *getLocalIP()
 {
     std::string local_ip;
@@ -109,6 +112,10 @@ const char *getLocalIP()
     return strdup(first_ip.c_str());
 }
 
+/**
+ * @brief Check if Bluetooth is available on the system.
+ * @return true if Bluetooth is available, false otherwise.
+ */
 bool checkBluetoothAvailability()
 {
     int dev_id = hci_get_route(nullptr);
@@ -122,6 +129,10 @@ bool checkBluetoothAvailability()
 }
 
 #ifdef CLIENT_BUILD
+/**
+ * @brief Send example speech data to the server.
+ * @param client Reference to the NetworkManager client.
+ */
 void send_speech_data(NetworkManager &client)
 {
     try
@@ -138,10 +149,16 @@ void send_speech_data(NetworkManager &client)
 #endif
 
 #ifdef SERVER_BUILD
+/**
+ * @brief Convert a string to the corresponding Task::TaskType enum.
+ * @param str The string representation of the task type.
+ * @return Corresponding Task::TaskType enum value.
+ */
 Task::TaskType stringToTaskType(const std::string &str)
 {
     static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
-        {"Book", Task::Book},
+        {"Book", Task::Book},// booking a reservation
+        {"Browse", Task::Browse},
         {"Calculate", Task::Calculate},
         {"Calendar", Task::Calendar},
         {"Call", Task::Call},
@@ -175,7 +192,16 @@ Task::TaskType stringToTaskType(const std::string &str)
     auto it = strToTaskType.find(str);
     return it != strToTaskType.end() ? it->second : Task::ERROR;
 }
-void terminalInputFunction(ModelRunner &nerModelObj, ModelRunner &classificationModelObj, HomeAssistantAPI *homeAssistantAPIObj, InputHandler &inputHandlerObj, TaskProcessor &taskProcessorObj)
+
+/**
+ * @brief Function to handle terminal input for commands.
+ * @param nerModelObj Reference to the NER ModelRunner object.
+ * @param intentRouterObj Reference to the IntentRouter object.
+ * @param homeAssistantAPIObj Pointer to the HomeAssistantAPI object (can be nullptr).
+ * @param inputHandlerObj Reference to the InputHandler object.
+ * @param taskProcessorObj Reference to the TaskProcessor object.
+ */
+void terminalInputFunction(ModelRunner &nerModelObj, IntentRouter &intentRouterObj, HomeAssistantAPI *homeAssistantAPIObj, InputHandler &inputHandlerObj, TaskProcessor &taskProcessorObj)
 {
     while (global_running)
     {
@@ -202,11 +228,11 @@ void terminalInputFunction(ModelRunner &nerModelObj, ModelRunner &classification
         {
             std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
         }
-        std::string sentence_label = classificationModelObj.ClassifySentence(user_input);
-        std::cout << "Intent: " << sentence_label << std::endl;
-        UserCommand user_command(user_input, sentence_entities, sentence_label, predicted_entities);
-        Task::TaskType taskType = stringToTaskType(sentence_label);
-        Task task(TaskProcessor::createTaskNumber(),user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
+        intentRouterObj.ReloadIfChanged();
+        std::string label = intentRouterObj.MatchIntent(user_input);
+        UserCommand user_command(user_input, sentence_entities, label, predicted_entities);
+        Task::TaskType taskType = stringToTaskType(label);
+        Task task(taskProcessorObj.createTaskNumber(),user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
         inputHandlerObj.addTask(task);
         taskProcessorObj.processTask(task);
     }
@@ -281,6 +307,9 @@ void start_server_network_manager(int server_port)
     }
 }
 
+/**
+ * @brief Stop the server NetworkManager.
+ */
 void stop_server_network_manager()
 {
     if (serverNetworkManager)
@@ -291,19 +320,24 @@ void stop_server_network_manager()
     }
 }
 
+/**
+ * @brief Initialize the models and TaskProcessor.
+ */
 void initialize_models_and_task_processor()
 {
     try
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
-        nerModel = std::make_unique<ModelRunner>(config.Root +"/models/ner_model.tflite",input_op, output_op);
-        classificationModel = std::make_unique<ModelRunner>(config.Root +"/models/classification_model.tflite",input_op, output_op);
+        nerModel = std::make_unique<ModelRunner>(config.Root +"models/ner_model.tflite",input_op, output_op);
+        classificationModel = std::make_unique<ModelRunner>(config.Root +"models/classification_model.tflite",input_op, output_op);
+        // Create the IntentRouter and store it in the dedicated pointer
+        intentRouter = std::make_unique<IntentRouter>(config.Root +"config/intents.json");
 
-        nerModel->LoadTokenizer(config.Root +"/models/ner_tokenizer.json");
-        nerModel->LoadLabels(config.Root +"/models/ner_labels.json");
+        nerModel->LoadTokenizer(config.Root +"models/ner_tokenizer.json");
+        nerModel->LoadLabels(config.Root +"models/ner_labels.json");
 
-        classificationModel->LoadTokenizer(config.Root +"/models/classification_tokenizer.json");
-        classificationModel->LoadLabels(config.Root +"/models/classification_type_labels.json");
+        classificationModel->LoadTokenizer(config.Root +"models/classification_tokenizer.json");
+        classificationModel->LoadLabels(config.Root +"models/classification_type_labels.json");
 
         inputHandler = std::make_unique<InputHandler>();
         taskProcessor = std::make_unique<TaskProcessor>(nullptr, *nerModel, *classificationModel);
@@ -319,20 +353,25 @@ void initialize_models_and_task_processor()
 
 void start_terminal_input()
 {
-    if (!nerModel || !classificationModel || !taskProcessor || !inputHandler)
+    if (!nerModel || !classificationModel || !taskProcessor || !inputHandler || !intentRouter)
     {
         std::cerr << "Models or TaskProcessor are not properly initialized." << std::endl;
         return;
     }
 
     std::thread terminalThread([&]()
-                               { terminalInputFunction(*nerModel, *classificationModel, nullptr, *inputHandler, *taskProcessor); });
+                               { terminalInputFunction(*nerModel, *intentRouter, nullptr, *inputHandler, *taskProcessor); });
 
     terminalThread.detach();
     DEBUG_PRINT("Terminal input thread started.");
 }
 #endif
 
+/**
+ * @brief Check if a file exists.
+ * @param filename The path to the file.
+ * @return true if the file exists, false otherwise.
+ */
 bool fileExists(const std::string &filename)
 {
     std::ifstream file(filename);
@@ -361,7 +400,7 @@ void createDefaultConfig(const std::string &filename)
     std::cout << "Default configuration created at " << filename << std::endl;
 }
 
-int main(int argc, char *argv[])
+int main(int /*argc*/, char * /*argv*/[])
 {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);

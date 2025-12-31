@@ -8,6 +8,7 @@ extern std::unique_ptr<ModelRunner> nerModel;
 extern std::unique_ptr<ModelRunner> classificationModel;
 extern std::unique_ptr<TaskProcessor> taskProcessor;
 extern std::unique_ptr<InputHandler> inputHandler;
+extern std::unique_ptr<IntentRouter> intentRouter;
 #endif
 
 /**
