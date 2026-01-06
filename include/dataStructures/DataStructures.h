@@ -2,12 +2,16 @@
  * @Authors         Sebastiaan den Hertog
  * @Date created    04-10-2024
  * @Date updated    04-10-2024 (By: Sebastiaan den Hertog)
- * @Description     constuctor, destructor and methods for the UserCommand class
+ * @Description     constructor, destructor and methods for the UserCommand class
  */
+
+#ifndef DATASTRUCTURES_H
+#define DATASTRUCTURES_H
+
 
 #include <string>
 #include <vector>
-#include <utility> 
+#include <utility>
 
 struct UserCommand
 {
@@ -25,3 +29,5 @@ struct UserCommand
           intent_label(label),
           predicted_entities(predicted_ents) {}
 };
+
+#endif

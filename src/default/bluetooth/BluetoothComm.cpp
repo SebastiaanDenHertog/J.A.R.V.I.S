@@ -249,3 +249,18 @@ void BluetoothComm::handleIncomingConnectionsThread()
         std::this_thread::sleep_for(std::chrono::seconds(5)); // Adjust the sleep duration as needed
     }
 }
+
+/**
+ * @brief Check if Bluetooth is available on the system.
+ * @return true if Bluetooth is available, false otherwise.
+ */
+bool BluetoothComm::checkBluetoothAvailability() {
+    int dev_id = hci_get_route(nullptr);
+    if (dev_id < 0)
+        return false;
+    int sock = hci_open_dev(dev_id);
+    if (sock < 0)
+        return false;
+    hci_close_dev(sock);
+    return true;
+}

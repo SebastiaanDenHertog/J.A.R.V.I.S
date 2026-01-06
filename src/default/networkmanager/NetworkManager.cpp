@@ -24,7 +24,7 @@
  */
 
 NetworkManager::NetworkManager(int port, Protocol protocol, ModelRunner *nerModel, ModelRunner *classificationModel)
-    : port(port), serverSd(-1), udpSd(-1), connectedToSpecialServer(false), protocol(protocol), clientAddrUDPSize(sizeof(clientAddrUDP)), nerModel(nerModel), classificationModel(classificationModel)
+    : port(port), serverSd(-1), udpSd(-1), clientAddrUDPSize(sizeof(clientAddrUDP)), connectedToSpecialServer(false), protocol(protocol), nerModel(nerModel), classificationModel(classificationModel)
 {
     Configuration config = ConfigurationManager::getInstance().getConfiguration();
     // WhisperTranscriber setup
@@ -86,6 +86,32 @@ NetworkManager::NetworkManager(int port, const char* serverIp, Protocol protocol
 }
 
 #endif
+
+/**
+ * @brief Get the local IP address of the machine.
+ * @return Local IP address as a string.
+ */
+const char *NetworkManager::getIpAddress()
+{
+    std::string local_ip;
+    std::string cmd = "hostname -I";
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe)
+    {
+        std::cerr << "popen() failed!" << std::endl;
+        return "";
+    }
+    char buffer[128];
+    while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr)
+    {
+        local_ip += buffer;
+    }
+    local_ip.erase(std::remove(local_ip.begin(), local_ip.end(), '\n'), local_ip.end());
+    std::stringstream ss(local_ip);
+    std::string first_ip;
+    ss >> first_ip;
+    return strdup(first_ip.c_str());
+}
 
 /**
  * @brief Method to process sound data.

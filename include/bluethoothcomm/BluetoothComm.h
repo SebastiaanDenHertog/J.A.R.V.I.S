@@ -32,6 +32,7 @@ public:
 
     bool initialize();
     void terminate();
+    bool checkBluetoothAvailability();
     std::vector<BluetoothDevice> scanDevices();
     std::vector<BluetoothDevice> listConnections();
     bool connectToDevice(const std::string &deviceAddress);

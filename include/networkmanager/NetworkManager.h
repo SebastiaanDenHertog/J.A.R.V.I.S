@@ -76,6 +76,8 @@ public:
 #endif
     ~NetworkManager();
 
+    const char *getIpAddress();
+
     void runServer();
     void connectClient();
 
