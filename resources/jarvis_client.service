@@ -4,7 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/client >> /var/log/jarvis/client.log 2>&1
+ExecStart=/usr/local/bin/client
+StandardOutput=append:/var/log/jarvis/client.log
+StandardError=append:/var/log/jarvis/client_error.log
 # Optionally set working directory, environment variables, etc.
 # WorkingDirectory=/var/jarvis
 # Environment=MY_ENV_VAR=some_value
