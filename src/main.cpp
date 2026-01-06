@@ -26,7 +26,6 @@
 #include "Watchdog.h"
 
 #ifdef CLIENT_BUILD
-
 #include "PixelRing.h"
 #include "ReSpeaker.h"
 #include "HardwareInterface.h"
@@ -86,48 +85,6 @@ void signal_handler(int signal)
     }
 }
 
-/**
- * @brief Get the local IP address of the machine.
- * @return Local IP address as a string.
- */
-const char *getLocalIP()
-{
-    std::string local_ip;
-    std::string cmd = "hostname -I";
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe)
-    {
-        std::cerr << "popen() failed!" << std::endl;
-        return "";
-    }
-    char buffer[128];
-    while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr)
-    {
-        local_ip += buffer;
-    }
-    local_ip.erase(std::remove(local_ip.begin(), local_ip.end(), '\n'), local_ip.end());
-    std::stringstream ss(local_ip);
-    std::string first_ip;
-    ss >> first_ip;
-    return strdup(first_ip.c_str());
-}
-
-/**
- * @brief Check if Bluetooth is available on the system.
- * @return true if Bluetooth is available, false otherwise.
- */
-bool checkBluetoothAvailability()
-{
-    int dev_id = hci_get_route(nullptr);
-    if (dev_id < 0)
-        return false;
-    int sock = hci_open_dev(dev_id);
-    if (sock < 0)
-        return false;
-    hci_close_dev(sock);
-    return true;
-}
-
 #ifdef CLIENT_BUILD
 /**
  * @brief Send example speech data to the server.
@@ -149,59 +106,13 @@ void send_speech_data(NetworkManager &client)
 #endif
 
 #ifdef SERVER_BUILD
-/**
- * @brief Convert a string to the corresponding Task::TaskType enum.
- * @param str The string representation of the task type.
- * @return Corresponding Task::TaskType enum value.
- */
-Task::TaskType stringToTaskType(const std::string &str)
-{
-    static const std::unordered_map<std::string, Task::TaskType> strToTaskType = {
-        {"Book", Task::Book},// booking a reservation
-        {"Browse", Task::Browse},
-        {"Calculate", Task::Calculate},
-        {"Calendar", Task::Calendar},
-        {"Call", Task::Call},
-        {"Connect", Task::Connect},
-        {"ControlHeating", Task::ControlHeating},
-        {"ControlLight", Task::ControlLight},
-        {"Define", Task::Define},
-        {"Email", Task::Email},
-        {"Find", Task::Find},
-        {"GetRecipe", Task::GetRecipe},
-        {"GetShippingInfo", Task::GetShippingInfo},
-        {"Locate", Task::Locate},
-        {"Message", Task::Message},
-        {"Navigate", Task::Navigate},
-        {"NewsQuery", Task::NewsQuery},
-        {"OrderItem", Task::OrderItem},
-        {"PauseMusic", Task::PauseMusic},
-        {"PauseVideo", Task::PauseVideo},
-        {"PlayMusic", Task::PlayMusic},
-        {"PlayVideo", Task::PlayVideo},
-        {"Read", Task::Read},
-        {"Recommend", Task::Recommend},
-        {"ResumeVideo", Task::ResumeVideo},
-        {"SetAlarm", Task::SetAlarm},
-        {"SetTimer", Task::SetTimer},
-        {"SetVolume", Task::SetVolume},
-        {"ShoppingList", Task::ShoppingList},
-        {"Summarize", Task::Summarize},
-        {"Translate", Task::Translate},
-        {"WeatherQuery", Task::WeatherQuery}};
-    auto it = strToTaskType.find(str);
-    return it != strToTaskType.end() ? it->second : Task::ERROR;
-}
 
 /**
  * @brief Function to handle terminal input for commands.
- * @param nerModelObj Reference to the NER ModelRunner object.
- * @param intentRouterObj Reference to the IntentRouter object.
- * @param homeAssistantAPIObj Pointer to the HomeAssistantAPI object (can be nullptr).
  * @param inputHandlerObj Reference to the InputHandler object.
  * @param taskProcessorObj Reference to the TaskProcessor object.
  */
-void terminalInputFunction(ModelRunner &nerModelObj, IntentRouter &intentRouterObj, HomeAssistantAPI *homeAssistantAPIObj, InputHandler &inputHandlerObj, TaskProcessor &taskProcessorObj)
+void terminalInputFunction(InputHandler &inputHandlerObj, TaskProcessor &taskProcessorObj, NetworkManager &networkManager)
 {
     while (global_running)
     {
@@ -213,33 +124,15 @@ void terminalInputFunction(ModelRunner &nerModelObj, IntentRouter &intentRouterO
             global_running = false;
             break;
         }
-        auto [_, predicted_entities] = nerModelObj.PredictlabelFromInput(user_input); // Ignore the first part
-        std::vector<std::pair<std::string, std::string>> sentence_entities;
-        std::istringstream iss(user_input);
-        std::string word;
-        int entity_index = 0;
-        while (iss >> word && entity_index < predicted_entities.size())
-        {
-            sentence_entities.emplace_back(word, predicted_entities[entity_index]);
-            entity_index++;
-        }
-        std::cout << "Sentence and Entities: " << std::endl;
-        for (const auto &pair : sentence_entities)
-        {
-            std::cout << "Word: " << pair.first << " -> Entity: " << pair.second << std::endl;
-        }
-        intentRouterObj.ReloadIfChanged();
-        std::string label = intentRouterObj.MatchIntent(user_input);
-        UserCommand user_command(user_input, sentence_entities, label, predicted_entities);
-        Task::TaskType taskType = stringToTaskType(label);
-        Task task(taskProcessorObj.createTaskNumber(),user_input, 1, {"client", getLocalIP(), 15880, {}}, taskType, user_command);
+        std::vector<std::pair<std::string, std::string>> emptyVectorPair;
+        std::vector<std::string> emptyVector;
+        UserCommand user_command(user_input,emptyVectorPair, nullptr, emptyVector);
+        Task task(taskProcessorObj.createTaskNumber(), user_input, 1, {"server_terminal", networkManager.getIpAddress(), 15880, {}}, Task::Ner, user_command);
         inputHandlerObj.addTask(task);
         taskProcessorObj.processTask(task);
     }
 }
-#endif
 
-#ifdef SERVER_BUILD
 void run_server(const Configuration &config)
 {
     try
@@ -328,8 +221,8 @@ void initialize_models_and_task_processor()
     try
     {
         Configuration config = ConfigurationManager::getInstance().getConfiguration();
-        nerModel = std::make_unique<ModelRunner>(config.Root +"models/ner_model.tflite",input_op, output_op);
-        classificationModel = std::make_unique<ModelRunner>(config.Root +"models/classification_model.tflite",input_op, output_op);
+        nerModel = std::make_unique<ModelRunner>(config.Root +"models/ner_model",input_op, output_op);
+        classificationModel = std::make_unique<ModelRunner>(config.Root +"models/classification_model",input_op, output_op);
         // Create the IntentRouter and store it in the dedicated pointer
         intentRouter = std::make_unique<IntentRouter>(config.Root +"config/intents.json");
 
@@ -340,8 +233,7 @@ void initialize_models_and_task_processor()
         classificationModel->LoadLabels(config.Root +"models/classification_type_labels.json");
 
         inputHandler = std::make_unique<InputHandler>();
-        taskProcessor = std::make_unique<TaskProcessor>(nullptr, *nerModel, *classificationModel);
-
+        taskProcessor = std::make_unique<TaskProcessor>(nullptr, *nerModel, *classificationModel, *intentRouter, *inputHandler, *taskProcessor);
         DEBUG_PRINT("Models and TaskProcessor initialized.");
     }
     catch (const std::exception &e)
@@ -360,7 +252,7 @@ void start_terminal_input()
     }
 
     std::thread terminalThread([&]()
-                               { terminalInputFunction(*nerModel, *intentRouter, nullptr, *inputHandler, *taskProcessor); });
+                               { terminalInputFunction(*inputHandler, *taskProcessor,*serverNetworkManager); });
 
     terminalThread.detach();
     DEBUG_PRINT("Terminal input thread started.");
@@ -432,7 +324,7 @@ int main(int /*argc*/, char * /*argv*/[])
 
     while (global_running)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     watchdog.stopMonitoring();

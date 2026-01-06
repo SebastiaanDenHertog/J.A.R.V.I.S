@@ -9,15 +9,15 @@
 #define WEBSERVER_H
 
 #include <httpserver.h>
-#include <httpserver/http_resource.h>
-#include <httpserver/http_request.h>
-#include <httpserver/http_utils.h>
-#include <httpserver/create_webserver.h>
-#include <httpserver/details/http_endpoint.h>
 #include <string>
-#include <memory>
-#include "Configuration.h"
+#include "InputHandler.h"
+#include "IntentRouter.h"
+#include "TaskProcessor.h"
 
-void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads, bool use_server);
+#ifdef SERVER_BUILD
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads, TaskProcessor taskProcessor, InputHandler inputHandler, NetworkManager networkManager);
+#else
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads);
+#endif
 
 #endif // WEBSERVER_H

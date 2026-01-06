@@ -202,7 +202,7 @@
 
                 if (response.ok) {
                     displayStatusMessage('Server configuration updated successfully.', 'success');
-                    fetchServerConfig();
+                    await fetchServerConfig();
                 } else {
                     displayStatusMessage('Failed to update server configuration.', 'error');
                 }

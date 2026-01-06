@@ -13,6 +13,7 @@
 #include "webServer.h"
 #include "HomeAssistantAPI.h"
 #include "IntentRouter.h"
+#include "Configuration.h"
 
 #ifdef SERVER_BUILD
 #include "TaskProcessor.h"

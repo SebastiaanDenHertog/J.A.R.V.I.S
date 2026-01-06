@@ -13,6 +13,9 @@
 #include <fstream>
 #include <memory>
 #include "Configuration.h"
+#include "DataStructures.h"
+#include "Task.h"
+#include "TaskProcessor.h"
 
 /**
  * @brief Setup the web server with the given parameters.
@@ -462,33 +465,34 @@ public:
 class PostQueryResource : public httpserver::http_resource
 {
 public:
-    std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req) override
+    std::shared_ptr<httpserver::http_response> render_POST(const httpserver::http_request &req, TaskProcessor taskProcessor, InputHandler inputHandler, NetworkManager networkManager)
     {
         try
         {
             json j = json::parse(req.get_content());
             if (j.contains("query") && j["query"].is_string())
             {
-                std::string query = j["query"].get<std::string>();
-                std::cout << "Received query: " << query << std::endl;
-
-                // Here you would process the query and get a response
-                std::string response_message = "Processed query: " + query;
+                std::string user_input = j["query"].get<std::string>();
+                std::cout << "Received query: " << user_input << std::endl;
+                std::vector<std::pair<std::string, std::string>> emptyVectorPair;
+                std::vector<std::string> emptyVector;
+                UserCommand userCommand(user_input,emptyVectorPair, nullptr, emptyVector);
+                Task task(taskProcessor.createTaskNumber(), user_input, 1, {"server_terminal", networkManager.getIpAddress(), 15880, {}}, Task::Ner, userCommand);
+                inputHandler.addTask(task);
+                taskProcessor.processTask(task);
+                std::string response_message = "Processed query: " + user_input;
 
                 json response_json = {
                     {"status", "success"},
                     {"response", response_message}};
 
-                std::cerr << response_json.dump() << std::endl;
                 return std::make_shared<httpserver::string_response>(response_json.dump(), 200, "application/json");
             }
-            else
-            {
                 return std::make_shared<httpserver::string_response>("Invalid request: 'query' field is required.", 400, "application/json");
-            }
         }
         catch (const std::exception &e)
         {
+            std::cout << "Error processing: PostQueryResource error:" << e.what()  << std::endl;
             json error_json = {
                 {"status", "error"},
                 {"message", e.what()}};
@@ -789,6 +793,7 @@ public:
     }
 };
 
+#ifdef CLIENT_BUILD
 /**
  * @brief Setup the web server with the given parameters.
  * @param secure Bool Whether to use SSL
@@ -799,8 +804,7 @@ public:
  * @param use_server Bool Whether to use the server or client pages
  */
 
-void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads, bool use_server)
-{
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads) {
     try
     {
         httpserver::create_webserver ws_builder = httpserver::create_webserver(port).max_threads(threads).log_access(custom_access_log).not_found_resource(not_found_custom).method_not_allowed_resource(not_allowed_custom);
@@ -814,7 +818,65 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
             std::cout << "Using SSL with cert: " << cert << " and key: " << key << std::endl;
         }
 
+        httpserver::webserver ws = httpserver::webserver(ws_builder);
+        auto homePage = std::make_unique<HomePageClientResource>();
+        ws.register_resource("/", homePage.get(), true);
+        auto configPage = std::make_unique<ConfigPageResourceClient>();
+        ws.register_resource("/config", configPage.get(), true);
+        auto getClientConfig = std::make_unique<GetClientConfigResource>();
+        ws.register_resource("/api/client/config", getClientConfig.get(), true);
+        auto updateClientConfig = std::make_unique<UpdateClientConfigResource>();
+        ws.register_resource("/api/client/config/update", updateClientConfig.get(), true);
+        auto getClientConfigOnlyServer = std::make_unique<GetClientConfigResourceOnlyServer>();
+        ws.register_resource("/api/client/clientconfig", getClientConfigOnlyServer.get(), true);
+        auto updateClientConfigOnlyServer = std::make_unique<UpdateClientConfigResourceOnlyServer>();
+        ws.register_resource("/api/client/clientconfig/update", updateClientConfigOnlyServer.get(), true);
+
+
+        ws.start(false);
+        std::cout << "Web Server running on port: " << port << std::endl;
+
+        while (ws.is_running())
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        std::cout << "Web Server stopped" << std::endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Server failed to start: " << e.what() << std::endl;
+    }
+}
+#endif
+
 #ifdef SERVER_BUILD
+/**
+ * @brief Setup the web server with the given parameters.
+ * @param secure Bool Whether to use SSL
+ * @param cert Path to the SSL certificate
+ * @param key Path to the SSL key
+ * @param port Port number to listen on
+ * @param threads Number of threads to use
+ * @param taskProcessor
+ * @param inputHandler
+ * @param networkManager
+ */
+
+void setup_server(bool secure, const std::string &cert, const std::string &key, uint16_t port, int threads, TaskProcessor taskProcessor, InputHandler inputHandler, NetworkManager networkManager) {
+    try
+    {
+        httpserver::create_webserver ws_builder = httpserver::create_webserver(port).max_threads(threads).log_access(custom_access_log).not_found_resource(not_found_custom).method_not_allowed_resource(not_allowed_custom);
+        if (key.empty() || cert.empty())
+        {
+            secure = false;
+        }
+        if (secure)
+        {
+            ws_builder.use_ssl().https_mem_key(key).https_mem_cert(cert);
+            std::cout << "Using SSL with cert: " << cert << " and key: " << key << std::endl;
+        }
+
         httpserver::webserver ws = httpserver::webserver(ws_builder);
         auto homePage = std::make_unique<HomePageServerResource>();
         ws.register_resource("/", homePage.get(), true);
@@ -832,23 +894,7 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         ws.register_resource("/api/server/config/update", updateServerConfig.get(), true);
         auto listClients = std::make_unique<ListClientsResource>();
         ws.register_resource("/api/server/get_clients", listClients.get(), true);
-#endif
-#ifdef CLIENT_BUILD
-        httpserver::webserver ws = httpserver::webserver(ws_builder);
-        auto homePage = std::make_unique<HomePageClientResource>();
-        ws.register_resource("/", homePage.get(), true);
-        auto configPage = std::make_unique<ConfigPageResourceClient>();
-        ws.register_resource("/config", configPage.get(), true);
-        auto getClientConfig = std::make_unique<GetClientConfigResource>();
-        ws.register_resource("/api/client/config", getClientConfig.get(), true);
-        auto updateClientConfig = std::make_unique<UpdateClientConfigResource>();
-        ws.register_resource("/api/client/config/update", updateClientConfig.get(), true);
-        auto getClientConfigOnlyServer = std::make_unique<GetClientConfigResourceOnlyServer>();
-        ws.register_resource("/api/client/clientconfig", getClientConfigOnlyServer.get(), true);
-        auto updateClientConfigOnlyServer = std::make_unique<UpdateClientConfigResourceOnlyServer>();
-        ws.register_resource("/api/client/clientconfig/update", updateClientConfigOnlyServer.get(), true);
 
-#endif
         ws.start(false);
         std::cout << "Web Server running on port: " << port << std::endl;
 
@@ -864,3 +910,4 @@ void setup_server(bool secure, const std::string &cert, const std::string &key, 
         std::cerr << "Server failed to start: " << e.what() << std::endl;
     }
 }
+#endif

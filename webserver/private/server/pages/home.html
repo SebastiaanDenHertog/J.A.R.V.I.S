@@ -96,7 +96,7 @@
             if (query === "" || query === null) {
                 noInput()
             } else {
-                await post('/api/query',query).then(response => {
+                await post('/api/server/query',query).then(response => {
                     alert(response.toString());
 
                     console.log('Query submitted successfully');

@@ -143,7 +143,9 @@ void Watchdog::startService(const std::string &service)
                 config.web_client_port,
 #endif
                 config.threads,
-                config.use_server
+                taskProcessor,
+                inputHandler,
+                intentRouter
             );
             webServerRunning = false; })
             .detach();
